@@ -1,6 +1,6 @@
 # Foodseyo Shared Analysis Orchestration
 
-**Status:** Implemented for T4
+**Status:** Implemented for T4.1
 
 **Date:** 2026-07-15
 
@@ -132,6 +132,7 @@ Semantic errors include:
 - strong or moderate reviews without evidence;
 - verified freshness without official evidence;
 - unavailable images with reusable fields;
+- attribution-required images without attribution metadata;
 - restaurant-specific general references;
 - general references without source, reusable rights, or presentation limitation;
 - persisted session-only images;
@@ -162,7 +163,7 @@ Restaurant uncertainty, insufficient reviews, `could_not_verify` freshness, miss
 - external-research degradation;
 - final partial status.
 
-Issues are deduplicated by code plus related-entity IDs. Repeated limitations cannot create duplicate issues for the same entity.
+Issues are deduplicated by code plus a stable, order-independent set of related-entity IDs. Repeated limitations cannot create duplicate issues for the same entity. When duplicates have different severity, the merged issue preserves `error` over `warning` over `info`; if any duplicate is non-recoverable, the merged issue remains non-recoverable.
 
 ## Envelope creation
 
@@ -180,14 +181,16 @@ Default IDs use `crypto.randomUUID`. The clock and ID factory are injectable, wh
 
 ## Image reuse safety
 
-`isDishImageReusableForDisplay` and `getReusableDishImageSource` prevent persistent UI adapters from displaying:
+`isDishImageReusableForDisplay` and `getReusableDishImageSource` allow persistent UI adapters to display only images with `rightsStatus: cleared` and a URL or local asset path. They prevent persistent UI adapters from displaying:
 
+- `attribution_required` images until attribution UI exists;
+- images with `unknown` rights;
 - `session_only` images;
 - `not_reusable` images;
 - unavailable images;
 - image records with no URL or local asset.
 
-The current cleared local demo asset remains displayable. The Restaurant/Dish adapter now uses this helper, preserves actual category labels, maps missing categories to `Other`, preserves `$$$$`, and uses `Unknown` rather than a false price-level default.
+An `attribution_required` image must still carry non-empty attribution metadata to pass semantic validation, but metadata alone does not make it displayable. The current cleared local demo asset remains displayable. The Restaurant/Dish adapter uses this helper, preserves actual category labels, maps missing categories to `Other`, preserves `$$$$`, and uses `Unknown` rather than a false price-level default.
 
 ## Tests
 
@@ -196,11 +199,12 @@ The lightweight Node validation entry point runs the existing contract checks an
 - demo dispatch, deterministic envelope creation, final parsing, and serialization;
 - T3 fixture corrections;
 - evidence, restaurant, menu, category, featured-dish, price, review, freshness, image, and dietary semantics;
-- complete versus partial/failed behavior;
-- image reuse safety;
-- explicit typed errors for all unimplemented analyzers;
+- explicit complete, partial, and failed status behavior, including optional-evidence cases that remain complete;
+- all current image-rights display states and missing attribution metadata;
+- actual dispatcher execution and typed rejection for all five unimplemented analyzers, including input-type preservation and no demo fallback;
 - issue deduplication;
-- canonical fixture immutability.
+- highest-severity and strictest-recoverability issue merging;
+- complete canonical fixture immutability before and after demo analysis.
 
 No test framework dependency was added.
 

@@ -20,6 +20,8 @@ Reasons:
 
 Missing imagery must never block menu explanation, analysis, or ordering guidance.
 
+The current persistent Restaurant and Dish UI displays only images with `rightsStatus: cleared` and a valid URL or local asset path. Images marked `attribution_required` remain hidden until the product can visibly render their attribution. Images with `unknown`, `session_only`, or `not_reusable` rights are not public Dish Card assets.
+
 ## Image priority
 
 Choose a dish image in this order:
@@ -62,7 +64,9 @@ An image may be treated as restaurant-specific only when the evidence clearly co
 
 A food photo visible inside a user-uploaded Google Maps, Yelp, search-result, or other third-party screen may be used as evidence during the current analysis session. It must use `user_provided_screen` provenance.
 
-Until the original source and reuse rights are separately verified, Foodseyo must not extract, permanently store, or redistribute that image as a public Dish Card image. Its rights status is `session_only` or `not_reusable`. An official website or official social source also does not automatically make an image rights-cleared.
+Until the original source and reuse rights are separately verified, Foodseyo must not extract, permanently store, or redistribute that image as a public Dish Card image. Its rights status is `session_only` or `not_reusable`. An official website or official social source also does not automatically make an image rights-cleared; provenance and permission are separate facts.
+
+An image with `attribution_required` rights must retain non-empty attribution metadata, but the current UI does not yet render that attribution and therefore must not display the image. An image with `unknown` rights must remain hidden until its reuse rights are verified. Neither status may be automatically promoted to `cleared` because a source appears official.
 
 ## Future shared image metadata
 
@@ -212,7 +216,9 @@ Before a dish image is displayed, confirm:
 
 - its source type and user-facing label are accurate;
 - restaurant-specific status is supported by evidence;
-- rights and attribution requirements are satisfied;
+- its rights status is `cleared` and a valid source path exists;
+- attribution-required images remain hidden until attribution is visibly rendered;
+- unknown rights are verified rather than assumed from an official source;
 - a general reference includes its limitation;
 - an unavailable image degrades to an honest, accessible placeholder;
 - no AI-generated dish image is used.

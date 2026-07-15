@@ -273,3 +273,19 @@ This log records accepted product and architecture decisions frozen in T2. Chang
 - **Impact:** Foodseyo may return complete or partial useful guidance with explicit limitations rather than treating every unknown value as failure.
 - **Status:** Accepted
 - **Date:** 2026-07-15
+
+## D-035 — Display only rights-cleared dish images in the current MVP UI
+
+- **Decision:** Display only rights-cleared dish images in the current MVP UI.
+- **Reason:** The current UI does not yet render required attribution, and images with unknown, session-only, or non-reusable rights must not be publicly reused.
+- **Impact:** Only images with `rightsStatus=cleared` and a valid source path are passed to persistent Restaurant and Dish UI. Attribution-required images remain hidden until attribution UI exists.
+- **Status:** Accepted
+- **Date:** 2026-07-15
+
+## D-036 — Preserve the highest severity when deduplicating analysis issues
+
+- **Decision:** Preserve the highest severity when deduplicating analysis issues.
+- **Reason:** The same limitation may be detected by semantic validation and derived issue logic with different severity levels.
+- **Impact:** Duplicate issues are merged by code and related entities while preserving the most severe warning and the strictest recoverability state.
+- **Status:** Accepted
+- **Date:** 2026-07-15

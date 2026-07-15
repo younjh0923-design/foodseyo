@@ -2,9 +2,7 @@ import type { DishImage } from "../../domain/foodseyo-analysis.ts";
 
 export function isDishImageReusableForDisplay(image: DishImage): boolean {
   if (image.sourceType === "unavailable") return false;
-  if (image.rightsStatus === "not_reusable" || image.rightsStatus === "session_only") {
-    return false;
-  }
+  if (image.rightsStatus !== "cleared") return false;
 
   return image.localAssetPath !== null || image.url !== null;
 }

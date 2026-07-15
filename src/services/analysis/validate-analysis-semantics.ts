@@ -420,6 +420,16 @@ export function validateAnalysisSemantics(
           dishEntity,
         );
       }
+      if (
+        image.rightsStatus === "attribution_required" &&
+        (image.attribution === null || image.attribution.trim().length === 0)
+      ) {
+        addError(
+          "IMAGE_ATTRIBUTION_MISSING",
+          `Dish ${dish.id} requires image attribution metadata.`,
+          dishEntity,
+        );
+      }
       if (image.sourceType === "general_reference") {
         if (image.restaurantSpecific) {
           addError(

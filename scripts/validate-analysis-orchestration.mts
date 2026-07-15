@@ -3,19 +3,25 @@ import {
   DishImageSchema,
   FoodseyoAnalysisPayloadSchema,
   FoodseyoAnalysisSchema,
+  type AnalysisIssue,
+  type DishImage,
   type FoodseyoAnalysisPayload,
 } from "../src/domain/foodseyo-analysis.ts";
 import {
   AnalysisCapabilityUnavailableError,
   analyzeFoodseyoInput,
   analyzerRegistry,
+  deduplicateAnalysisIssues,
   deriveAnalysisIssues,
   deriveAnalysisStatus,
+  getReusableDishImageSource,
   isDishImageReusableForDisplay,
   validateAnalysisSemantics,
   type AnalysisCapability,
   type AnalysisDraft,
+  type AnalyzeFoodseyoRequest,
   type SemanticRuleCode,
+  type TransientImageInput,
 } from "../src/services/analysis/index.ts";
 
 const passedChecks: string[] = [];
@@ -47,6 +53,7 @@ const draftFor = (
 });
 
 const fixedTimestamp = "2026-07-15T12:00:00.000Z";
+const canonicalFixtureBeforeAnalysis = JSON.stringify(demoFoodseyoAnalysis);
 const demoResult = await analyzeFoodseyoInput(
   { type: "demo", fixtureId: "pai-northern-thai-kitchen" },
   {
@@ -76,6 +83,19 @@ verify(
 verify(
   canonicalKhaoSoi.restaurantSpecific.proteinOptions.values.join(",") === "Chicken,Beef",
   "protein options remain available",
+);
+const canonicalVeganAssessment = canonicalKhaoSoi.dietary.items.find(
+  (item) => item.key === "vegan",
+);
+verify(
+  canonicalVeganAssessment?.status === "confirm_with_staff" &&
+    canonicalVeganAssessment.explanation ===
+      "The listed demo options are chicken and beef, but vegan availability was not confirmed." &&
+    canonicalVeganAssessment.basis === "direct_observation" &&
+    canonicalVeganAssessment.sourceIds.includes("demo-menu-fixture") &&
+    canonicalVeganAssessment.limitation ===
+      "Confirm current ingredients, broth, preparation, and modification options with staff.",
+  "demo vegan assessment conservatively requires staff confirmation",
 );
 
 const confirmedByMissing = clonePayload();
@@ -262,11 +282,88 @@ verify(
   "user-provided screen with session-only rights is accepted",
 );
 
-const notReusableImage = structuredClone(canonicalKhaoSoi.image);
-notReusableImage.rightsStatus = "not_reusable";
+const imageWith = (overrides: Partial<DishImage>): DishImage => ({
+  ...structuredClone(canonicalKhaoSoi.image),
+  ...overrides,
+});
+
+const verifyImageDisplayPolicy = (
+  image: DishImage,
+  expectedSource: string | null,
+  label: string,
+) => {
+  verify(
+    isDishImageReusableForDisplay(image) === (expectedSource !== null) &&
+      getReusableDishImageSource(image) === expectedSource,
+    label,
+  );
+};
+
+verifyImageDisplayPolicy(
+  canonicalKhaoSoi.image,
+  "/images/thai-dishes.png",
+  "cleared demo local asset remains displayable",
+);
+verifyImageDisplayPolicy(
+  imageWith({
+    url: "https://example.com/cleared.jpg",
+    localAssetPath: null,
+    rightsStatus: "cleared",
+  }),
+  "https://example.com/cleared.jpg",
+  "cleared image URL is displayable",
+);
+verifyImageDisplayPolicy(
+  imageWith({ url: null, localAssetPath: null, rightsStatus: "cleared" }),
+  null,
+  "cleared image without a source is not displayable",
+);
+verifyImageDisplayPolicy(
+  imageWith({ rightsStatus: "session_only" }),
+  null,
+  "session-only image is not displayable",
+);
+verifyImageDisplayPolicy(
+  imageWith({ rightsStatus: "not_reusable" }),
+  null,
+  "not-reusable image is not displayable",
+);
+verifyImageDisplayPolicy(
+  imageWith({ rightsStatus: "unknown" }),
+  null,
+  "unknown-rights image is not displayable",
+);
+verifyImageDisplayPolicy(
+  imageWith({ rightsStatus: "attribution_required", attribution: "Example source" }),
+  null,
+  "attribution-required image remains hidden before attribution UI exists",
+);
+
+const attributionMissing = clonePayload();
+if (!attributionMissing.menu) throw new Error("Demo menu is required.");
+attributionMissing.menu.dishes[0].image = {
+  ...attributionMissing.menu.dishes[0].image,
+  rightsStatus: "attribution_required",
+  attribution: " ",
+};
 verify(
-  !isDishImageReusableForDisplay(notReusableImage),
-  "not-reusable image is rejected by display helper",
+  hasSemanticError(attributionMissing, "IMAGE_ATTRIBUTION_MISSING"),
+  "attribution-required image without attribution metadata is rejected",
+);
+
+verifyImageDisplayPolicy(
+  imageWith({
+    sourceType: "unavailable",
+    url: null,
+    localAssetPath: null,
+    sourcePageUrl: null,
+    restaurantSpecific: false,
+    userFacingLabel: "Image unavailable",
+    attribution: null,
+    rightsStatus: "unknown",
+  }),
+  null,
+  "unavailable image is not displayable",
 );
 
 verify(
@@ -275,6 +372,57 @@ verify(
     sourceType: "ai_generated",
   }).success,
   "AI-generated image source remains rejected by Zod",
+);
+
+const completePayload = clonePayload();
+const completeSemantics = validateAnalysisSemantics(completePayload);
+verify(
+  deriveAnalysisStatus(
+    draftFor(completePayload, "demo_analysis"),
+    completePayload,
+    completeSemantics,
+  ) === "complete",
+  "completed core capability with a useful result is complete",
+);
+
+const incompleteCoreDraft: AnalysisDraft = {
+  ...draftFor(completePayload, "demo_analysis"),
+  completedCapabilities: [],
+};
+verify(
+  deriveAnalysisStatus(incompleteCoreDraft, completePayload, completeSemantics) === "partial",
+  "incomplete core capability with a useful result is partial",
+);
+
+verify(
+  deriveAnalysisStatus(
+    draftFor(completePayload, "demo_analysis", ["demo_analysis"]),
+    completePayload,
+    completeSemantics,
+  ) === "partial",
+  "degraded core capability with a useful result is partial",
+);
+
+const failedPayload = clonePayload();
+failedPayload.restaurantResolution = {
+  status: "unconfirmed",
+  candidates: [],
+  selectedCandidateId: null,
+  confirmedBy: null,
+  sourceIds: [],
+  limitations: ["No usable result was produced."],
+};
+failedPayload.restaurant = null;
+failedPayload.menu = null;
+failedPayload.orderingGuidance = null;
+const failedSemantics = validateAnalysisSemantics(failedPayload);
+verify(
+  deriveAnalysisStatus(
+    draftFor(failedPayload, "menu_analysis"),
+    failedPayload,
+    failedSemantics,
+  ) === "failed",
+  "analysis without restaurant, menu dishes, or ordering guidance is failed",
 );
 
 const unconfirmedUsefulMenu = clonePayload();
@@ -311,8 +459,8 @@ verify(
     draftFor(unconfirmedUsefulMenu, "menu_analysis"),
     unconfirmedUsefulMenu,
     unconfirmedSemantics,
-  ) !== "failed",
-  "unconfirmed restaurant with useful menu is not failed",
+  ) === "complete",
+  "unconfirmed restaurant with useful general menu remains complete",
 );
 
 const insufficientReviewSemantics = validateAnalysisSemantics(insufficientReview);
@@ -347,34 +495,105 @@ verify(
   "dietary staff confirmation alone does not cause partial status",
 );
 
-const transientImage = {
+const unavailableOptionalImage = clonePayload();
+if (!unavailableOptionalImage.menu) throw new Error("Demo menu is required.");
+unavailableOptionalImage.menu.dishes[0].image = {
+  ...unavailableOptionalImage.menu.dishes[0].image,
+  sourceType: "unavailable",
+  url: null,
+  localAssetPath: null,
+  sourcePageUrl: null,
+  restaurantSpecific: false,
+  userFacingLabel: "Image unavailable",
+  attribution: null,
+  rightsStatus: "unknown",
+};
+const unavailableImageSemantics = validateAnalysisSemantics(unavailableOptionalImage);
+verify(
+  deriveAnalysisStatus(
+    draftFor(unavailableOptionalImage, "demo_analysis"),
+    unavailableOptionalImage,
+    unavailableImageSemantics,
+  ) === "complete",
+  "unavailable optional image alone does not cause partial status",
+);
+
+const transientImage: TransientImageInput = {
   id: "transient-menu-image",
   fileName: "menu.jpg",
   mediaType: "image/jpeg",
   byteLength: 1,
   read: async () => new Uint8Array([0]),
 };
-let unavailableAnalyzerError: unknown = null;
-try {
-  await analyzeFoodseyoInput({
+const unavailableRequests: readonly AnalyzeFoodseyoRequest[] = [
+  {
     type: "menu_images",
     images: [transientImage],
     userEnteredRestaurantName: null,
     location: null,
-  });
-} catch (error) {
-  unavailableAnalyzerError = error;
+  },
+  {
+    type: "restaurant_photo",
+    image: transientImage,
+    userEnteredRestaurantName: null,
+    location: null,
+  },
+  {
+    type: "restaurant_screen",
+    image: transientImage,
+    sourcePlatformLabel: "Test screen",
+    userEnteredRestaurantName: null,
+    location: null,
+  },
+  {
+    type: "restaurant_link",
+    submittedUrl: "https://example.com/restaurant",
+    userEnteredRestaurantName: null,
+  },
+  {
+    type: "nearby_search",
+    location: {
+      latitude: 43.6532,
+      longitude: -79.3832,
+      label: "Test location",
+    },
+    selectedCandidateId: null,
+    selectedByUser: false,
+  },
+];
+
+const verifyUnavailableAnalyzer = async (request: AnalyzeFoodseyoRequest) => {
+  let unavailableAnalyzerError: unknown = null;
+  let returnedResult: unknown;
+  try {
+    returnedResult = await analyzeFoodseyoInput(request);
+  } catch (error) {
+    unavailableAnalyzerError = error;
+  }
+
+  verify(
+    unavailableAnalyzerError instanceof AnalysisCapabilityUnavailableError,
+    `${request.type} throws AnalysisCapabilityUnavailableError`,
+  );
+  verify(
+    unavailableAnalyzerError instanceof AnalysisCapabilityUnavailableError &&
+      unavailableAnalyzerError.code === "ANALYZER_CAPABILITY_UNAVAILABLE",
+    `${request.type} preserves the stable capability error code`,
+  );
+  verify(
+    unavailableAnalyzerError instanceof AnalysisCapabilityUnavailableError &&
+      unavailableAnalyzerError.inputType === request.type,
+    `${request.type} preserves the requested input type`,
+  );
+  verify(
+    returnedResult === undefined && unavailableAnalyzerError !== null,
+    `${request.type} returns no analysis and never falls back to demo data`,
+  );
+};
+
+for (const request of unavailableRequests) {
+  await verifyUnavailableAnalyzer(request);
 }
-verify(
-  unavailableAnalyzerError instanceof AnalysisCapabilityUnavailableError,
-  "unimplemented analyzer returns a typed capability error",
-);
-verify(
-  unavailableAnalyzerError instanceof AnalysisCapabilityUnavailableError &&
-    unavailableAnalyzerError.inputType === "menu_images" &&
-    unavailableAnalyzerError.code === "ANALYZER_CAPABILITY_UNAVAILABLE",
-  "unimplemented menu analyzer never returns demo data",
-);
 
 const duplicateIssuePayload = clonePayload();
 const duplicateWarning = {
@@ -398,6 +617,83 @@ verify(
   "issue derivation deduplicates code and related-entity combinations",
 );
 
+const issueFor = (
+  severity: AnalysisIssue["severity"],
+  relatedEntityIds: readonly string[],
+  recoverable = true,
+  code: AnalysisIssue["code"] = "MENU_FRESHNESS_UNVERIFIED",
+): AnalysisIssue => ({
+  code,
+  severity,
+  message: `${severity} ${code}`,
+  relatedEntityIds: [...relatedEntityIds],
+  recoverable,
+});
+
+const infoThenWarning = deduplicateAnalysisIssues([
+  issueFor("info", ["dish-a"]),
+  issueFor("warning", ["dish-a"]),
+]);
+verify(
+  infoThenWarning.length === 1 &&
+    infoThenWarning[0].severity === "warning" &&
+    infoThenWarning[0].message === "warning MENU_FRESHNESS_UNVERIFIED",
+  "issue merge upgrades info to warning and keeps the warning message",
+);
+
+const warningThenInfo = deduplicateAnalysisIssues([
+  issueFor("warning", ["dish-a"]),
+  issueFor("info", ["dish-a"]),
+]);
+verify(
+  warningThenInfo.length === 1 && warningThenInfo[0].severity === "warning",
+  "issue merge does not downgrade warning to info",
+);
+
+const errorThenWarning = deduplicateAnalysisIssues([
+  issueFor("error", ["dish-a"]),
+  issueFor("warning", ["dish-a"]),
+]);
+verify(
+  errorThenWarning.length === 1 && errorThenWarning[0].severity === "error",
+  "issue merge does not downgrade error to warning",
+);
+
+const strictRecoverability = deduplicateAnalysisIssues([
+  issueFor("warning", ["dish-a"], true),
+  issueFor("warning", ["dish-a"], false),
+]);
+verify(
+  strictRecoverability.length === 1 && !strictRecoverability[0].recoverable,
+  "issue merge preserves non-recoverable state",
+);
+
+const reversedEntityOrder = deduplicateAnalysisIssues([
+  issueFor("info", ["dish-a", "dish-b"]),
+  issueFor("warning", ["dish-b", "dish-a"]),
+]);
+verify(
+  reversedEntityOrder.length === 1 &&
+    reversedEntityOrder[0].severity === "warning" &&
+    reversedEntityOrder[0].relatedEntityIds.join(",") === "dish-a,dish-b",
+  "issue key treats reversed related-entity order as the same stable set",
+);
+
+const differentEntities = deduplicateAnalysisIssues([
+  issueFor("info", ["dish-a"]),
+  issueFor("warning", ["dish-b"]),
+]);
+verify(
+  differentEntities.length === 2,
+  "same issue code with different related entities remains separate",
+);
+
+const differentCodes = deduplicateAnalysisIssues([
+  issueFor("info", ["dish-a"]),
+  issueFor("warning", ["dish-a"], true, "REVIEW_EVIDENCE_INSUFFICIENT"),
+]);
+verify(differentCodes.length === 2, "different issue codes remain separate");
+
 verify(
   Object.keys(analyzerRegistry).sort().join(",") ===
     "demo,menu_images,nearby_search,restaurant_link,restaurant_photo,restaurant_screen",
@@ -405,8 +701,8 @@ verify(
 );
 
 verify(
-  demoFoodseyoAnalysis.payload.menu?.dishes[0].id === "khao-soi",
-  "orchestration tests do not mutate the canonical demo fixture",
+  JSON.stringify(demoFoodseyoAnalysis) === canonicalFixtureBeforeAnalysis,
+  "orchestration preserves the complete canonical demo fixture",
 );
 
 console.log(`Foodseyo analysis orchestration validation: ${passedChecks.length} checks passed.`);

@@ -30,8 +30,17 @@ export function deriveAnalysisStatus(
   return "complete";
 }
 
+const severityRank: Record<AnalysisIssue["severity"], number> = {
+  info: 0,
+  warning: 1,
+  error: 2,
+};
+
+const normalizedRelatedEntityIds = (issue: AnalysisIssue): string[] =>
+  [...new Set(issue.relatedEntityIds)].sort();
+
 const issueKey = (issue: AnalysisIssue): string =>
-  `${issue.code}:${[...new Set(issue.relatedEntityIds)].sort().join(",")}`;
+  `${issue.code}:${normalizedRelatedEntityIds(issue).join(",")}`;
 
 export function deduplicateAnalysisIssues(
   issues: readonly AnalysisIssue[],
@@ -39,12 +48,27 @@ export function deduplicateAnalysisIssues(
   const byKey = new Map<string, AnalysisIssue>();
   for (const issue of issues) {
     const key = issueKey(issue);
-    if (!byKey.has(key)) {
-      byKey.set(key, {
-        ...issue,
-        relatedEntityIds: [...new Set(issue.relatedEntityIds)],
-      });
+    const existing = byKey.get(key);
+    const normalizedIssue: AnalysisIssue = {
+      ...issue,
+      relatedEntityIds: normalizedRelatedEntityIds(issue),
+    };
+
+    if (!existing) {
+      byKey.set(key, normalizedIssue);
+      continue;
     }
+
+    const preferredIssue =
+      severityRank[normalizedIssue.severity] > severityRank[existing.severity]
+        ? normalizedIssue
+        : existing;
+
+    byKey.set(key, {
+      ...preferredIssue,
+      relatedEntityIds: normalizedIssue.relatedEntityIds,
+      recoverable: existing.recoverable && normalizedIssue.recoverable,
+    });
   }
   return [...byKey.values()];
 }

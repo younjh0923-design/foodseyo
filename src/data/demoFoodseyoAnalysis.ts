@@ -224,11 +224,13 @@ const dishes: Dish[] = [
       {
         key: "vegan",
         label: "Vegan",
-        status: "confirmed_absent",
-        explanation: "The demo menu lists chicken or beef options.",
+        status: "confirm_with_staff",
+        explanation:
+          "The listed demo options are chicken and beef, but vegan availability was not confirmed.",
         basis: "direct_observation",
         sourceIds: [DEMO_MENU_EVIDENCE_ID],
-        limitation: "Confirm current options and preparation with staff.",
+        limitation:
+          "Confirm current ingredients, broth, preparation, and modification options with staff.",
       },
       {
         key: "gluten",
