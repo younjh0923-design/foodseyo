@@ -1,27 +1,29 @@
-export type EvidenceSource =
-  | "official_menu"
-  | "official_website"
-  | "uploaded_menu"
-  | "public_web"
-  | "platform_api_sample"
+import type {
+  Availability,
+  ClaimBasis,
+  EvidenceSourceType,
+  ReviewConsensusStatus,
+} from "@/domain/foodseyo-analysis";
+
+export type EvidenceBadgeKind =
+  | EvidenceSourceType
   | "general_food_knowledge"
   | "ai_inference"
-  | "demo_data"
-  | "unavailable"
-  | "staff_confirmation";
+  | "unavailable";
 
-export type ReviewConsensusLevel = "strong" | "moderate" | "mixed" | "insufficient";
 export type SpicePreference = "mild" | "medium" | "hot";
 export type PreferredLanguage = "English" | "Korean";
 
-export interface EvidenceItem {
-  source: EvidenceSource;
+export interface EvidenceReference {
+  sourceType: EvidenceSourceType | null;
+  basis: ClaimBasis;
+  availability: Availability;
   label: string;
   note?: string;
 }
 
 export interface ReviewConsensus {
-  level: ReviewConsensusLevel;
+  level: ReviewConsensusStatus;
   sourceGroupCount: number;
   evidenceCount: number;
   freshness: string;
@@ -35,7 +37,7 @@ export interface DietaryFact {
   label: string;
   status: string;
   evidence: string;
-  source: EvidenceSource;
+  badgeKind: EvidenceBadgeKind;
   action?: string;
 }
 
@@ -71,7 +73,7 @@ export interface Dish {
   overview: DishOverview;
   reviewConsensus: ReviewConsensus;
   dietary: DietaryFact[];
-  evidence: EvidenceItem[];
+  evidence: EvidenceReference[];
 }
 
 export interface Restaurant {

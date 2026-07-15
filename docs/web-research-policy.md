@@ -125,16 +125,13 @@ Foodseyo never guarantees that a menu is certainly current. Prohibited claims in
 
 ## Evidence provenance
 
-Research results retain one of the evidence source types defined in [product-rules.md](./product-rules.md). In particular:
+Research results keep three separate properties defined in [product-rules.md](./product-rules.md):
 
-- official menu claims use `official_menu`;
-- official site claims use `official_website`;
-- public pages use `public_web`;
-- search-result evidence may use `web_search_result`;
-- unsupported facts use `unavailable` rather than an invented value;
-- AI synthesis that is not itself a source is labeled `ai_inference` when relevant.
+- `EvidenceSourceType` records the actual source, such as `official_menu`, `official_website`, `official_social`, `public_web`, or `web_search_result`.
+- `ClaimBasis` records how the claim was formed, such as `external_source` or `ai_inference`.
+- `Availability` records whether the value is `available`, `unknown`, `unavailable`, or `insufficient`.
 
-Search output is not automatically a restaurant-specific fact. A claim must retain its source and must be presented with the appropriate limitation.
+AI is not an evidence source. `ai_inference` may be the claim basis while the supporting public pages remain the evidence sources. `unavailable` is an availability state and must not be stored as provenance. Search output is not automatically a restaurant-specific fact; each important claim retains source IDs and an appropriate limitation.
 
 ## Missing-evidence rules
 
@@ -148,7 +145,7 @@ Without evidence, research must not generate:
 - allergy safety or absence of cross-contact;
 - dietary-safety guarantees.
 
-Use explicit fallbacks: `null`, `unknown`, `insufficient`, `unconfirmed`, `could_not_verify`, or `unavailable` as applicable.
+Use explicit fallbacks: `null`, `unknown`, `insufficient`, `unconfirmed`, `could_not_verify`, or an `unavailable` availability state as applicable.
 
 ## Dietary and allergy safety
 

@@ -58,6 +58,12 @@ The MVP image source categories do not include `ai_generated`.
 
 An image may be treated as restaurant-specific only when the evidence clearly connects the image to both the confirmed restaurant and the dish. A visually similar dish is not sufficient.
 
+### Images inside user-provided third-party screens
+
+A food photo visible inside a user-uploaded Google Maps, Yelp, search-result, or other third-party screen may be used as evidence during the current analysis session. It must use `user_provided_screen` provenance.
+
+Until the original source and reuse rights are separately verified, Foodseyo must not extract, permanently store, or redistribute that image as a public Dish Card image. Its rights status is `session_only` or `not_reusable`. An official website or official social source also does not automatically make an image rights-cleared.
+
 ## Future shared image metadata
 
 The T3 data contract should be able to represent the following metadata without changing the decisions in this policy:

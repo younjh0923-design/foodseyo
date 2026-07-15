@@ -225,3 +225,27 @@ This log records accepted product and architecture decisions frozen in T2. Chang
 - **Impact:** The future feature requires accounts, storage, consent, restaurant and dish association, upload dates, reporting, deletion, moderation, freshness indicators, and source labels.
 - **Status:** Accepted
 - **Date:** 2026-07-15
+
+## D-029 — Separate evidence provenance, claim basis, and availability
+
+- **Decision:** Separate evidence provenance, claim basis, and availability in the shared analysis contract.
+- **Reason:** An actual source, the method used to form a claim, and the absence of a value are different concepts and must not share one enum.
+- **Impact:** `EvidenceSourceType` contains only real evidence locations, `ClaimBasis` contains reasoning methods, and `Availability` contains value states.
+- **Status:** Accepted
+- **Date:** 2026-07-15
+
+## D-030 — Unverified third-party screen images are not reusable
+
+- **Decision:** Treat unverified third-party images inside uploaded screens as session-only or not reusable.
+- **Reason:** A user-provided screen may support analysis without establishing the original image source or redistribution rights.
+- **Impact:** Such images may inform the current session but are not extracted, permanently stored, or republished as public Dish Card images until rights are verified.
+- **Status:** Accepted
+- **Date:** 2026-07-15
+
+## D-031 — MVP analysis data remains session-scoped
+
+- **Decision:** Keep MVP analysis inputs and results session-scoped without permanent user-image or precise-location storage.
+- **Reason:** The competition MVP does not require accounts or a database, and retaining sensitive input data would add unnecessary privacy and security risk.
+- **Impact:** The analysis contract excludes raw image data, secrets, and permanent exact user coordinates; login, databases, and permanent image storage remain post-submission work.
+- **Status:** Accepted
+- **Date:** 2026-07-15

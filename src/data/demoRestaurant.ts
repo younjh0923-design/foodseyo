@@ -1,250 +1,194 @@
-import type { DietaryFact, Dish, Restaurant, ReviewConsensus } from "@/types/domain";
+import { demoFoodseyoAnalysis } from "@/data/demoFoodseyoAnalysis";
+import type {
+  DietaryAssessment,
+  Dish as AnalysisDish,
+  EvidenceItem as AnalysisEvidenceItem,
+} from "@/domain/foodseyo-analysis";
+import type {
+  DietaryFact,
+  Dish,
+  EvidenceBadgeKind,
+  EvidenceReference,
+  Restaurant,
+} from "@/types/domain";
 
-const demoReview: ReviewConsensus = {
-  level: "moderate",
-  sourceGroupCount: 2,
-  evidenceCount: 5,
-  freshness: "Recent demo evidence included",
-  positiveThemes: ["Well-balanced flavor", "Frequently mentioned by diners"],
-  negativeThemes: ["Taste preferences vary"],
-  disagreements: ["Spice perception differs between reviewers"],
-  limitation: "Demo review evidence is illustrative and does not represent a live review feed.",
-};
+const analysisMenu = demoFoodseyoAnalysis.payload.menu;
+const analysisRestaurant = demoFoodseyoAnalysis.payload.restaurant;
 
-const sharedDietary: DietaryFact[] = [
-  {
-    label: "Ingredient details",
-    status: "Information is incomplete",
-    evidence: "Demo menu description",
-    source: "demo_data",
-    action: "Confirm with staff",
-  },
+if (!analysisMenu || !analysisRestaurant) {
+  throw new Error("The canonical Foodseyo demo fixture requires a restaurant and menu.");
+}
+
+const uiCategories: Dish["category"][] = [
+  "Noodles",
+  "Curry",
+  "Rice",
+  "Sides",
+  "Dessert",
 ];
 
-const baseOverview = (name: string, description: string) => ({
-  whatItIs: description,
-  regionalBackground: `${name} is presented here with concise general food context for travelers.`,
-  mainIngredients: ["Ingredients vary by preparation"],
-  cookingMethod: "Preparation varies by restaurant and is not confirmed in this demo.",
-  textureAndFlavor: "Flavor and texture may vary by preparation and service.",
-  similarTo: "Ask the restaurant team for the closest familiar comparison.",
-  portionGuidance: "Portion size is not confirmed. Ask staff if you plan to share.",
-  generalKnowledge: `${name} can be prepared in several regional and restaurant-specific styles.`,
-  atRestaurant: "The available demo menu confirms the dish name and short description only.",
-});
+const isUiCategory = (value: string): value is Dish["category"] =>
+  uiCategories.some((category) => category === value);
 
-const dish = (
-  input: Pick<
-    Dish,
-    | "id"
-    | "name"
-    | "category"
-    | "shortDescription"
-    | "price"
-    | "tasteTags"
-    | "textureTags"
-    | "spiceLevel"
-    | "imagePosition"
-  >,
-): Dish => ({
-  ...input,
-  localName: null,
-  pronunciation: null,
-  currency: "CAD",
-  imageUrl: "/images/thai-dishes.png",
-  imageSource: "Demo reference image",
-  representative: true,
-  reviewBadge: "Repeated opinion",
-  overview: baseOverview(input.name, input.shortDescription),
-  reviewConsensus: demoReview,
-  dietary: sharedDietary,
-  evidence: [
-    { source: "demo_data", label: "Demo data" },
-    { source: "general_food_knowledge", label: "General dish knowledge" },
-  ],
-});
-
-const khaoSoi: Dish = {
-  ...dish({
-    id: "khao-soi",
-    name: "Khao Soi",
-    category: "Noodles",
-    shortDescription: "Coconut curry noodle soup with crispy noodles and pickled mustard greens.",
-    price: 18,
-    tasteTags: ["Rich", "Aromatic", "Mild spicy"],
-    textureTags: ["Creamy", "Crispy"],
-    spiceLevel: "Mild",
-    imagePosition: "18% 50%",
-  }),
-  localName: "ข้าวซอย",
-  pronunciation: "kow soy",
-  overview: {
-    whatItIs:
-      "A Northern Thai coconut curry noodle soup combining soft egg noodles with crispy noodles and a rich aromatic broth.",
-    regionalBackground: "Commonly associated with Chiang Mai and Northern Thailand.",
-    mainIngredients: [
-      "Egg noodles",
-      "Coconut milk",
-      "Curry paste",
-      "Chicken",
-      "Pickled mustard greens",
-      "Shallots",
-      "Crispy noodles",
-    ],
-    cookingMethod:
-      "Egg noodles are served in a coconut curry broth and finished with crispy noodles and fresh garnishes.",
-    textureAndFlavor:
-      "Creamy and comforting with gentle heat, crispy texture, and bright tang from pickled vegetables.",
-    similarTo: "Somewhat similar to laksa, but generally milder and more coconut-forward.",
-    portionGuidance: "Demo reviews often describe it as a generous individual main; portion size can vary.",
-    generalKnowledge:
-      "Khao Soi commonly combines coconut curry broth, egg noodles, and crispy noodle toppings.",
-    atRestaurant:
-      "The menu lists chicken or beef options. Public demo evidence repeatedly identifies it as a signature dish.",
-  },
-  reviewConsensus: {
-    level: "strong",
-    sourceGroupCount: 3,
-    evidenceCount: 8,
-    freshness: "Recent evidence included",
-    positiveThemes: [
-      "Rich and flavorful broth",
-      "Frequently recommended as a signature dish",
-      "Generous portion",
-    ],
-    negativeThemes: ["Some diners find the broth salty", "Texture may feel heavy for some users"],
-    disagreements: [
-      "Waiting-time complaints appear mostly in one source group",
-      "Spice perception varies between reviewers",
-    ],
-    limitation:
-      "We do not decide which platform to trust. We identify which food opinions remain consistent across sources.",
-  },
-  dietary: [
-    {
-      label: "Vegetarian",
-      status: "Ask whether modification is available",
-      evidence: "Official ingredient details are incomplete",
-      source: "unavailable",
-      action: "Confirm with staff",
-    },
-    {
-      label: "Vegan",
-      status: "Not vegan by default",
-      evidence: "General recipe and menu description",
-      source: "general_food_knowledge",
-    },
-    {
-      label: "Gluten",
-      status: "Likely contains wheat noodles",
-      evidence: "Menu description",
-      source: "official_menu",
-    },
-    {
-      label: "Coconut",
-      status: "Likely included",
-      evidence: "Menu description",
-      source: "official_menu",
-    },
-    {
-      label: "Peanuts",
-      status: "Information unavailable",
-      evidence: "No confirmed ingredient statement",
-      source: "unavailable",
-      action: "Confirm with staff",
-    },
-    {
-      label: "Cross-contact",
-      status: "Confirm with staff",
-      evidence: "Kitchen practices are not included in demo data",
-      source: "staff_confirmation",
-    },
-  ],
-  evidence: [
-    { source: "official_menu", label: "Official menu" },
-    { source: "public_web", label: "Public web source" },
-    { source: "demo_data", label: "Demo review dataset" },
-    { source: "general_food_knowledge", label: "General dish knowledge" },
-  ],
+const categoryById = (categoryId: string | null): Dish["category"] => {
+  const label = analysisMenu.categories.find((category) => category.id === categoryId)?.label;
+  return label && isUiCategory(label) ? label : "Sides";
 };
 
+const evidenceById = (id: string): AnalysisEvidenceItem | null =>
+  demoFoodseyoAnalysis.payload.evidence.find((item) => item.id === id) ?? null;
+
+const firstEvidenceSource = (sourceIds: string[]) =>
+  sourceIds.map(evidenceById).find((item) => item !== null)?.sourceType ?? null;
+
+const dietaryBadgeKind = (assessment: DietaryAssessment): EvidenceBadgeKind => {
+  if (assessment.status === "confirm_with_staff") return "staff_confirmation";
+  if (assessment.basis === "general_food_knowledge") return "general_food_knowledge";
+  if (assessment.basis === "ai_inference") return "ai_inference";
+  return firstEvidenceSource(assessment.sourceIds) ?? "unavailable";
+};
+
+const dietaryStatusLabel: Record<DietaryAssessment["status"], string> = {
+  confirmed_present: "Confirmed present",
+  likely_present: "Likely included",
+  confirmed_absent: "Not present in the available evidence",
+  may_be_modifiable: "Ask whether modification is available",
+  unknown: "Information unavailable",
+  confirm_with_staff: "Confirm with staff",
+};
+
+const toDietaryFact = (assessment: DietaryAssessment): DietaryFact => ({
+  label: assessment.label,
+  status: dietaryStatusLabel[assessment.status],
+  evidence:
+    assessment.explanation ?? assessment.limitation ?? "No supporting detail is available.",
+  badgeKind: dietaryBadgeKind(assessment),
+  action:
+    assessment.status === "confirm_with_staff" ||
+    assessment.status === "unknown" ||
+    assessment.status === "may_be_modifiable"
+      ? "Confirm with staff"
+      : undefined,
+});
+
+const toEvidenceReferences = (dish: AnalysisDish): EvidenceReference[] => {
+  const sourceReferences = dish.evidenceIds.flatMap((id) => {
+    const evidence = evidenceById(id);
+    if (!evidence) return [];
+
+    return [
+      {
+        sourceType: evidence.sourceType,
+        basis:
+          evidence.sourceType === "uploaded_menu" ||
+          evidence.sourceType === "user_provided_screen" ||
+          evidence.sourceType === "demo_data"
+            ? "direct_observation"
+            : "external_source",
+        availability: "available",
+        label: evidence.sourceLabel ?? evidence.title,
+        note: evidence.limitations[0],
+      } satisfies EvidenceReference,
+    ];
+  });
+
+  return [
+    ...sourceReferences,
+    {
+      sourceType: null,
+      basis: "general_food_knowledge",
+      availability: "available",
+      label: "General dish knowledge",
+    },
+  ];
+};
+
+const toDishViewModel = (dish: AnalysisDish): Dish => {
+  const general = dish.generalKnowledge;
+  const restaurantSpecific = dish.restaurantSpecific;
+
+  return {
+    id: dish.id,
+    name: dish.name,
+    localName: dish.originalName,
+    pronunciation: dish.pronunciation,
+    category: categoryById(dish.categoryId),
+    shortDescription:
+      dish.menuDescription ?? general.definition ?? "Dish description unavailable.",
+    price: dish.price?.amount ?? null,
+    currency: dish.price?.currency ?? analysisMenu.currency ?? "",
+    imageUrl: dish.image.localAssetPath ?? dish.image.url,
+    imageSource: dish.image.userFacingLabel,
+    imagePosition: dish.image.displayPosition ?? undefined,
+    tasteTags: general.typicalTaste,
+    textureTags: general.typicalTexture,
+    spiceLevel: dish.visibleSpiceLabel ?? general.typicalSpice ?? "Unknown",
+    representative: analysisMenu.featuredDishIds.includes(dish.id),
+    reviewBadge:
+      dish.reviews.status === "insufficient" ? "Insufficient evidence" : "Repeated opinion",
+    overview: {
+      whatItIs: general.definition ?? "General dish definition unavailable.",
+      regionalBackground:
+        general.regionalBackground ?? "Regional background is unavailable.",
+      mainIngredients:
+        general.commonIngredients.length > 0
+          ? general.commonIngredients
+          : ["Ingredients vary by preparation"],
+      cookingMethod:
+        general.typicalPreparation ??
+        "Preparation varies by restaurant and is not confirmed in this demo.",
+      textureAndFlavor:
+        [...general.typicalTaste, ...general.typicalTexture].join(" · ") ||
+        "Flavor and texture may vary by preparation.",
+      similarTo:
+        general.similarDishes.join(", ") ||
+        "Ask the restaurant team for the closest familiar comparison.",
+      portionGuidance:
+        general.orderingConsiderations.join(" ") ||
+        "Portion size is not confirmed. Ask staff if you plan to share.",
+      generalKnowledge:
+        general.definition ?? "General dish knowledge is unavailable.",
+      atRestaurant: restaurantSpecific.menuDescription,
+    },
+    reviewConsensus: {
+      level: dish.reviews.status,
+      sourceGroupCount: dish.reviews.sourceGroupCount,
+      evidenceCount: dish.reviews.evidenceCount,
+      freshness: dish.reviews.freshness ?? "Freshness unavailable",
+      positiveThemes: dish.reviews.repeatedPositives,
+      negativeThemes: dish.reviews.repeatedNegatives,
+      disagreements: dish.reviews.disagreements,
+      limitation: dish.reviews.limitation ?? "Review limitations are unavailable.",
+    },
+    dietary: dish.dietary.items.map(toDietaryFact),
+    evidence: toEvidenceReferences(dish),
+  };
+};
+
+const dishes = analysisMenu.dishes.map(toDishViewModel);
+const restaurantImage = analysisMenu.dishes[0]?.image ?? null;
+
+const priceLevel =
+  analysisRestaurant.priceLevel === "$" ||
+  analysisRestaurant.priceLevel === "$$" ||
+  analysisRestaurant.priceLevel === "$$$"
+    ? analysisRestaurant.priceLevel
+    : "$$";
+
 export const demoRestaurant: Restaurant = {
-  id: "pai-northern-thai-kitchen",
-  name: "PAI Northern Thai Kitchen",
+  id: analysisRestaurant.id ?? "demo-restaurant",
+  name: analysisRestaurant.name ?? "Demo restaurant",
   localName: null,
-  location: "Toronto",
-  cuisine: "Northern Thai",
-  priceLevel: "$$",
+  location: analysisRestaurant.address ?? "Location unavailable",
+  cuisine: analysisRestaurant.cuisineLabels.join(", ") || "Cuisine unavailable",
+  priceLevel,
   shortSummary:
-    "A lively Northern Thai restaurant known for rich coconut curries, aromatic herbs, and bold regional flavors.",
-  imageUrl: "/images/thai-dishes.png",
-  imageSource: "Demo reference image",
-  representativeDishIds: [
-    "khao-soi",
-    "sai-ua",
-    "pad-kra-pao",
-    "green-curry",
-    "mango-sticky-rice",
-    "tom-yum-soup",
-  ],
-  dishes: [
-    khaoSoi,
-    dish({
-      id: "sai-ua",
-      name: "Sai Ua",
-      category: "Sides",
-      shortDescription: "Northern Thai herb sausage.",
-      price: 12,
-      tasteTags: ["Herby", "Savory", "Grilled"],
-      textureTags: ["Juicy", "Charred"],
-      spiceLevel: "Mild",
-      imagePosition: "52% 54%",
-    }),
-    dish({
-      id: "pad-kra-pao",
-      name: "Pad Kra Pao",
-      category: "Rice",
-      shortDescription: "Stir-fried basil with rice.",
-      price: 17,
-      tasteTags: ["Savory", "Peppery", "Medium spicy"],
-      textureTags: ["Tender", "Crisp-edged"],
-      spiceLevel: "Medium",
-      imagePosition: "54% 60%",
-    }),
-    dish({
-      id: "green-curry",
-      name: "Green Curry",
-      category: "Curry",
-      shortDescription: "Coconut green curry.",
-      price: 19,
-      tasteTags: ["Creamy", "Herbal", "Medium spicy"],
-      textureTags: ["Silky", "Tender"],
-      spiceLevel: "Medium",
-      imagePosition: "84% 32%",
-    }),
-    dish({
-      id: "mango-sticky-rice",
-      name: "Mango Sticky Rice",
-      category: "Dessert",
-      shortDescription: "Coconut sticky rice with mango.",
-      price: 10,
-      tasteTags: ["Sweet", "Creamy", "Fruity"],
-      textureTags: ["Chewy", "Soft"],
-      spiceLevel: "None",
-      imagePosition: "72% 72%",
-    }),
-    dish({
-      id: "tom-yum-soup",
-      name: "Tom Yum Soup",
-      category: "Curry",
-      shortDescription: "Hot and sour aromatic soup.",
-      price: 15,
-      tasteTags: ["Sour", "Fragrant", "Spicy"],
-      textureTags: ["Brothy", "Tender"],
-      spiceLevel: "Hot",
-      imagePosition: "32% 42%",
-    }),
-  ],
+    analysisRestaurant.summary ??
+    "A clearly labeled static demo restaurant for the Foodseyo experience.",
+  imageUrl: restaurantImage?.localAssetPath ?? restaurantImage?.url ?? null,
+  imageSource: restaurantImage?.userFacingLabel ?? "Image unavailable",
+  representativeDishIds: analysisMenu.featuredDishIds,
+  dishes,
 };
 
 export const getDish = (dishId: string) =>

@@ -24,24 +24,27 @@ import { IconButton, PrimaryButton } from "@/components/common/Controls";
 import { PageHeader } from "@/components/common/PageHeader";
 import { SafeImage } from "@/components/common/SafeImage";
 import { MobileShell } from "@/components/layout/MobileShell";
-import type { Dish, EvidenceSource } from "@/types/domain";
+import type { Dish, EvidenceBadgeKind } from "@/types/domain";
 
 type Tab = "overview" | "review" | "dietary";
 
-const evidenceLabels: Record<EvidenceSource, string> = {
+const evidenceLabels: Record<EvidenceBadgeKind, string> = {
   official_menu: "Official menu",
   official_website: "Officially confirmed",
+  official_social: "Official social source",
   uploaded_menu: "Uploaded menu",
+  user_provided_screen: "Restaurant screen",
   public_web: "Public source",
+  web_search_result: "Web search result",
   platform_api_sample: "Public source",
+  staff_confirmation: "Confirm with staff",
+  demo_data: "Demo data",
   general_food_knowledge: "General recipe",
   ai_inference: "AI inference",
-  demo_data: "Demo data",
   unavailable: "Information unavailable",
-  staff_confirmation: "Confirm with staff",
 };
 
-function SourceBadge({ source, label }: { source: EvidenceSource; label?: string }) {
+function SourceBadge({ source, label }: { source: EvidenceBadgeKind; label?: string }) {
   return <span className="inline-flex rounded-full border border-[var(--border)] bg-[var(--surface)] px-2.5 py-1 text-[10px] font-bold text-[var(--text-secondary)]">{label ?? evidenceLabels[source]}</span>;
 }
 
@@ -127,7 +130,7 @@ function DietaryTab({ dish, onCreateQuestion }: { dish: Dish; onCreateQuestion: 
               <p className="text-sm font-bold">{fact.label}</p>
               <p className="mt-1.5 text-sm leading-5">{fact.status}</p>
               <p className="mt-3 text-xs leading-5 text-[var(--text-secondary)]">Evidence: {fact.evidence}</p>
-              <div className="mt-3 flex flex-wrap gap-2"><SourceBadge source={fact.source} />{fact.action ? <SourceBadge source="staff_confirmation" label={fact.action} /> : null}</div>
+              <div className="mt-3 flex flex-wrap gap-2"><SourceBadge source={fact.badgeKind} />{fact.action ? <SourceBadge source="staff_confirmation" label={fact.action} /> : null}</div>
             </section>
           ))}
         </div>

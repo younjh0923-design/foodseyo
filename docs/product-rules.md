@@ -105,20 +105,38 @@ General food knowledge must never be presented as a restaurant-specific fact.
 
 ## Evidence and data rules
 
-Allowed evidence source types are:
+Foodseyo separates where information came from, how a claim was produced, and whether a value was obtained. These are independent fields in the shared data contract.
+
+`EvidenceSourceType` records an actual source or user-provided evidence location:
 
 - `official_menu`
 - `official_website`
+- `official_social`
 - `uploaded_menu`
 - `user_provided_screen`
 - `public_web`
 - `web_search_result`
 - `platform_api_sample`
+- `staff_confirmation`
+- `demo_data`
+
+`ClaimBasis` records how a claim was established:
+
+- `direct_observation`
+- `external_source`
 - `general_food_knowledge`
 - `ai_inference`
-- `demo_data`
+- `user_confirmation`
+- `deterministic_calculation`
+
+`Availability` records whether the value was obtained:
+
+- `available`
+- `unknown`
 - `unavailable`
-- `staff_confirmation`
+- `insufficient`
+
+AI inference is not an evidence source. General food knowledge is a claim basis, not restaurant evidence. `unavailable` describes value availability, not provenance.
 
 When evidence is absent, Foodseyo must not invent or assert:
 
@@ -136,6 +154,15 @@ Unknown data uses explicit fallback values:
 - insufficient review evidence → `insufficient`
 - unidentified restaurant → `unconfirmed`
 - unverified freshness → `could_not_verify`
+
+## MVP data handling
+
+- `FoodseyoAnalysis` stores input context and normalized results, not original image bytes, `File` objects, `Blob` objects, or base64 image data.
+- API keys and authentication tokens are never stored in analysis results.
+- Exact user-location coordinates are not permanently copied into analysis results. The contract may record that location was used; a restaurant's public location is a separate field.
+- MVP analysis inputs and results are session-only by default.
+- Login, database storage, permanent image storage, and server-side user accounts remain post-submission scope.
+- Server logging should not record original images, API keys, authentication tokens, or exact user location.
 
 ## Dish image policy
 
