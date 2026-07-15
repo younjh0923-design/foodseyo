@@ -249,3 +249,27 @@ This log records accepted product and architecture decisions frozen in T2. Chang
 - **Impact:** The analysis contract excludes raw image data, secrets, and permanent exact user coordinates; login, databases, and permanent image storage remain post-submission work.
 - **Status:** Accepted
 - **Date:** 2026-07-15
+
+## D-032 — One shared analysis orchestrator
+
+- **Decision:** Use one shared analysis orchestrator for all supported input types.
+- **Reason:** Input-specific analyzers must produce consistent validated results without duplicating envelope, status, issue, and validation logic.
+- **Impact:** All future analyzers connect through one dispatcher and return a shared draft that becomes `FoodseyoAnalysis`.
+- **Status:** Accepted
+- **Date:** 2026-07-15
+
+## D-033 — Separate structural and semantic validation
+
+- **Decision:** Separate structural schema validation from business semantic validation.
+- **Reason:** Zod validates shape, while cross-entity references and logical combinations require a separate validation layer that remains compatible with future Structured Output.
+- **Impact:** Analyzer output must pass both structural and semantic validation before it is returned to the application.
+- **Status:** Accepted
+- **Date:** 2026-07-15
+
+## D-034 — Derive status from core input success
+
+- **Decision:** Derive analysis status from core input success, not optional evidence completeness.
+- **Reason:** Missing reviews, images, menu freshness, or restaurant confirmation does not always make a result unusable.
+- **Impact:** Foodseyo may return complete or partial useful guidance with explicit limitations rather than treating every unknown value as failure.
+- **Status:** Accepted
+- **Date:** 2026-07-15

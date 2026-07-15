@@ -92,7 +92,9 @@ General knowledge must not be phrased as though the restaurant confirmed it.
 
 ## Stage 6 — Normalize into the shared analysis
 
-The shared analysis is a conceptual product contract. T2 does not define implementation types or schemas. Every input should be able to populate the applicable parts of:
+The shared analysis is implemented as the T3 `FoodseyoAnalysis` Zod contract and executed through the T4 shared orchestrator. Every input-specific analyzer populates a common draft; the orchestrator normalizes it, validates structure and business semantics, derives status and issues, and creates the final envelope. Runtime details are defined in [analysis-orchestration.md](./analysis-orchestration.md).
+
+Every input should be able to populate the applicable parts of:
 
 - input type and input provenance;
 - restaurant identity state and candidate information;

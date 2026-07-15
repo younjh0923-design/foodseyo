@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/validate-analysis-contract.mts"
+    "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/validate-all.mts"
   },
   "dependencies": {
     "lucide-react": "latest",

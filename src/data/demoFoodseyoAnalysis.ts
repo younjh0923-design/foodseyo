@@ -122,21 +122,10 @@ const createDemoDish = (input: DemoDishInput): Dish => {
     },
     restaurantSpecific: {
       menuDescription: input.menuDescription,
-      confirmedIngredients: signature
-        ? {
-            values: proteinOptions,
-            availability: proteinOptions.length > 0 ? "available" : "unknown",
-            basis: "direct_observation",
-            sourceIds: [DEMO_MENU_EVIDENCE_ID],
-            limitation:
-              proteinOptions.length > 0
-                ? "Only the listed demo protein options are confirmed."
-                : "Full ingredients are not confirmed.",
-          }
-        : {
-            values: [],
-            ...unavailableDemoClaim("Full restaurant-specific ingredients are not confirmed."),
-          },
+      confirmedIngredients: {
+        values: [],
+        ...unavailableDemoClaim("Full restaurant-specific ingredients are not confirmed."),
+      },
       preparationDetails: {
         values: [],
         ...unavailableDemoClaim("Restaurant-specific preparation is not confirmed."),

@@ -58,7 +58,7 @@ export interface Dish {
   name: string;
   localName: string | null;
   pronunciation: string | null;
-  category: "Noodles" | "Curry" | "Rice" | "Sides" | "Dessert";
+  category: string;
   shortDescription: string;
   price: number | null;
   currency: string;
@@ -82,7 +82,7 @@ export interface Restaurant {
   localName: string | null;
   location: string;
   cuisine: string;
-  priceLevel: "$" | "$$" | "$$$";
+  priceLevel: "$" | "$$" | "$$$" | "$$$$" | "Unknown";
   shortSummary: string;
   imageUrl: string | null;
   imageSource: string;

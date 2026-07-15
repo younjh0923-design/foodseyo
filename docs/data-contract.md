@@ -1,6 +1,6 @@
 # Foodseyo Unified Analysis Data Contract
 
-**Status:** Implemented for T3
+**Status:** Implemented for T3 and executed by T4
 
 **Date:** 2026-07-15
 
@@ -203,3 +203,11 @@ For a future GPT integration:
 - keep UI adapters and deterministic recommendation calculations outside the model contract.
 
 T3 does not add an API route, model call, web search, restaurant search, or live result UI migration.
+
+## T4 runtime boundary
+
+T4 consumes the canonical schemas through `analyzeFoodseyoInput`. Input-specific analyzers return an internal draft rather than constructing envelopes. The shared orchestrator normalizes payload candidates, runs Zod structural validation, runs separate business semantic validation, derives status and issues, creates the app-managed envelope, validates the final result, and verifies JSON serialization.
+
+Transient binary and exact-location access exists only in the analyze request. It is never copied into this canonical contract. The demo is the only implemented analyzer in T4; all other inputs return a typed capability-unavailable error until their real analyzers are added.
+
+Runtime details are defined in [analysis-orchestration.md](./analysis-orchestration.md).

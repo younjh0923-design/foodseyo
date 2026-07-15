@@ -11,6 +11,7 @@ import type {
   EvidenceReference,
   Restaurant,
 } from "@/types/domain";
+import { getReusableDishImageSource } from "@/services/analysis/image-display";
 
 const analysisMenu = demoFoodseyoAnalysis.payload.menu;
 const analysisRestaurant = demoFoodseyoAnalysis.payload.restaurant;
@@ -19,20 +20,9 @@ if (!analysisMenu || !analysisRestaurant) {
   throw new Error("The canonical Foodseyo demo fixture requires a restaurant and menu.");
 }
 
-const uiCategories: Dish["category"][] = [
-  "Noodles",
-  "Curry",
-  "Rice",
-  "Sides",
-  "Dessert",
-];
-
-const isUiCategory = (value: string): value is Dish["category"] =>
-  uiCategories.some((category) => category === value);
-
 const categoryById = (categoryId: string | null): Dish["category"] => {
   const label = analysisMenu.categories.find((category) => category.id === categoryId)?.label;
-  return label && isUiCategory(label) ? label : "Sides";
+  return label ?? "Other";
 };
 
 const evidenceById = (id: string): AnalysisEvidenceItem | null =>
@@ -117,7 +107,7 @@ const toDishViewModel = (dish: AnalysisDish): Dish => {
       dish.menuDescription ?? general.definition ?? "Dish description unavailable.",
     price: dish.price?.amount ?? null,
     currency: dish.price?.currency ?? analysisMenu.currency ?? "",
-    imageUrl: dish.image.localAssetPath ?? dish.image.url,
+    imageUrl: getReusableDishImageSource(dish.image),
     imageSource: dish.image.userFacingLabel,
     imagePosition: dish.image.displayPosition ?? undefined,
     tasteTags: general.typicalTaste,
@@ -168,24 +158,17 @@ const toDishViewModel = (dish: AnalysisDish): Dish => {
 const dishes = analysisMenu.dishes.map(toDishViewModel);
 const restaurantImage = analysisMenu.dishes[0]?.image ?? null;
 
-const priceLevel =
-  analysisRestaurant.priceLevel === "$" ||
-  analysisRestaurant.priceLevel === "$$" ||
-  analysisRestaurant.priceLevel === "$$$"
-    ? analysisRestaurant.priceLevel
-    : "$$";
-
 export const demoRestaurant: Restaurant = {
   id: analysisRestaurant.id ?? "demo-restaurant",
   name: analysisRestaurant.name ?? "Demo restaurant",
   localName: null,
   location: analysisRestaurant.address ?? "Location unavailable",
   cuisine: analysisRestaurant.cuisineLabels.join(", ") || "Cuisine unavailable",
-  priceLevel,
+  priceLevel: analysisRestaurant.priceLevel ?? "Unknown",
   shortSummary:
     analysisRestaurant.summary ??
     "A clearly labeled static demo restaurant for the Foodseyo experience.",
-  imageUrl: restaurantImage?.localAssetPath ?? restaurantImage?.url ?? null,
+  imageUrl: restaurantImage ? getReusableDishImageSource(restaurantImage) : null,
   imageSource: restaurantImage?.userFacingLabel ?? "Image unavailable",
   representativeDishIds: analysisMenu.featuredDishIds,
   dishes,
