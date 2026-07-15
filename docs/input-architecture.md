@@ -1,6 +1,6 @@
 # Foodseyo Parallel Input Architecture
 
-**Status:** Frozen for T2
+**Status:** Updated for T5 menu-image analysis
 
 **Date:** 2026-07-15
 
@@ -39,6 +39,8 @@ Purpose:
 - continue dish explanations and ordering support even if the restaurant is not identified.
 
 Menu images may contain no usable restaurant identity. That is an accepted outcome, not an analysis failure. Restaurant-specific facts remain unavailable until supported by evidence.
+
+T5 accepts 1-10 ordered JPEG, PNG, or WEBP images in one capture session. The browser uses count-adaptive resizing and compression toward 3,800,000 total bytes without going below the readability floor. The server independently enforces 4,000,000 bytes and submits all retained images in order through one Responses API request. Vercel Blob, permanent uploads, and multi-request batch merging are outside T5.
 
 ## `restaurant_photo`
 

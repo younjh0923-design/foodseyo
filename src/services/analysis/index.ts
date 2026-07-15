@@ -1,5 +1,9 @@
 export { analyzeFoodseyoInput } from "./analyze-foodseyo-input.ts";
-export { analyzerRegistry, dispatchAnalysisRequest } from "./analyzers.ts";
+export {
+  analyzerRegistry,
+  createAnalyzerRegistry,
+  dispatchAnalysisRequest,
+} from "./analyzers.ts";
 export {
   AnalysisAbortedError,
   AnalysisCapabilityUnavailableError,
@@ -26,6 +30,7 @@ export { normalizeAnalysisPayloadCandidate } from "./normalize-analysis.ts";
 export { validateAnalysisSemantics } from "./validate-analysis-semantics.ts";
 export type {
   AnalysisAnalyzer,
+  AnalysisAnalyzerRegistry,
   AnalysisCapability,
   AnalysisDraft,
   AnalyzeFoodseyoOptions,

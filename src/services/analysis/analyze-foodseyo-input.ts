@@ -34,7 +34,7 @@ export async function analyzeFoodseyoInput(
 
   const draft = await dispatchAnalysisRequest(request, {
     signal: options.signal ?? null,
-  });
+  }, options.analyzerRegistry);
 
   const normalizedCandidate = normalizeAnalysisPayloadCandidate(draft.payloadCandidate);
   const payloadResult = FoodseyoAnalysisPayloadSchema.safeParse(normalizedCandidate);

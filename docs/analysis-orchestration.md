@@ -1,6 +1,6 @@
 # Foodseyo Shared Analysis Orchestration
 
-**Status:** Implemented for T4.1
+**Status:** Implemented for T4.1 and extended by T5
 
 **Date:** 2026-07-15
 
@@ -13,7 +13,7 @@ analyzeFoodseyoInput(request)
   → Promise<FoodseyoAnalysis>
 ```
 
-T4 does not call OpenAI, search the web, identify live restaurants, or expose a Next.js API route. The demo analyzer is the only implemented analyzer. The other five input paths terminate with a typed capability-unavailable error and never return demo data as a fallback.
+The shared T4 core itself does not call a provider. T5 injects one server-only `menu_images` analyzer at the API route boundary; the default registry remains provider-free and capability-unavailable. The demo analyzer remains deterministic. Restaurant photo, screen, link, and nearby analyzers remain unavailable and never return demo data as a fallback.
 
 ## Execution flow
 
@@ -208,15 +208,15 @@ The lightweight Node validation entry point runs the existing contract checks an
 
 No test framework dependency was added.
 
-## T5 connection point
+## T5 menu-image implementation
 
-T5 may implement the menu-image analyzer behind the existing analyzer interface. It should adapt browser or server image input to `TransientImageInput`, create an `AnalysisDraft`, and let this orchestrator perform normalization, validation, status, issue, envelope, and serialization work.
+T5 implements the menu-image analyzer behind the existing interface. `/api/analyze/menu-images` validates 1-10 ordered transient images, creates a server-only OpenAI provider, and injects only the `menu_images` registry entry. The analyzer returns an `AnalysisDraft`; the orchestrator still owns normalization, validation, status, issues, envelope creation, and serialization. The provider dependency remains replaceable by a fake, so automatic tests never call OpenAI.
 
 Future restaurant-photo, screen, link, nearby, and research providers connect through the same boundary. They must not bypass structural or semantic validation.
 
-## Why there is no API route yet
+## T5 transport boundary
 
-T4 does not add `/api/analyze`, multipart parsing, a server action, or Vercel function configuration. The transport boundary depends on the actual GPT image-analysis design in T5. Creating a route earlier would freeze an upload and authentication contract before a real analyzer exists.
+The concrete T5 transport is a Node.js multipart route at `/api/analyze/menu-images`. It validates MIME and magic bytes, enforces a 4,000,000-byte total limit, returns stable safe errors with `Cache-Control: no-store`, and keeps the OpenAI key server-only. Full details are in [menu-image-analysis.md](./menu-image-analysis.md).
 
 ## Demo asset limitation
 

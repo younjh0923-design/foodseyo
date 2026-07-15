@@ -289,3 +289,35 @@ This log records accepted product and architecture decisions frozen in T2. Chang
 - **Impact:** Duplicate issues are merged by code and related entities while preserving the most severe warning and the strictest recoverability state.
 - **Status:** Accepted
 - **Date:** 2026-07-15
+
+## D-037 — Narrow GPT schema before canonical mapping
+
+- **Decision:** Use a narrow GPT Structured Output schema before canonical Foodseyo mapping.
+- **Reason:** The model should extract visible menu information and general food knowledge, while the application retains control over evidence IDs, restaurant resolution, image rights, status, issues, and safety policy.
+- **Impact:** GPT output is validated as `MenuImageModelOutput` and converted deterministically into `FoodseyoAnalysisPayload` before entering the shared orchestrator.
+- **Status:** Accepted
+- **Date:** 2026-07-15
+
+## D-038 — Adaptive direct upload without persistent storage
+
+- **Decision:** Preprocess menu images in the browser before direct Vercel Function upload.
+- **Reason:** Phone images commonly exceed the deployment request payload limit, while the MVP intentionally avoids permanent image storage and Blob infrastructure.
+- **Impact:** The client preserves menu readability while adaptively resizing and compressing up to ten ordered images under a 3,800,000-byte target. It stops with a readability error rather than crossing its 1400 px and 0.68 quality floors; the server independently enforces a 4,000,000-byte total limit.
+- **Status:** Accepted
+- **Date:** 2026-07-15
+
+## D-039 — GPT-5.6 image understanding without web tools
+
+- **Decision:** Use GPT-5.6 through the OpenAI Responses API without web tools in T5.
+- **Reason:** T5 is limited to understanding user-provided menu images. Restaurant web research, public reviews, and freshness verification are separate enrichment capabilities.
+- **Impact:** The provider sends up to ten ordered text-and-image inputs in one request with Structured Outputs, `store=false`, and no tools. Review consensus and menu freshness remain explicitly unavailable.
+- **Status:** Accepted
+- **Date:** 2026-07-15
+
+## D-040 — Uploaded menu imagery is evidence, not reusable photography
+
+- **Decision:** Do not reuse uploaded menu imagery as persistent dish photography.
+- **Reason:** An uploaded menu may be analyzed as session evidence, but the right to extract and republish embedded dish images is not established.
+- **Impact:** T5 dish images remain unavailable unless a separate rights-cleared source is introduced by a later feature.
+- **Status:** Accepted
+- **Date:** 2026-07-15

@@ -1,6 +1,6 @@
 # Foodseyo Unified Analysis Data Contract
 
-**Status:** Implemented for T3 and executed by T4
+**Status:** Implemented for T3, executed by T4, and populated by T5 menu analysis
 
 **Date:** 2026-07-15
 
@@ -190,11 +190,11 @@ Information gaps and operational failure are distinct. For example, restaurant i
 
 `src/data/demoRestaurant.ts` is a UI adapter. It derives the existing `Restaurant` and `Dish` view models from the canonical fixture so Restaurant Overview, Dish Detail, Food Passport, Meal Planner, Assistant mock, and routes can remain unchanged. The previous hand-authored `demoRestaurant` dataset is no longer a second source of truth.
 
-## Validation and future Structured Output
+## Validation and T5 Structured Output
 
 `npm test` runs the lightweight Node validation module. It checks demo parsing, enum rejection, nullable prices, insufficient reviews, forbidden AI image sources, partial analysis, session-only screen imagery, separated evidence semantics, strict rejection of raw image fields, and JSON serialization.
 
-For a future GPT integration:
+The T5 menu-image integration uses a narrow `MenuImageModelOutputSchema` before canonical mapping:
 
 - use `FoodseyoAnalysisPayloadSchema` as the payload boundary;
 - let the app create `analysisId`, `generatedAt`, status, and input context where appropriate;
@@ -202,12 +202,12 @@ For a future GPT integration:
 - validate model or orchestrator output before exposing it to UI;
 - keep UI adapters and deterministic recommendation calculations outside the model contract.
 
-T3 does not add an API route, model call, web search, restaurant search, or live result UI migration.
+The application, not GPT, creates evidence IDs, entity IDs, restaurant resolution state, final status, issues, image-rights defaults, and the envelope. This separation keeps model output small and prevents raw provider data from bypassing the canonical contract.
 
 ## T4 runtime boundary
 
 T4 consumes the canonical schemas through `analyzeFoodseyoInput`. Input-specific analyzers return an internal draft rather than constructing envelopes. The shared orchestrator normalizes payload candidates, runs Zod structural validation, runs separate business semantic validation, derives status and issues, creates the app-managed envelope, validates the final result, and verifies JSON serialization.
 
-Transient binary and exact-location access exists only in the analyze request. It is never copied into this canonical contract. The demo is the only implemented analyzer in T4; all other inputs return a typed capability-unavailable error until their real analyzers are added.
+Transient binary and exact-location access exists only in the analyze request. It is never copied into this canonical contract. T5 supplies a route-injected `menu_images` analyzer while the default registry remains provider-free. Demo remains implemented; restaurant photo, screen, link, and nearby inputs still return typed capability-unavailable errors.
 
 Runtime details are defined in [analysis-orchestration.md](./analysis-orchestration.md).

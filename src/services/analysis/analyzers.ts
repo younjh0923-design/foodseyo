@@ -1,5 +1,4 @@
 import { demoFoodseyoAnalysis } from "../../data/demoFoodseyoAnalysis.ts";
-import type { InputType } from "../../domain/foodseyo-analysis.ts";
 import {
   AnalysisAbortedError,
   AnalysisCapabilityUnavailableError,
@@ -8,6 +7,7 @@ import {
 } from "./analysis-errors.ts";
 import type {
   AnalysisAnalyzer,
+  AnalysisAnalyzerRegistry,
   AnalysisDraft,
   AnalyzerExecutionContext,
   AnalyzeFoodseyoRequest,
@@ -66,30 +66,33 @@ class CapabilityUnavailableAnalyzer<TRequest extends UnimplementedAnalyzeRequest
   }
 }
 
-export type AnalyzerRegistry = {
-  readonly [TInputType in InputType]: AnalysisAnalyzer<
-    AnalyzeRequestByType<TInputType>
-  >;
-};
+export type AnalyzerRegistry = AnalysisAnalyzerRegistry;
 
-export const analyzerRegistry: AnalyzerRegistry = {
-  menu_images: new CapabilityUnavailableAnalyzer<AnalyzeRequestByType<"menu_images">>(
-    "menu_images",
-  ),
-  restaurant_photo: new CapabilityUnavailableAnalyzer<
-    AnalyzeRequestByType<"restaurant_photo">
-  >("restaurant_photo"),
-  restaurant_screen: new CapabilityUnavailableAnalyzer<
-    AnalyzeRequestByType<"restaurant_screen">
-  >("restaurant_screen"),
-  restaurant_link: new CapabilityUnavailableAnalyzer<
-    AnalyzeRequestByType<"restaurant_link">
-  >("restaurant_link"),
-  nearby_search: new CapabilityUnavailableAnalyzer<AnalyzeRequestByType<"nearby_search">>(
-    "nearby_search",
-  ),
-  demo: new DemoAnalyzer(),
-};
+export function createAnalyzerRegistry(
+  overrides: Partial<AnalyzerRegistry> = {},
+): AnalyzerRegistry {
+  return {
+    menu_images: new CapabilityUnavailableAnalyzer<AnalyzeRequestByType<"menu_images">>(
+      "menu_images",
+    ),
+    restaurant_photo: new CapabilityUnavailableAnalyzer<
+      AnalyzeRequestByType<"restaurant_photo">
+    >("restaurant_photo"),
+    restaurant_screen: new CapabilityUnavailableAnalyzer<
+      AnalyzeRequestByType<"restaurant_screen">
+    >("restaurant_screen"),
+    restaurant_link: new CapabilityUnavailableAnalyzer<
+      AnalyzeRequestByType<"restaurant_link">
+    >("restaurant_link"),
+    nearby_search: new CapabilityUnavailableAnalyzer<AnalyzeRequestByType<"nearby_search">>(
+      "nearby_search",
+    ),
+    demo: new DemoAnalyzer(),
+    ...overrides,
+  };
+}
+
+export const analyzerRegistry: AnalyzerRegistry = createAnalyzerRegistry();
 
 const assertNeverInput = (request: never): never => {
   void request;
@@ -99,20 +102,21 @@ const assertNeverInput = (request: never): never => {
 export async function dispatchAnalysisRequest(
   request: AnalyzeFoodseyoRequest,
   context: AnalyzerExecutionContext,
+  registry: AnalyzerRegistry = analyzerRegistry,
 ): Promise<AnalysisDraft> {
   switch (request.type) {
     case "menu_images":
-      return analyzerRegistry.menu_images.analyze(request, context);
+      return registry.menu_images.analyze(request, context);
     case "restaurant_photo":
-      return analyzerRegistry.restaurant_photo.analyze(request, context);
+      return registry.restaurant_photo.analyze(request, context);
     case "restaurant_screen":
-      return analyzerRegistry.restaurant_screen.analyze(request, context);
+      return registry.restaurant_screen.analyze(request, context);
     case "restaurant_link":
-      return analyzerRegistry.restaurant_link.analyze(request, context);
+      return registry.restaurant_link.analyze(request, context);
     case "nearby_search":
-      return analyzerRegistry.nearby_search.analyze(request, context);
+      return registry.nearby_search.analyze(request, context);
     case "demo":
-      return analyzerRegistry.demo.analyze(request, context);
+      return registry.demo.analyze(request, context);
   }
 
   return assertNeverInput(request);

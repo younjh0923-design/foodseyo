@@ -99,10 +99,17 @@ export interface AnalysisAnalyzer<TRequest extends AnalyzeFoodseyoRequest> {
   analyze(request: TRequest, context: AnalyzerExecutionContext): Promise<AnalysisDraft>;
 }
 
+export type AnalysisAnalyzerRegistry = {
+  readonly [TInputType in InputType]: AnalysisAnalyzer<
+    AnalyzeRequestByType<TInputType>
+  >;
+};
+
 export interface AnalyzeFoodseyoOptions {
   readonly signal?: AbortSignal;
   readonly now?: () => Date;
   readonly createAnalysisId?: () => string;
+  readonly analyzerRegistry?: AnalysisAnalyzerRegistry;
 }
 
 export type SemanticRuleCode =

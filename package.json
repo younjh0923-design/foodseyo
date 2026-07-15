@@ -8,11 +8,13 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/validate-all.mts"
+    "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/validate-all.mts",
+    "smoke:menu-analysis": "node --conditions=react-server --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/smoke-menu-analysis.mts"
   },
   "dependencies": {
     "lucide-react": "latest",
     "next": "latest",
+    "openai": "^6.46.0",
     "react": "latest",
     "react-dom": "latest",
     "zod": "^4.4.3"

@@ -1,6 +1,11 @@
-import type { FoodPassport } from "@/types/domain";
+import {
+  FoodseyoAnalysisSchema,
+  type FoodseyoAnalysis,
+} from "../domain/foodseyo-analysis.ts";
+import type { FoodPassport } from "../types/domain.ts";
 
 export const PASSPORT_STORAGE_KEY = "foodseyo:food-passport";
+export const CURRENT_ANALYSIS_STORAGE_KEY = "foodseyo.currentAnalysis";
 
 export const emptyPassport: FoodPassport = {
   allergies: [],
@@ -28,4 +33,31 @@ export function writePassport(passport: FoodPassport): void {
 
 export function removePassport(): void {
   window.localStorage.removeItem(PASSPORT_STORAGE_KEY);
+}
+
+export function serializeCurrentAnalysis(analysis: FoodseyoAnalysis): string {
+  return JSON.stringify(FoodseyoAnalysisSchema.parse(analysis));
+}
+
+export function parseStoredCurrentAnalysis(value: string | null): FoodseyoAnalysis | null {
+  if (value === null) return null;
+  try {
+    const result = FoodseyoAnalysisSchema.safeParse(JSON.parse(value));
+    return result.success ? result.data : null;
+  } catch {
+    return null;
+  }
+}
+
+export function readCurrentAnalysis(): FoodseyoAnalysis | null {
+  if (typeof window === "undefined") return null;
+  return parseStoredCurrentAnalysis(window.sessionStorage.getItem(CURRENT_ANALYSIS_STORAGE_KEY));
+}
+
+export function writeCurrentAnalysis(analysis: FoodseyoAnalysis): void {
+  window.sessionStorage.setItem(CURRENT_ANALYSIS_STORAGE_KEY, serializeCurrentAnalysis(analysis));
+}
+
+export function removeCurrentAnalysis(): void {
+  window.sessionStorage.removeItem(CURRENT_ANALYSIS_STORAGE_KEY);
 }
