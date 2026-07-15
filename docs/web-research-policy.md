@@ -4,7 +4,7 @@
 
 **Date:** 2026-07-15
 
-This policy governs restaurant discovery, menu verification, public review research, and evidence enrichment. It applies only when research would add information that is missing or useful for deciding what to order.
+This policy governs restaurant discovery, menu verification, public review research, image-source discovery, and evidence enrichment. It applies only when research would add information that is missing or useful for deciding what to order. Dish image usage is governed by [image-policy.md](./image-policy.md).
 
 ## Default provider
 
@@ -18,7 +18,9 @@ Approved research purposes are:
 - find publicly accessible review evidence;
 - research public opinions about a specific dish;
 - compare an uploaded menu with online menu evidence;
-- find evidence relevant to menu freshness.
+- find evidence relevant to menu freshness;
+- find official pages that clearly connect a dish to an image;
+- find original source and provenance pages for possible reference images.
 
 Research should be targeted. It must not repeat facts already established by the input unless corroboration is useful.
 
@@ -50,6 +52,20 @@ Foodseyo must not claim that it:
 - knows which platform is inherently more trustworthy;
 - determined whether an individual review is fake;
 - produced a simple average of unrelated platform scores.
+
+## Image source discovery
+
+OpenAI web search may find official restaurant pages, official menus, official pages containing dish images, original image source pages, and provenance information for possible general references.
+
+Search results identify candidates; they do not grant usage rights. Before Foodseyo uses an image, it must verify:
+
+- the original source page;
+- usage rights or license;
+- attribution requirements;
+- the image’s accurate connection to the dish;
+- whether the image is restaurant-specific.
+
+Do not use an unverified search-result image, a search thumbnail alone, an image with unclear copyright, another restaurant’s image presented as the current restaurant, or an image whose source cannot be traced. If no source-honest image is available, use an accessible placeholder. The MVP does not use AI-generated dish images.
 
 ## Restaurant identity research
 

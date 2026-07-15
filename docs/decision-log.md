@@ -201,3 +201,27 @@ This log records accepted product and architecture decisions frozen in T2. Chang
 - **Impact:** Competition development stays focused on the documented P0 product and does not begin deferred platform work.
 - **Status:** Accepted
 - **Date:** 2026-07-15
+
+## D-026 — No AI-generated dish images in the MVP
+
+- **Decision:** Do not generate dish images with AI for the Foodseyo MVP.
+- **Reason:** AI-generated images increase cost and latency and may not accurately represent the dish or the restaurant’s actual presentation.
+- **Impact:** The MVP uses verified user-provided or official images, rights-cleared general reference images, or honest placeholders.
+- **Status:** Accepted
+- **Date:** 2026-07-15
+
+## D-027 — Source-honest general dish references
+
+- **Decision:** Use source-honest general dish references when official images are unavailable.
+- **Reason:** Some restaurants do not provide official dish photography, but users may still benefit from a clearly labeled visual reference.
+- **Impact:** General reference images must have clear provenance and usage rights, must be labeled as references, and must never be presented as restaurant-specific dish images.
+- **Status:** Accepted
+- **Date:** 2026-07-15
+
+## D-028 — Community Dish Photos & Reviews after submission
+
+- **Decision:** Add Community Dish Photos & Reviews after the initial submission.
+- **Reason:** A growing user community can provide real dish photos and practical menu experiences when official restaurant images are unavailable.
+- **Impact:** The future feature requires accounts, storage, consent, restaurant and dish association, upload dates, reporting, deletion, moderation, freshness indicators, and source labels.
+- **Status:** Accepted
+- **Date:** 2026-07-15

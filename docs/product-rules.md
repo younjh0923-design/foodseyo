@@ -4,7 +4,7 @@
 
 **Date:** 2026-07-15
 
-This document is the normative product definition for Foodseyo. It defines the product goal, information boundaries, safety rules, UX principles, and competition scope. Detailed input behavior is defined in [input-architecture.md](./input-architecture.md), the shared reasoning sequence in [analysis-flow.md](./analysis-flow.md), and research behavior in [web-research-policy.md](./web-research-policy.md).
+This document is the normative product definition for Foodseyo. It defines the product goal, information boundaries, safety rules, UX principles, and competition scope. Detailed input behavior is defined in [input-architecture.md](./input-architecture.md), the shared reasoning sequence in [analysis-flow.md](./analysis-flow.md), research behavior in [web-research-policy.md](./web-research-policy.md), and source-honest dish imagery in [image-policy.md](./image-policy.md).
 
 ## Official product definition
 
@@ -137,6 +137,21 @@ Unknown data uses explicit fallback values:
 - unidentified restaurant → `unconfirmed`
 - unverified freshness → `could_not_verify`
 
+## Dish image policy
+
+Foodseyo MVP does not generate dish images with AI. GPT-5.6 analysis of user-provided menu, restaurant, and screen images remains P0; generating replacement food photography is a separate capability and is not part of the MVP.
+
+Dish imagery follows this order:
+
+1. an image in a user-uploaded menu or restaurant screen;
+2. an image clearly connected to the dish on an official menu;
+3. an image clearly connected to the dish on an official website;
+4. an image clearly connected to the dish on a confirmed official social account;
+5. a rights-cleared, source-traceable general dish reference;
+6. an accessible placeholder.
+
+General references must be labeled as references with **Actual presentation may differ.** They must never be presented as restaurant-specific images. Missing imagery does not block dish explanation or ordering support. Source categories, labels, rights checks, future metadata requirements, and missing-image behavior are defined in [image-policy.md](./image-policy.md).
+
 ## Dietary safety
 
 Dietary status uses:
@@ -183,6 +198,7 @@ There is no separate P1 list for the competition. All of the following are P0 be
 ### P0 — Core Understanding
 
 - GPT-5.6 structured analysis;
+- GPT-5.6 analysis of uploaded menu, restaurant, and screen images, without generating dish images;
 - menu and restaurant-signal extraction;
 - general dish explanations;
 - taste, texture, spice, and common ingredients;
@@ -244,6 +260,7 @@ The internal implementation order is:
 The following are explicitly outside the competition submission scope:
 
 - login, database, and server-side user accounts;
+- Community Dish Photos & Reviews, including user photo uploads, public review creation, image storage, reporting, deletion, and moderation;
 - synchronized favorites;
 - PWA, Capacitor, App Store distribution, and payments;
 - voice input;
