@@ -1,6 +1,6 @@
 # Foodseyo Menu Image Analysis
 
-**Status:** Implemented and production-hardened for T5.1
+**Status:** Implemented and production-hardened for T5.1; Home intake unified in T5.2
 
 **Date:** 2026-07-15
 
@@ -29,6 +29,8 @@ T5 does not add restaurant web research, public reviews, menu-freshness verifica
 ```
 
 No raw image, data URL, base64 payload, browser `File`, API key, exact location, or original filename is copied into the canonical result.
+
+T5.2 adds a second entry into the same capture session. Home's **Scan or upload** Bottom Sheet opens its camera or gallery picker directly from the user gesture, validates selected Files with the existing client rules, and stages them in an app-level in-memory provider. Menu Scan consumes the set once, clears it, and then owns preview object URL creation and cleanup. Direct Menu Scan entry remains supported. The handoff has no persistence, Base64 conversion, URL query, canonical File field, Blob service, or demo fallback.
 
 ## Client preprocessing and payload budget
 
@@ -148,7 +150,7 @@ After a compact success summary is shown, Foodseyo attempts to store the validat
 
 ## Automatic tests
 
-`pnpm test` runs 11 contract checks, 73 orchestration checks, 91 menu-image checks, and 86 T5.1 hardening checks: **261 assertions total**. The suites use injected fake providers and make zero network calls. They cover schemas, explicit-input provenance, canonical conversion, restaurant resolution, price/options, dietary safety, non-empty evidence indexes, empty-category filtering, analyzer-side byte validation and cancellation, source-size guards, both decoder paths and cleanup, safe client errors, storage failure, real SDK error classes, native Request/Response route boundaries, session serialization, provider request configuration, the ten-image limit, adaptive profiles, readability floors, order preservation, and one-request delivery.
+`pnpm test` runs 11 contract checks, 73 orchestration checks, 91 menu-image checks, 86 T5.1 hardening checks, and 72 T5.2 Home-entry checks: **333 assertions total**. The suites use injected fake providers and make zero network calls. In addition to the existing analysis coverage, T5.2 checks exact Home copy, honest link handling, accepted schemes, source safety, camera/gallery selection rules, order preservation, one-shot transient consumption, Strict Mode handoff structure, direct Menu Scan compatibility, object URL ownership, accessibility labels, and the absence of persistence or demo fallback.
 
 ## Optional live smoke test
 

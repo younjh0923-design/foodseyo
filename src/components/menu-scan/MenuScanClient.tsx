@@ -2,21 +2,19 @@
 
 import { Camera, Images, LoaderCircle, ScanLine, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { BottomSheet } from "@/components/common/BottomSheet";
 import { ConfirmationDialog } from "@/components/common/ConfirmationDialog";
 import { PrimaryButton, SecondaryButton } from "@/components/common/Controls";
+import { useImageIntake } from "@/components/intake/ImageIntakeProvider";
 import { PageHeader } from "@/components/common/PageHeader";
 import { MobileShell } from "@/components/layout/MobileShell";
 import {
   getSafeMenuAnalysisErrorMessage,
   parseMenuAnalysisResponse,
 } from "@/lib/menu-analysis-client";
-import {
-  MenuImagePreprocessingError,
-  preprocessMenuImages,
-  validateMenuImageSelection,
-} from "@/lib/menu-image-preprocessing";
+import { preprocessMenuImages } from "@/lib/menu-image-preprocessing";
+import { prepareMenuScanAppend } from "@/lib/image-intake";
 import { tryWriteCurrentAnalysis } from "@/lib/storage";
 import { MAX_MENU_IMAGE_COUNT } from "@/services/menu-analysis/menu-upload-validation";
 
@@ -40,6 +38,7 @@ function makeId() {
 
 export function MenuScanClient() {
   const router = useRouter();
+  const { consumePendingFiles } = useImageIntake();
   const cameraRef = useRef<HTMLInputElement>(null);
   const galleryRef = useRef<HTMLInputElement>(null);
   const pagesRef = useRef<MenuPage[]>([]);
@@ -60,21 +59,19 @@ export function MenuScanClient() {
     [],
   );
 
-  const appendFiles = (files: FileList | null) => {
-    if (!files?.length || analyzing) return;
-    const selected = Array.from(files);
-    try {
-      validateMenuImageSelection([...pagesRef.current.map((page) => page.file), ...selected]);
-    } catch (error) {
-      setAnalysisError(
-        error instanceof MenuImagePreprocessingError
-          ? error.message
-          : "The selected menu images could not be added.",
-      );
+  const appendFiles = useCallback((files: readonly File[]) => {
+    if (!files.length || analyzing) return;
+    const result = prepareMenuScanAppend(
+      pagesRef.current.map((page) => page.file),
+      files,
+    );
+    if (result.kind === "cancelled") return;
+    if (result.kind === "invalid") {
+      setAnalysisError(result.message);
       return;
     }
 
-    const added = selected.map((file) => ({
+    const added = result.files.map((file) => ({
       id: makeId(),
       file,
       url: URL.createObjectURL(file),
@@ -87,7 +84,15 @@ export function MenuScanClient() {
     setAnalysisError(null);
     setAnalysisSummary(null);
     setStorageWarning(null);
-  };
+  }, [analyzing]);
+
+  useEffect(() => {
+    const handoffTimer = window.setTimeout(() => {
+      const pending = consumePendingFiles();
+      if (pending) appendFiles(pending.files);
+    }, 0);
+    return () => window.clearTimeout(handoffTimer);
+  }, [appendFiles, consumePendingFiles]);
 
   const removePage = (id: string) => {
     if (analyzing) return;
@@ -171,14 +176,14 @@ export function MenuScanClient() {
   const previewNumber = preview
     ? pages.findIndex((page) => page.id === preview.id) + 1
     : 0;
-  const pageStatus = pages.length === 1 ? "1 page ready" : `${pages.length} pages ready`;
+  const pageStatus = pages.length === 1 ? "1 image ready" : `${pages.length} images ready`;
 
   return (
     <MobileShell>
       <div className="flex min-h-dvh flex-col bg-[var(--surface)]">
         <PageHeader
-          title="Scan menu"
-          description={`Capture up to ${MAX_MENU_IMAGE_COUNT} pages for one analysis.`}
+          title="Review images"
+          description={`Add up to ${MAX_MENU_IMAGE_COUNT} images. Menu text is required for the current analysis.`}
           onBack={handleBack}
           backLabel="Back to home"
         />
@@ -192,7 +197,7 @@ export function MenuScanClient() {
             aria-label="Scan a menu page with the camera"
             className="sr-only"
             onChange={(event) => {
-              appendFiles(event.currentTarget.files);
+              appendFiles(Array.from(event.currentTarget.files ?? []));
               event.currentTarget.value = "";
             }}
           />
@@ -204,13 +209,13 @@ export function MenuScanClient() {
             aria-label="Choose menu pages from photos"
             className="sr-only"
             onChange={(event) => {
-              appendFiles(event.currentTarget.files);
+              appendFiles(Array.from(event.currentTarget.files ?? []));
               event.currentTarget.value = "";
             }}
           />
 
           <div aria-live="polite" className="sr-only">
-            {pages.length ? pageStatus : "No menu pages yet."}
+            {pages.length ? pageStatus : "No images yet."}
           </div>
           <div aria-live="polite" aria-atomic="true" className="sr-only">
             {analyzing ? "Uploading and analyzing your menu." : ""}
@@ -222,16 +227,16 @@ export function MenuScanClient() {
                 <ScanLine aria-hidden="true" size={29} />
               </span>
               <h2 className="mt-5 text-xl font-bold tracking-[-0.025em]">
-                No menu pages yet.
+                No images yet.
               </h2>
               <p className="mx-auto mt-2 max-w-[28ch] text-sm leading-5 text-[var(--text-secondary)]">
-                Start with the first page. You can add more before analyzing.
+                Take a photo or choose images to begin.
               </p>
               <PrimaryButton
                 className="mt-6 w-full"
                 onClick={() => cameraRef.current?.click()}
               >
-                <Camera aria-hidden="true" size={18} /> Scan first page
+                <Camera aria-hidden="true" size={18} /> Take a photo
               </PrimaryButton>
               <SecondaryButton
                 className="mt-2 w-full"
@@ -245,7 +250,7 @@ export function MenuScanClient() {
               <div className="flex items-end justify-between gap-3">
                 <div>
                   <p className="text-xs font-bold uppercase tracking-[0.14em] text-[var(--primary)]">
-                    Capture session
+                    Images ready
                   </p>
                   <h2 id="ready-pages-title" className="mt-1 text-xl font-bold">
                     {pageStatus}
@@ -262,7 +267,7 @@ export function MenuScanClient() {
                   >
                     <button
                       type="button"
-                      aria-label={`Preview menu page ${index + 1}`}
+                      aria-label={`Preview image ${index + 1}`}
                       onClick={() => setPreviewId(page.id)}
                       className="block w-full text-left"
                     >
@@ -270,16 +275,16 @@ export function MenuScanClient() {
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={page.url}
-                        alt={`Menu page ${index + 1}`}
+                        alt={`Selected image ${index + 1}`}
                         className="aspect-[4/5] w-full object-cover"
                       />
                       <span className="block px-3 py-3 text-sm font-bold">
-                        Page {index + 1}
+                        Image {index + 1}
                       </span>
                     </button>
                     <button
                       type="button"
-                      aria-label={`Remove menu page ${index + 1}`}
+                      aria-label={`Remove image ${index + 1}`}
                       disabled={analyzing}
                       onClick={() => removePage(page.id)}
                       className="absolute right-2 top-2 flex size-11 items-center justify-center rounded-full border border-white/60 bg-[var(--surface)]/95 text-[var(--destructive)] shadow-sm disabled:opacity-50"
@@ -295,7 +300,7 @@ export function MenuScanClient() {
                   disabled={analyzing || pages.length >= MAX_MENU_IMAGE_COUNT}
                   onClick={() => cameraRef.current?.click()}
                 >
-                  <Camera aria-hidden="true" size={17} /> Scan another page
+                  <Camera aria-hidden="true" size={17} /> Take another photo
                 </SecondaryButton>
                 <SecondaryButton
                   disabled={analyzing || pages.length >= MAX_MENU_IMAGE_COUNT}
@@ -350,7 +355,7 @@ export function MenuScanClient() {
             ) : null}
             {analyzing
               ? "Uploading and analyzing your menu…"
-              : `Analyze ${pages.length} ${pages.length === 1 ? "page" : "pages"}`}
+              : "Analyze menu"}
           </PrimaryButton>
           <p className="mt-2 text-center text-[11px] leading-4 text-[var(--text-muted)]">
             Images are used for this analysis only and are not stored permanently.
@@ -361,15 +366,15 @@ export function MenuScanClient() {
       <BottomSheet
         open={Boolean(preview)}
         onClose={() => setPreviewId(null)}
-        title={`Menu page ${previewNumber}`}
-        description="Preview only. Your capture session stays unchanged."
+        title={`Image ${previewNumber}`}
+        description="Preview only. Your image session stays unchanged."
       >
         {preview ? (
           <div className="safe-bottom py-5">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={preview.url}
-              alt={`Full preview of menu page ${previewNumber}`}
+              alt={`Full preview of image ${previewNumber}`}
               className="max-h-[65dvh] w-full rounded-[20px] object-contain"
             />
           </div>
@@ -378,9 +383,9 @@ export function MenuScanClient() {
 
       <ConfirmationDialog
         open={discardOpen}
-        title="Discard scanned pages?"
-        description={`You have ${pages.length} menu ${pages.length === 1 ? "page" : "pages"} ready.`}
-        cancelLabel="Keep scanning"
+        title="Discard selected images?"
+        description={`You have ${pages.length} ${pages.length === 1 ? "image" : "images"} ready.`}
+        cancelLabel="Keep images"
         confirmLabel="Discard"
         destructive
         onCancel={() => setDiscardOpen(false)}

@@ -1,6 +1,6 @@
 # Foodseyo Parallel Input Architecture
 
-**Status:** Updated for T5.1 menu-image analysis hardening
+**Status:** Updated for T5.2 unified Home image intake
 
 **Date:** 2026-07-15
 
@@ -16,6 +16,20 @@ demo ──────────────────┘
 ```
 
 Menu scanning is one input path. It is not Foodseyo’s required first step and is not the entire product flow.
+
+## Home entry surface versus analyzers
+
+T5.2 intentionally exposes three Home surfaces:
+
+1. restaurant/menu link bar;
+2. Food Passport;
+3. unified **Scan or upload** card.
+
+The image card opens one Bottom Sheet with **Take a photo** and **Choose from photos**. Home owns both hidden file inputs so the picker opens inside the user's active click instead of after navigation. Valid selected Files are staged in an app-level React provider, Menu Scan consumes them once, clears the pending state, and creates its own preview object URLs.
+
+This transient handoff is memory-only: no local or session storage, IndexedDB, Base64, URL query, canonical payload, database, Blob service, or permanent upload contains the raw Files. Refresh may clear them. File order is preserved, and direct `/menu-scan` access continues with an empty session.
+
+The compact Home UI does not change the six canonical input types. At this checkpoint the unified image action prepares `menu_images`; future dispatch to `restaurant_photo` or `restaurant_screen` is deferred. The link bar validates HTTP/HTTPS syntax and reports that analysis is coming soon. It performs no fetch and never falls back to Demo.
 
 ## Input overview
 
@@ -76,6 +90,8 @@ Purpose:
 - recommend dishes and practical combinations.
 
 The link may make restaurant matching unnecessary because identity can be known at the start. Research should focus on missing or useful details rather than repeating known facts.
+
+The live link analyzer is not implemented at T5.2. Its Home field remains visible for product direction, but currently provides syntax validation and an availability message only.
 
 ## `nearby_search`
 
@@ -139,4 +155,4 @@ Signals create candidates; they do not all carry equal authority. Current locati
 - Failed web research must fall back to available input evidence and general food knowledge.
 - Denied location must return the user to manual or non-location paths.
 - Unsupported or unreadable input must show a recoverable error and preserve already selected files when possible.
-- Demo remains available as a clearly labeled fallback.
+- Demo remains available through its explicit route and analyzer, but unsupported Home inputs never fall back to it automatically.

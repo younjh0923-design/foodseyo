@@ -353,3 +353,35 @@ This log records accepted product and architecture decisions frozen in T2. Chang
 - **Impact:** The OpenAI timeout remains below the 90-second Route maximum duration.
 - **Status:** Accepted
 - **Date:** 2026-07-15
+
+## D-045 — Simplify the MVP Home entry surface
+
+- **Decision:** The MVP Home shows one restaurant/menu link field, Food Passport, and one unified image-input action. Nearby search, recent analysis, fixed demo cards, and separate camera/gallery/screenshot cards are not shown on Home.
+- **Reason:** The first screen should minimize decision load and prioritize the two ways users already have restaurant context: a public link or an image. Food Passport remains visible as personalization rather than as an analysis input.
+- **Impact:** The Home layout becomes brand, one question, one explanation, one link field, and two action cards. Nearby and history remain deferred without deleting their architecture.
+- **Status:** Accepted
+- **Date:** 2026-07-15
+
+## D-046 — Unify camera and gallery selection before navigation
+
+- **Decision:** The Scan or upload action opens one Bottom Sheet where the user chooses Take a photo or Choose from photos. The file picker opens directly from the Home user gesture, and selected Files are handed to Menu Scan through transient in-memory state.
+- **Reason:** Mobile browsers may block a file picker that is automatically opened after Route navigation because the original user activation has been lost.
+- **Impact:** Home owns the initial hidden file inputs. Menu Scan consumes staged files once, creates and cleans its own preview object URLs, and remains usable when opened directly.
+- **Status:** Accepted
+- **Date:** 2026-07-15
+
+## D-047 — Do not fake live link analysis
+
+- **Decision:** Until the restaurant-link analyzer exists, the Home link field performs local HTTP/HTTPS syntax validation and displays an honest availability message. It does not route to Demo or simulate analysis.
+- **Reason:** A fixed demo redirect would misrepresent an unavailable live capability.
+- **Impact:** Valid links receive a coming-soon message and no provider or network call. The field remains in the intended Home information architecture for later integration.
+- **Status:** Accepted
+- **Date:** 2026-07-15
+
+## D-048 — Keep Home image handoff transient
+
+- **Decision:** Files selected from Home remain only in browser memory until Menu Scan consumes them. They are not serialized, persisted, placed in URLs, or added to the canonical analysis contract.
+- **Reason:** The MVP has no account, database, or permanent upload requirement, and raw user images should not be retained unnecessarily.
+- **Impact:** Browser refresh may clear staged files. This is accepted. Existing session-only analysis and privacy rules remain intact.
+- **Status:** Accepted
+- **Date:** 2026-07-15

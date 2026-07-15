@@ -1,10 +1,11 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import { ImageIntakeProvider } from "@/components/intake/ImageIntakeProvider";
 import { PassportProvider } from "@/components/passport/PassportProvider";
 
 export const metadata: Metadata = {
   title: "Foodseyo",
-  description: "Understand the menu. Order with confidence.",
+  description: "AI Food Copilot for restaurant and menu images.",
 };
 
 export const viewport: Viewport = {
@@ -18,7 +19,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="en">
       <body>
-        <PassportProvider>{children}</PassportProvider>
+        <PassportProvider>
+          <ImageIntakeProvider>{children}</ImageIntakeProvider>
+        </PassportProvider>
       </body>
     </html>
   );

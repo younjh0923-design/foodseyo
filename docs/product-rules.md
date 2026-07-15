@@ -1,6 +1,6 @@
 # Foodseyo Product Rules
 
-**Status:** Frozen for T2
+**Status:** Frozen product rules with T5.2 Home entry clarification
 
 **Date:** 2026-07-15
 
@@ -208,6 +208,17 @@ General recipes must not be used to declare restaurant-specific allergy safety. 
 - Treat multi-image input as a basic convenience, not a differentiator or core marketing claim.
 - Do not force the number of representative dishes to exactly three.
 - Keep deterministic, calculable order recommendations in TypeScript; use the Assistant only as support.
+
+### T5.2 Home entry surface
+
+The persistent Home surface contains only the brand, one ordering question and explanation, one restaurant/menu link field, and two equal action cards in this order:
+
+1. **Food Passport** — personalization settings, not an analysis input;
+2. **Scan or upload** — a Bottom Sheet with **Take a photo** and **Choose from photos**.
+
+Nearby search, recent analysis, fixed demo cards, and separate screenshot/menu cards are hidden from Home without deleting their routes or analyzer architecture. Home action count does not need to equal the six canonical input types. At T5.2, selected images prepare the existing Menu Scan session; only `menu_images` has a live provider. Restaurant photo, restaurant screen, restaurant link, and nearby live analysis remain deferred.
+
+The visible link field performs local HTTP/HTTPS syntax validation only. A valid link receives an honest coming-soon message; it is not fetched, persisted, sent to a provider, or redirected to Demo.
 
 ## Competition P0 scope
 

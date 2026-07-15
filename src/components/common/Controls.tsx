@@ -102,14 +102,14 @@ export function ActionCard({ icon, title, description, status, href, onClick, ar
       <span className="mt-5 block text-[15px] font-bold leading-5 text-[var(--text)]">{title}</span>
       <span className="mt-1 block text-xs leading-[18px] text-[var(--text-secondary)]">{description}</span>
       {status ? (
-        <span className="mt-3 inline-flex min-h-6 items-center rounded-full bg-[var(--canvas)] px-2.5 text-[11px] font-bold text-[var(--text-secondary)]">
+        <span className="mt-3 inline-flex min-h-6 max-w-full items-center rounded-2xl bg-[var(--canvas)] px-2.5 py-1 text-center text-[11px] font-bold leading-4 whitespace-normal break-words text-[var(--text-secondary)]">
           {status}
         </span>
       ) : null}
     </>
   );
   const cardClass =
-    "min-h-[172px] rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-4 text-left transition-[background-color,border-color,transform] hover:border-[var(--border-strong)] hover:bg-[#fffaf3] active:bg-[var(--canvas)]";
+    "h-full min-h-[172px] w-full overflow-hidden rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-4 text-left transition-[background-color,border-color,transform] hover:border-[var(--border-strong)] hover:bg-[var(--canvas)] active:bg-[var(--canvas)]";
 
   return href ? (
     <Link href={href} aria-label={ariaLabel ?? title} className={cardClass}>
