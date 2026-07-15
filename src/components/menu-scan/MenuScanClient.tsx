@@ -9,12 +9,15 @@ import { PrimaryButton, SecondaryButton } from "@/components/common/Controls";
 import { PageHeader } from "@/components/common/PageHeader";
 import { MobileShell } from "@/components/layout/MobileShell";
 import {
+  getSafeMenuAnalysisErrorMessage,
+  parseMenuAnalysisResponse,
+} from "@/lib/menu-analysis-client";
+import {
   MenuImagePreprocessingError,
   preprocessMenuImages,
   validateMenuImageSelection,
 } from "@/lib/menu-image-preprocessing";
-import { writeCurrentAnalysis } from "@/lib/storage";
-import { MenuAnalysisApiResponseSchema } from "@/services/menu-analysis/menu-analysis-api";
+import { tryWriteCurrentAnalysis } from "@/lib/storage";
 import { MAX_MENU_IMAGE_COUNT } from "@/services/menu-analysis/menu-upload-validation";
 
 interface MenuPage {
@@ -47,6 +50,7 @@ export function MenuScanClient() {
   const [analyzing, setAnalyzing] = useState(false);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [analysisSummary, setAnalysisSummary] = useState<AnalysisSummary | null>(null);
+  const [storageWarning, setStorageWarning] = useState<string | null>(null);
 
   useEffect(
     () => () => {
@@ -82,6 +86,7 @@ export function MenuScanClient() {
     });
     setAnalysisError(null);
     setAnalysisSummary(null);
+    setStorageWarning(null);
   };
 
   const removePage = (id: string) => {
@@ -95,6 +100,7 @@ export function MenuScanClient() {
     });
     setAnalysisError(null);
     setAnalysisSummary(null);
+    setStorageWarning(null);
     if (previewId === id) setPreviewId(null);
   };
 
@@ -122,6 +128,7 @@ export function MenuScanClient() {
     setAnalyzing(true);
     setAnalysisError(null);
     setAnalysisSummary(null);
+    setStorageWarning(null);
 
     try {
       const preparedImages = await preprocessMenuImages(pages.map((page) => page.file));
@@ -134,27 +141,24 @@ export function MenuScanClient() {
         body: formData,
         signal: controller.signal,
       });
-      const parsedResponse = MenuAnalysisApiResponseSchema.safeParse(await response.json());
-      if (!parsedResponse.success) {
-        throw new Error("Menu analysis returned an invalid response.");
-      }
-      if (!parsedResponse.data.ok) {
-        throw new Error(parsedResponse.data.error.message);
-      }
-
-      writeCurrentAnalysis(parsedResponse.data.analysis);
+      const analysis = await parseMenuAnalysisResponse(response);
+      const storedForNextScreen = tryWriteCurrentAnalysis(analysis);
       setAnalysisSummary({
-        status: parsedResponse.data.analysis.status,
-        restaurantName: parsedResponse.data.analysis.payload.restaurant?.name ?? null,
-        dishCount: parsedResponse.data.analysis.payload.menu?.dishes.length ?? 0,
+        status: analysis.status,
+        restaurantName: analysis.payload.restaurant?.name ?? null,
+        dishCount: analysis.payload.menu?.dishes.length ?? 0,
       });
-    } catch (error) {
-      if (controller.signal.aborted) return;
-      setAnalysisError(
-        error instanceof Error
-          ? error.message
-          : "Something went wrong while analyzing the menu.",
+      setStorageWarning(
+        storedForNextScreen
+          ? null
+          : "Menu analysis succeeded, but this browser could not keep the result for the next screen.",
       );
+    } catch (error) {
+      const safeMessage = getSafeMenuAnalysisErrorMessage(
+        error,
+        controller.signal.aborted,
+      );
+      if (safeMessage) setAnalysisError(safeMessage);
     } finally {
       if (abortRef.current === controller) {
         abortRef.current = null;
@@ -207,6 +211,9 @@ export function MenuScanClient() {
 
           <div aria-live="polite" className="sr-only">
             {pages.length ? pageStatus : "No menu pages yet."}
+          </div>
+          <div aria-live="polite" aria-atomic="true" className="sr-only">
+            {analyzing ? "Uploading and analyzing your menu." : ""}
           </div>
 
           {!pages.length ? (
@@ -320,6 +327,15 @@ export function MenuScanClient() {
                 {analysisSummary.dishCount} dishes · {analysisSummary.status}
               </p>
             </section>
+          ) : null}
+
+          {storageWarning ? (
+            <p
+              role="status"
+              className="mt-3 rounded-[18px] border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-5 text-[var(--text-secondary)]"
+            >
+              {storageWarning}
+            </p>
           ) : null}
         </main>
 

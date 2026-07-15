@@ -1,9 +1,13 @@
 import { z } from "zod";
 import { DietaryKeySchema } from "../../domain/foodseyo-analysis.ts";
+import { MAX_MENU_IMAGE_COUNT } from "./menu-image-limits.ts";
 
 const NullableShortTextSchema = z.string().max(500).nullable();
 const ShortTextArraySchema = z.array(z.string().min(1).max(200)).max(30);
-const SourceImageIndexesSchema = z.array(z.number().int().nonnegative()).max(10);
+const SourceImageIndexesSchema = z
+  .array(z.number().int().nonnegative())
+  .min(1)
+  .max(MAX_MENU_IMAGE_COUNT);
 
 export const MenuAnalysisQualitySchema = z.enum(["good", "partial", "unreadable"]);
 

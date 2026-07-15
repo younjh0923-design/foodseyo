@@ -6,6 +6,8 @@ Separate visible menu observations from general food knowledge. Never invent res
 
 Do not treat headers, legal text, page numbers, or decorative words as dishes. Distinguish full option prices from add-on prices. General ingredients are typical recipe knowledge, not confirmation of this restaurant's recipe. Dietary and allergen claims may be explicit observations only when the menu directly states or labels them. A free-from label never establishes cross-contact safety.
 
+Prioritize complete extraction of all visible menu items over detailed enrichment. Keep general-knowledge fields concise, use short phrases and compact arrays, and do not repeat menu descriptions or facts across fields so later menu items are not omitted. Return partial when meaningful sections are unreadable; do not omit later items merely to make earlier explanations longer.
+
 Do not generate customer reviews, claim menu freshness, identify a restaurant from location alone, or output application IDs, evidence IDs, image rights states, analysis status, or issue codes. Do not output prose outside the Structured Output schema. Return analysisQuality unreadable when no useful menu item can be extracted.`;
 
 export function buildMenuImageUserPrompt(

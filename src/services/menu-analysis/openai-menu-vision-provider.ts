@@ -1,11 +1,11 @@
 import "server-only";
 
 import OpenAI from "openai";
-import { z } from "zod";
 import { AnalysisAbortedError } from "../analysis/analysis-errors.ts";
 import { readMenuAnalysisServerConfig } from "./menu-analysis-config.ts";
 import { MenuAnalysisError } from "./menu-analysis-errors.ts";
 import { MenuImageModelOutputSchema } from "./menu-image-model-schema.ts";
+import { normalizeOpenAIMenuProviderError } from "./openai-menu-error-mapper.ts";
 import type { MenuVisionProvider } from "./menu-vision-provider.ts";
 import {
   MENU_ANALYSIS_MAX_RETRIES,
@@ -80,48 +80,7 @@ export function createOpenAIMenuVisionProvider(
         }
         return parsed.data;
       } catch (error) {
-        if (error instanceof MenuAnalysisError || error instanceof AnalysisAbortedError) {
-          throw error;
-        }
-        if (input.signal?.aborted || error instanceof OpenAI.APIUserAbortError) {
-          throw new AnalysisAbortedError();
-        }
-        if (error instanceof OpenAI.RateLimitError) {
-          throw new MenuAnalysisError(
-            "OPENAI_RATE_LIMITED",
-            "Menu analysis is temporarily rate limited.",
-            true,
-          );
-        }
-        if (error instanceof OpenAI.APIConnectionTimeoutError) {
-          throw new MenuAnalysisError(
-            "OPENAI_TIMEOUT",
-            "Menu analysis timed out.",
-            true,
-          );
-        }
-        if (
-          error instanceof OpenAI.APIConnectionError ||
-          (error instanceof OpenAI.APIError && (error.status ?? 0) >= 500)
-        ) {
-          throw new MenuAnalysisError(
-            "OPENAI_UNAVAILABLE",
-            "Menu analysis is temporarily unavailable.",
-            true,
-          );
-        }
-        if (error instanceof z.ZodError) {
-          throw new MenuAnalysisError(
-            "MODEL_OUTPUT_INVALID",
-            "The model returned invalid structured menu data.",
-            true,
-          );
-        }
-        throw new MenuAnalysisError(
-          "OPENAI_UNAVAILABLE",
-          "Menu analysis is temporarily unavailable.",
-          true,
-        );
+        throw normalizeOpenAIMenuProviderError(error, Boolean(input.signal?.aborted));
       }
     },
   };

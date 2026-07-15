@@ -58,6 +58,25 @@ export function writeCurrentAnalysis(analysis: FoodseyoAnalysis): void {
   window.sessionStorage.setItem(CURRENT_ANALYSIS_STORAGE_KEY, serializeCurrentAnalysis(analysis));
 }
 
+export interface CurrentAnalysisStorageWriter {
+  setItem(key: string, value: string): void;
+}
+
+export function tryWriteCurrentAnalysis(
+  analysis: FoodseyoAnalysis,
+  storage?: CurrentAnalysisStorageWriter,
+): boolean {
+  try {
+    const target =
+      storage ?? (typeof window !== "undefined" ? window.sessionStorage : null);
+    if (!target) return false;
+    target.setItem(CURRENT_ANALYSIS_STORAGE_KEY, serializeCurrentAnalysis(analysis));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export function removeCurrentAnalysis(): void {
   window.sessionStorage.removeItem(CURRENT_ANALYSIS_STORAGE_KEY);
 }

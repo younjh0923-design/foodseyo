@@ -1,6 +1,7 @@
 export type MenuAnalysisErrorCode =
   | "OPENAI_NOT_CONFIGURED"
   | "OPENAI_MODEL_UNSUPPORTED"
+  | "OPENAI_AUTH_FAILED"
   | "OPENAI_RATE_LIMITED"
   | "OPENAI_TIMEOUT"
   | "OPENAI_UNAVAILABLE"
@@ -10,7 +11,10 @@ export type MenuAnalysisErrorCode =
   | "INVALID_SOURCE_IMAGE_INDEX"
   | "MENU_NOT_READABLE"
   | "MENU_DISHES_MISSING"
-  | "CANONICAL_ADAPTER_FAILED";
+  | "CANONICAL_ADAPTER_FAILED"
+  | "INVALID_MENU_IMAGE_INPUT"
+  | "TOO_MANY_MENU_IMAGES"
+  | "MENU_IMAGE_BYTES_EXCEEDED";
 
 export class MenuAnalysisError extends Error {
   readonly code: MenuAnalysisErrorCode;

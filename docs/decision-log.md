@@ -321,3 +321,35 @@ This log records accepted product and architecture decisions frozen in T2. Chang
 - **Impact:** T5 dish images remain unavailable unless a separate rights-cleared source is introduced by a later feature.
 - **Status:** Accepted
 - **Date:** 2026-07-15
+
+## D-041 — Treat explicit restaurant input as user evidence without borrowing unmatched image provenance
+
+- **Decision:** Treat explicit restaurant input as user evidence without borrowing unmatched image provenance.
+- **Reason:** A user-entered restaurant name and restaurant identity signals extracted from an uploaded menu may refer to different businesses.
+- **Impact:** Explicit input can confirm the entered name without evidence source IDs. Image-derived address, phone, website, and provenance are merged only when the visible restaurant name conservatively matches the user-entered name.
+- **Status:** Accepted
+- **Date:** 2026-07-15
+
+## D-042 — Revalidate menu image limits inside analyzer
+
+- **Decision:** Revalidate menu image limits inside the analyzer.
+- **Reason:** The HTTP route is one trust boundary, but analyzers may later be called by smoke scripts, internal services, or additional transports.
+- **Impact:** The menu-image analyzer independently enforces image count, supported media types, non-empty bytes, and actual total-byte limits before invoking the provider.
+- **Status:** Accepted
+- **Date:** 2026-07-15
+
+## D-043 — Expose only validated user-facing menu-analysis errors
+
+- **Decision:** Expose only validated user-facing menu-analysis errors.
+- **Reason:** Network, storage, framework, and non-JSON failures may contain technical implementation details that are not useful or appropriate for users.
+- **Impact:** The Menu Scan UI displays preprocessing messages and schema-validated API messages, while all unexpected errors use a fixed safe fallback.
+- **Status:** Accepted
+- **Date:** 2026-07-15
+
+## D-044 — Keep provider timeout below route execution limit
+
+- **Decision:** Keep the provider timeout below the route execution limit.
+- **Reason:** The application needs time to map provider timeouts into a stable JSON response before the hosting platform terminates the function.
+- **Impact:** The OpenAI timeout remains below the 90-second Route maximum duration.
+- **Status:** Accepted
+- **Date:** 2026-07-15

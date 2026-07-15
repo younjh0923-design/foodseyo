@@ -1,6 +1,6 @@
 # Foodseyo Unified Analysis Data Contract
 
-**Status:** Implemented for T3, executed by T4, and populated by T5 menu analysis
+**Status:** Implemented for T3, executed by T4, and populated by T5.1 menu analysis
 
 **Date:** 2026-07-15
 
@@ -208,6 +208,6 @@ The application, not GPT, creates evidence IDs, entity IDs, restaurant resolutio
 
 T4 consumes the canonical schemas through `analyzeFoodseyoInput`. Input-specific analyzers return an internal draft rather than constructing envelopes. The shared orchestrator normalizes payload candidates, runs Zod structural validation, runs separate business semantic validation, derives status and issues, creates the app-managed envelope, validates the final result, and verifies JSON serialization.
 
-Transient binary and exact-location access exists only in the analyze request. It is never copied into this canonical contract. T5 supplies a route-injected `menu_images` analyzer while the default registry remains provider-free. Demo remains implemented; restaurant photo, screen, link, and nearby inputs still return typed capability-unavailable errors.
+Transient binary and exact-location access exists only in the analyze request. It is never copied into this canonical contract. T5.1 supplies a route-injected `menu_images` analyzer while the default registry remains provider-free. Explicit restaurant input counts as user evidence without source IDs; unmatched image identity and contact details are not borrowed into that user-owned resolution. Direct-evidence confirmation still requires evidence source IDs. Demo remains implemented; restaurant photo, screen, link, and nearby inputs still return typed capability-unavailable errors.
 
 Runtime details are defined in [analysis-orchestration.md](./analysis-orchestration.md).

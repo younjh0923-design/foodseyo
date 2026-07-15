@@ -133,6 +133,7 @@ export function validateAnalysisSemantics(
       (candidate) => candidate.id === resolution.selectedCandidateId,
     );
     const confirmationCarriesUserEvidence =
+      resolution.confirmedBy === "explicit_input" ||
       resolution.confirmedBy === "user_confirmation" ||
       (resolution.confirmedBy === "nearby_selection" && selectedCandidate?.selectedByUser === true);
     if (resolution.sourceIds.length === 0 && !confirmationCarriesUserEvidence) {

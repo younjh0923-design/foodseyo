@@ -20,7 +20,7 @@ export const ALLOWED_MENU_ANALYSIS_MODELS = [
 export const DEFAULT_MENU_ANALYSIS_MODEL = "gpt-5.6" as const;
 export const MENU_ANALYSIS_REASONING_EFFORT = "low" as const;
 export const MENU_ANALYSIS_MAX_OUTPUT_TOKENS = 12_000;
-export const MENU_ANALYSIS_TIMEOUT_MS = 90_000;
+export const MENU_ANALYSIS_TIMEOUT_MS = 80_000;
 export const MENU_ANALYSIS_MAX_RETRIES = 1;
 
 export type MenuAnalysisModel = (typeof ALLOWED_MENU_ANALYSIS_MODELS)[number];

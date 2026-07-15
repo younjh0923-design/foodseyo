@@ -54,6 +54,15 @@ const safeUrl = (value: string | undefined): string | null => {
   }
 };
 
+const normalizeRestaurantName = (value: string): string =>
+  value
+    .normalize("NFKC")
+    .trim()
+    .toLocaleLowerCase("en")
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
 const toEvidenceId = (index: number): string => `uploaded-menu-image-${index + 1}`;
 
 const validateSourceImageIndex = (index: number, imageCount: number): void => {
@@ -355,19 +364,42 @@ const resolveRestaurant = (
     };
   }
 
-  const signalIndexes = output.restaurantSignals.map((signal) => signal.sourceImageIndex);
+  const normalizedUserName = userName ? normalizeRestaurantName(userName) : "";
+  const normalizedVisibleName = visibleName ? normalizeRestaurantName(visibleName) : "";
+  const explicitNameMatchesVisibleName = Boolean(
+    normalizedUserName &&
+      normalizedVisibleName &&
+      normalizedUserName === normalizedVisibleName,
+  );
+  const matchedIdentitySignals = explicitNameMatchesVisibleName
+    ? [nameSignal, addressSignal, phoneSignal, websiteSignal].filter(
+        (signal): signal is NonNullable<typeof signal> => signal !== undefined,
+      )
+    : [];
+  const directSignalIndexes = output.restaurantSignals.map(
+    (signal) => signal.sourceImageIndex,
+  );
   const sourceIds = userName
-    ? Array.from({ length: imageCount }, (_, index) => toEvidenceId(index))
-    : evidenceIdsForIndexes(signalIndexes, imageCount);
+    ? evidenceIdsForIndexes(
+        matchedIdentitySignals.map((signal) => signal.sourceImageIndex),
+        imageCount,
+      )
+    : evidenceIdsForIndexes(directSignalIndexes, imageCount);
+  const canMergeImageIdentity = !userName || explicitNameMatchesVisibleName;
   const candidateId = allocateId("restaurant", restaurantName, 1);
   const candidate = {
     id: candidateId,
     name: restaurantName,
-    address: addressSignal?.value ?? null,
-    website: safeUrl(websiteSignal?.value),
+    address: canMergeImageIdentity ? (addressSignal?.value ?? null) : null,
+    website: canMergeImageIdentity ? safeUrl(websiteSignal?.value) : null,
     cuisineLabels: [],
     matchReasons: userName
-      ? ["Restaurant name entered by the user"]
+      ? [
+          "Restaurant name entered by the user",
+          ...(explicitNameMatchesVisibleName
+            ? ["Visible restaurant name conservatively matches the entered name"]
+            : []),
+        ]
       : ["Restaurant name or logo text visible in the uploaded menu"],
     sourceIds,
     selectedByUser: false,
@@ -398,18 +430,26 @@ const resolveRestaurant = (
       confirmedBy: userName ? "explicit_input" : "direct_evidence",
       sourceIds,
       limitations: [
-        userName
-          ? "Restaurant identity uses the user-entered name and was not verified on the public web."
-          : "Restaurant identity is based only on direct signals visible in uploaded menu images.",
+        ...(userName
+          ? [
+              "Restaurant identity is based on explicit user input.",
+              "The entered restaurant name was not verified against public web data.",
+              explicitNameMatchesVisibleName
+                ? "Only conservatively matching image-derived identity and contact signals were merged."
+                : "Conflicting or unmatched image-derived identity and contact signals were not merged.",
+            ]
+          : [
+              "Restaurant identity is based only on direct signals visible in uploaded menu images.",
+            ]),
       ],
     },
     restaurant: {
       id: candidateId,
       name: restaurantName,
       summary: null,
-      address: addressSignal?.value ?? null,
-      phone: phoneSignal?.value ?? null,
-      website: safeUrl(websiteSignal?.value),
+      address: canMergeImageIdentity ? (addressSignal?.value ?? null) : null,
+      phone: canMergeImageIdentity ? (phoneSignal?.value ?? null) : null,
+      website: canMergeImageIdentity ? safeUrl(websiteSignal?.value) : null,
       cuisineLabels: [],
       priceLevel: null,
       publicLocation: null,
@@ -456,7 +496,9 @@ export function adaptMenuImageModelOutput(
   const dishes: Dish[] = [];
   let dishSequence = 0;
 
-  modelOutput.categories.forEach((category, categoryIndex) => {
+  modelOutput.categories
+    .filter((category) => category.dishes.length > 0)
+    .forEach((category, categoryIndex) => {
     const categoryId = allocateCategoryId("category", category.label, categoryIndex + 1);
     categories.push({ id: categoryId, label: category.label });
     category.dishes.forEach((dish) => {
@@ -464,7 +506,7 @@ export function adaptMenuImageModelOutput(
       const dishId = allocateDishId("dish", dish.name, dishSequence);
       dishes.push(toDish(dish, categoryId, imageCount, dishId));
     });
-  });
+    });
 
   const restaurant = resolveRestaurant(modelOutput, imageCount, userEnteredRestaurantName);
   const menuLimitations = unique([

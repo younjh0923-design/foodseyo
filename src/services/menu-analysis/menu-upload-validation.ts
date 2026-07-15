@@ -1,19 +1,23 @@
 import type { TransientImageInput } from "../analysis/analysis-types.ts";
 import type { MenuAnalysisApiErrorCode } from "./menu-analysis-api.ts";
+import {
+  MAX_MENU_IMAGE_COUNT,
+  SERVER_MENU_IMAGE_MAX_BYTES,
+  SERVER_SINGLE_IMAGE_MAX_BYTES,
+  isSupportedMenuImageType,
+  type SupportedMenuImageType,
+} from "./menu-image-limits.ts";
 
-export const MAX_MENU_IMAGE_COUNT = 10;
-export const CLIENT_MENU_IMAGE_TARGET_BYTES = 3_800_000;
-export const SERVER_MENU_IMAGE_MAX_BYTES = 4_000_000;
-export const SERVER_SINGLE_IMAGE_MAX_BYTES = 4_000_000;
+export {
+  CLIENT_MENU_IMAGE_TARGET_BYTES,
+  MAX_MENU_IMAGE_COUNT,
+  SERVER_MENU_IMAGE_MAX_BYTES,
+  SERVER_SINGLE_IMAGE_MAX_BYTES,
+  SUPPORTED_MENU_IMAGE_TYPES,
+  isSupportedMenuImageType,
+  type SupportedMenuImageType,
+} from "./menu-image-limits.ts";
 export const MAX_RESTAURANT_NAME_LENGTH = 120;
-
-export const SUPPORTED_MENU_IMAGE_TYPES = [
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-] as const;
-
-export type SupportedMenuImageType = (typeof SUPPORTED_MENU_IMAGE_TYPES)[number];
 
 export interface UploadFileLike {
   readonly name: string;
@@ -38,10 +42,6 @@ export class MenuUploadValidationError extends Error {
     this.status = status;
     this.name = "MenuUploadValidationError";
   }
-}
-
-export function isSupportedMenuImageType(value: string): value is SupportedMenuImageType {
-  return (SUPPORTED_MENU_IMAGE_TYPES as readonly string[]).includes(value);
 }
 
 export function detectMenuImageMediaType(bytes: Uint8Array): SupportedMenuImageType | null {

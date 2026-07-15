@@ -75,9 +75,9 @@ The demo analyzer:
 - keeps all evidence classified as `demo_data`;
 - leaves ID, timestamp, status, issues, and final validation to the orchestrator.
 
-### Unimplemented analyzers
+### Default provider-free analyzers
 
-Menu images, restaurant photo, restaurant screen, restaurant link, and nearby search analyzers throw `AnalysisCapabilityUnavailableError`. The error retains the requested input type and a stable orchestration error code. They do not fabricate restaurant, menu, review, image, or nearby data and do not fall back to the demo analyzer.
+The default registry keeps menu images, restaurant photo, restaurant screen, restaurant link, and nearby search capability-unavailable. T5/T5.1 overrides only `menu_images` at the server route boundary with the concrete provider-backed analyzer. All other live analyzers continue to throw `AnalysisCapabilityUnavailableError`; none fabricate data or fall back to the demo analyzer.
 
 ## Analysis draft
 
@@ -208,9 +208,9 @@ The lightweight Node validation entry point runs the existing contract checks an
 
 No test framework dependency was added.
 
-## T5 menu-image implementation
+## T5/T5.1 menu-image implementation
 
-T5 implements the menu-image analyzer behind the existing interface. `/api/analyze/menu-images` validates 1-10 ordered transient images, creates a server-only OpenAI provider, and injects only the `menu_images` registry entry. The analyzer returns an `AnalysisDraft`; the orchestrator still owns normalization, validation, status, issues, envelope creation, and serialization. The provider dependency remains replaceable by a fake, so automatic tests never call OpenAI.
+T5 implements the menu-image analyzer behind the existing interface. `/api/analyze/menu-images` validates 1-10 ordered transient images, creates a server-only OpenAI provider, and injects only the `menu_images` registry entry. T5.1 adds independent analyzer-side count, type, actual-byte, metadata, total-byte, order, and cancellation checks. The analyzer returns an `AnalysisDraft`; the orchestrator still owns normalization, validation, status, issues, envelope creation, and serialization. Provider and route dependencies remain replaceable by fakes, so automatic tests never call OpenAI or the network.
 
 Future restaurant-photo, screen, link, nearby, and research providers connect through the same boundary. They must not bypass structural or semantic validation.
 

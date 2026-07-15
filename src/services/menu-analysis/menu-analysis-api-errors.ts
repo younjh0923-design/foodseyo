@@ -52,6 +52,13 @@ export function mapMenuAnalysisError(error: unknown): SafeMenuAnalysisError {
           "Menu analysis is not available on this deployment yet.",
           false,
         );
+      case "OPENAI_AUTH_FAILED":
+        return safeError(
+          503,
+          "OPENAI_AUTH_FAILED",
+          "Menu analysis is not available on this deployment yet.",
+          false,
+        );
       case "OPENAI_RATE_LIMITED":
         return safeError(429, "OPENAI_RATE_LIMITED", "Menu analysis is busy. Try again shortly.", true);
       case "OPENAI_TIMEOUT":
@@ -68,6 +75,27 @@ export function mapMenuAnalysisError(error: unknown): SafeMenuAnalysisError {
           422,
           "MENU_NOT_READABLE",
           "We couldn’t read this menu clearly. Retake the photo with the text in focus.",
+          false,
+        );
+      case "INVALID_MENU_IMAGE_INPUT":
+        return safeError(
+          400,
+          "INVALID_MENU_IMAGE_INPUT",
+          "The menu image input is invalid.",
+          false,
+        );
+      case "TOO_MANY_MENU_IMAGES":
+        return safeError(
+          400,
+          "TOO_MANY_IMAGES",
+          "Choose no more than 10 menu images.",
+          false,
+        );
+      case "MENU_IMAGE_BYTES_EXCEEDED":
+        return safeError(
+          413,
+          "TOTAL_UPLOAD_TOO_LARGE",
+          "These menu images are too large to analyze together.",
           false,
         );
       case "MODEL_OUTPUT_INVALID":

@@ -7,10 +7,13 @@ import type {
 } from "../analysis/analysis-types.ts";
 import { adaptMenuImageModelOutput } from "./menu-image-adapter.ts";
 import { MenuAnalysisError } from "./menu-analysis-errors.ts";
+import {
+  MAX_MENU_IMAGE_COUNT,
+  SERVER_MENU_IMAGE_MAX_BYTES,
+  isSupportedMenuImageType,
+} from "./menu-image-limits.ts";
 import { MenuImageModelOutputSchema } from "./menu-image-model-schema.ts";
 import type { MenuVisionProvider } from "./menu-vision-provider.ts";
-
-const ALLOWED_MEDIA_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 export interface MenuImagesAnalyzerDependencies {
   readonly provider: MenuVisionProvider;
@@ -26,26 +29,62 @@ export function createMenuImagesAnalyzer(
       context: AnalyzerExecutionContext,
     ): Promise<AnalysisDraft> {
       if (context.signal?.aborted) throw new AnalysisAbortedError();
+      if (request.images.length === 0) {
+        throw new MenuAnalysisError(
+          "INVALID_MENU_IMAGE_INPUT",
+          "Menu analysis requires at least one image.",
+        );
+      }
+      if (request.images.length > MAX_MENU_IMAGE_COUNT) {
+        throw new MenuAnalysisError(
+          "TOO_MANY_MENU_IMAGES",
+          `Menu analysis accepts no more than ${MAX_MENU_IMAGE_COUNT} images.`,
+        );
+      }
 
       const images = [];
+      let actualTotalBytes = 0;
       for (const [index, image] of request.images.entries()) {
-        if (!image.mediaType || !ALLOWED_MEDIA_TYPES.has(image.mediaType)) {
+        if (context.signal?.aborted) throw new AnalysisAbortedError();
+        if (!image.mediaType || !isSupportedMenuImageType(image.mediaType)) {
           throw new MenuAnalysisError(
-            "MODEL_OUTPUT_INVALID",
+            "INVALID_MENU_IMAGE_INPUT",
             "Menu analyzer received an unsupported transient image type.",
           );
         }
-        const bytes = await image.read();
+        let bytes: Uint8Array;
+        try {
+          bytes = await image.read();
+        } catch {
+          if (context.signal?.aborted) throw new AnalysisAbortedError();
+          throw new MenuAnalysisError(
+            "INVALID_MENU_IMAGE_INPUT",
+            "A transient menu image could not be read.",
+          );
+        }
         if (context.signal?.aborted) throw new AnalysisAbortedError();
         if (bytes.byteLength === 0) {
           throw new MenuAnalysisError(
-            "MODEL_OUTPUT_INVALID",
+            "INVALID_MENU_IMAGE_INPUT",
             "Menu analyzer received an empty transient image.",
+          );
+        }
+        if (image.byteLength !== null && image.byteLength !== bytes.byteLength) {
+          throw new MenuAnalysisError(
+            "INVALID_MENU_IMAGE_INPUT",
+            "Transient image metadata does not match the actual bytes.",
+          );
+        }
+        actualTotalBytes += bytes.byteLength;
+        if (actualTotalBytes > SERVER_MENU_IMAGE_MAX_BYTES) {
+          throw new MenuAnalysisError(
+            "MENU_IMAGE_BYTES_EXCEEDED",
+            "Transient menu image bytes exceed the server analysis limit.",
           );
         }
         images.push({
           index,
-          mediaType: image.mediaType as "image/jpeg" | "image/png" | "image/webp",
+          mediaType: image.mediaType,
           bytes,
         });
       }

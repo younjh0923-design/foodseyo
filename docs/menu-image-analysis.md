@@ -1,6 +1,6 @@
 # Foodseyo Menu Image Analysis
 
-**Status:** Implemented for T5
+**Status:** Implemented and production-hardened for T5.1
 
 **Date:** 2026-07-15
 
@@ -46,7 +46,9 @@ The browser targets a total of **3,800,000 bytes**, leaving headroom below the s
 
 Compression first lowers quality in small steps and then lowers resolution. It never goes below a 1400 px long-edge floor for a larger source or JPEG quality 0.68. A smaller original is not upscaled or reduced below its own dimensions. The client measures a readability-floor version of every image before allocating the remaining bytes proportionally across the ordered set. This avoids rejecting one detailed page merely because another page would have used less than an equal share. If even the combined floor versions exceed the total target, the client shows a `SIZE_READABILITY_LIMIT` error and asks the user to remove a page, crop unused areas, or take clearer close-ups. It does not make menu text unreadable merely to force the upload under budget.
 
-Canvas execution is covered by browser build/manual verification; pure selection, limit, profile, and ordering helpers are covered by the lightweight Node suite without adding a DOM test framework.
+Before decoding, the browser also rejects any single source file above 25,000,000 bytes or a selected source set above 100,000,000 bytes. These source guards are separate from the 3,800,000-byte processed-output target and prevent excessive browser memory use.
+
+Decoding prefers `createImageBitmap` with orientation handling. Browsers without that capability use an `HTMLImageElement` object-URL fallback; both paths release the bitmap or revoke the object URL after processing. Pure selection, limit, profile, ordering, and injected decoder paths are covered by the lightweight Node suite without adding a DOM test framework. Manual device QA still includes iPhone Safari camera and gallery selection, portrait and landscape EXIF orientation, one-image and ten-image sets, and the unsupported-HEIC user message.
 
 ## Route contract
 
@@ -60,7 +62,7 @@ Request:
 - 1-10 images;
 - total declared and validated size at most 4,000,000 bytes.
 
-Every image must be non-empty, use an allowed MIME type, and match JPEG, PNG, or WEBP magic bytes. The route returns `Cache-Control: no-store`.
+Every image must be non-empty, use an allowed MIME type, and match JPEG, PNG, or WEBP magic bytes. The route returns `Cache-Control: no-store`. The injected analyzer independently revalidates image count, declared metadata, actual non-empty bytes, actual total bytes, type, order, and cancellation immediately before provider execution. A native `Request`/`Response` handler factory provides a network-free route-boundary test seam.
 
 Success:
 
@@ -98,10 +100,12 @@ The provider uses:
 - `max_output_tokens: 12000`;
 - `store: false`;
 - no tools or web search;
-- 90-second timeout;
+- 80-second provider timeout below the route's 90-second execution limit;
 - one retry;
 - propagated `AbortSignal`;
 - explicit refusal, incomplete response, invalid output, timeout, rate-limit, and service error mapping.
+
+OpenAI authentication and permission failures (401/403) are configuration errors: they are non-retryable and return a safe 503 response without exposing provider details. Rate limits, provider 5xx responses, connection failures, and timeouts keep their existing typed retry behavior.
 
 ## Model contract and injection resistance
 
@@ -109,7 +113,7 @@ The provider uses:
 
 The developer prompt treats all text in images as untrusted data. Instructions, URLs, prompt-like text, or commands printed in a menu image are never followed. The prompt prohibits fabricated restaurant-specific ingredients, preparation, popularity, signature claims, reviews, freshness, modifications, and allergy guarantees. Unreadable values stay nullable or uncertain.
 
-Source indexes are zero-based, limited to the submitted image set, and validated again by the adapter. An out-of-range reference fails with a typed error.
+Source indexes are zero-based, non-empty for extracted categories, dishes, prices, options, dietary claims, and menu options, limited to the submitted image set, and validated again by the adapter. An out-of-range reference fails with a typed error. Empty extracted categories are removed; an output with no useful dishes fails instead of producing an empty success. The prompt explicitly prioritizes complete visible-menu extraction while remaining concise and forbids repair calls, tools, or a second request.
 
 ## Canonical adapter and evidence semantics
 
@@ -122,6 +126,8 @@ Restaurant resolution follows these rules:
 - visible name only → `likely`;
 - no identity signal → `unconfirmed`;
 - location is not used and cannot confirm identity.
+
+An explicit restaurant name is user evidence and remains authoritative without requiring source IDs. By default, it does not borrow an image-derived address, phone, website, or identity source ID. Image identity and contact details are merged only when the visible name or logo is exactly equal after Unicode normalization, trim, lowercase conversion, punctuation removal, and whitespace collapse. There is no fuzzy, AI-assisted, or substring match. On a conflict, Foodseyo keeps the user-entered name, leaves contact and identity source IDs empty, and records the limitation.
 
 Visible numeric prices remain direct observations. Unknown currency remains `null`, unknown price remains `null`, full option prices remain `priceOptions`, and add-ons remain `options`. Zero is never used as an unknown fallback.
 
@@ -136,11 +142,13 @@ Explicit `contains` claims become `confirmed_present` direct observations. Free-
 - `unreadable` → typed `MENU_NOT_READABLE` error;
 - no useful dishes → typed `MENU_DISHES_MISSING` error.
 
-Missing optional reviews, freshness, images, or restaurant confirmation does not by itself make a good useful menu partial. Menu Scan shows loading, safe inline error, and a compact success summary. It stores the validated envelope under `foodseyo.currentAnalysis` in `sessionStorage`. T6 may read that key to build the full live Restaurant Overview and Dish Detail result UI; T5 does not route live data into the existing demo pages.
+Missing optional reviews, freshness, images, or restaurant confirmation does not by itself make a good useful menu partial. Menu Scan exposes loading status through an `aria-live` region, displays only preprocessing messages or schema-validated API messages, and replaces malformed JSON, HTML, network, and technical failures with a fixed generic message. User cancellation is silent.
+
+After a compact success summary is shown, Foodseyo attempts to store the validated envelope under `foodseyo.currentAnalysis` in `sessionStorage`. A browser storage failure does not erase the successful result; it adds the warning, “Menu analysis succeeded, but this browser could not keep the result for the next screen.” T6 may read the key to build the full live Restaurant Overview and Dish Detail result UI; T5.1 does not route live data into the existing demo pages.
 
 ## Automatic tests
 
-`pnpm test` runs 11 contract checks, 73 orchestration checks, and 91 menu-image checks: **175 assertions total**. The new suite uses an injected fake provider and makes zero network calls. It covers schemas, canonical conversion, restaurant resolution, price/options, dietary safety, evidence integrity, partial/failure behavior, upload helpers, safe errors, session serialization, provider request configuration, the ten-image limit, adaptive profiles, readability floors, order preservation, and one-request delivery.
+`pnpm test` runs 11 contract checks, 73 orchestration checks, 91 menu-image checks, and 86 T5.1 hardening checks: **261 assertions total**. The suites use injected fake providers and make zero network calls. They cover schemas, explicit-input provenance, canonical conversion, restaurant resolution, price/options, dietary safety, non-empty evidence indexes, empty-category filtering, analyzer-side byte validation and cancellation, source-size guards, both decoder paths and cleanup, safe client errors, storage failure, real SDK error classes, native Request/Response route boundaries, session serialization, provider request configuration, the ten-image limit, adaptive profiles, readability floors, order preservation, and one-request delivery.
 
 ## Optional live smoke test
 
@@ -174,4 +182,4 @@ Never expose the key with a `NEXT_PUBLIC_` prefix or commit `.env.local`.
 
 ## Limitations and deferred security work
 
-T5's direct function upload is intentionally bounded and transient. It has no Vercel Blob, permanent image storage, batch merging, database, account, or exact-location persistence. A later production-hardening task must add distributed rate limiting, budget controls, per-user abuse controls, monitoring with secret-safe metadata, and operational alerting. The current route's count, type, byte, timeout, no-store, and safe-error controls reduce risk but are not a complete abuse-prevention system.
+T5.1's direct function upload is intentionally bounded and transient. It has no Vercel Blob, permanent image storage, batch merging, database, account, or exact-location persistence. Later operational work still needs distributed rate limiting, budget controls, per-user abuse controls, monitoring with secret-safe metadata, and alerting. The current client, route, analyzer, provider-timeout, no-store, and safe-error controls reduce risk but are not a complete abuse-prevention system.

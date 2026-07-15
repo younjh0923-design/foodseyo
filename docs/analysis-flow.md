@@ -1,6 +1,6 @@
 # Foodseyo Shared Analysis Flow
 
-**Status:** Updated for T5 menu-image analysis
+**Status:** Updated for T5.1 menu-image analysis hardening
 
 **Date:** 2026-07-15
 
@@ -125,7 +125,7 @@ Menu images
 
 **Restaurant matching is not required to explain the menu.**
 
-T5 implements this path with 1-10 ordered JPEG, PNG, or WEBP inputs. The browser adaptively preprocesses the set to a 3,800,000-byte target while retaining a readability floor, then sends one multipart request to `/api/analyze/menu-images`. The server enforces a 4,000,000-byte total limit and sends the ordered set in one GPT-5.6 Responses API request with no web tools. The resulting narrow Structured Output is deterministically adapted and passed through the shared orchestrator. See [menu-image-analysis.md](./menu-image-analysis.md).
+T5.1 hardens this path with 1-10 ordered JPEG, PNG, or WEBP inputs. The browser applies 25,000,000-byte per-file and 100,000,000-byte source-set guards, then adaptively preprocesses toward 3,800,000 bytes while retaining a readability floor. The route and analyzer independently enforce the 4,000,000-byte processed total before all images are sent in one GPT-5.6 Responses API request with no web tools. The resulting narrow Structured Output is deterministically adapted and passed through the shared orchestrator. See [menu-image-analysis.md](./menu-image-analysis.md).
 
 Web research, reviews, and official freshness comparison remain later enrichment capabilities and are not silently performed by the T5 menu-image analyzer.
 

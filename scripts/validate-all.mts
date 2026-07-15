@@ -1,3 +1,4 @@
-import "./validate-analysis-contract.mts";
-import "./validate-analysis-orchestration.mts";
-import "./validate-menu-image-analysis.mts";
+await import("./validate-analysis-contract.mts");
+await import("./validate-analysis-orchestration.mts");
+await import("./validate-menu-image-analysis.mts");
+await import("./validate-menu-image-hardening.mts");

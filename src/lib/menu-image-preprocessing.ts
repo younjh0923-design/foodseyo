@@ -2,11 +2,13 @@ import {
   CLIENT_MENU_IMAGE_TARGET_BYTES,
   MAX_MENU_IMAGE_COUNT,
   SUPPORTED_MENU_IMAGE_TYPES,
-} from "../services/menu-analysis/menu-upload-validation.ts";
+} from "../services/menu-analysis/menu-image-limits.ts";
 
 const MIN_READABLE_LONG_EDGE = 1_400;
 const MIN_READABLE_JPEG_QUALITY = 0.68;
 const JPEG_OUTPUT_TYPE = "image/jpeg";
+export const MAX_SOURCE_MENU_IMAGE_BYTES = 25_000_000;
+export const MAX_SOURCE_MENU_IMAGES_TOTAL_BYTES = 100_000_000;
 
 export interface AdaptiveMenuImageProfile {
   maxLongEdge: number;
@@ -20,6 +22,8 @@ export type MenuImagePreprocessingErrorCode =
   | "TOO_MANY_IMAGES"
   | "UNSUPPORTED_IMAGE_TYPE"
   | "EMPTY_IMAGE"
+  | "SOURCE_IMAGE_TOO_LARGE"
+  | "SOURCE_IMAGES_TOTAL_TOO_LARGE"
   | "IMAGE_DECODE_FAILED"
   | "SIZE_READABILITY_LIMIT";
 
@@ -70,6 +74,7 @@ export function validateMenuImageSelection(files: readonly File[]): void {
     );
   }
 
+  let totalSourceBytes = 0;
   for (const file of files) {
     if (!(SUPPORTED_MENU_IMAGE_TYPES as readonly string[]).includes(file.type)) {
       throw new MenuImagePreprocessingError(
@@ -80,6 +85,110 @@ export function validateMenuImageSelection(files: readonly File[]): void {
     if (file.size <= 0) {
       throw new MenuImagePreprocessingError("EMPTY_IMAGE", "A selected menu image is empty.");
     }
+    if (file.size > MAX_SOURCE_MENU_IMAGE_BYTES) {
+      throw new MenuImagePreprocessingError(
+        "SOURCE_IMAGE_TOO_LARGE",
+        "This photo is too large to prepare safely. Choose a smaller image or retake it.",
+      );
+    }
+    totalSourceBytes += file.size;
+  }
+  if (totalSourceBytes > MAX_SOURCE_MENU_IMAGES_TOTAL_BYTES) {
+    throw new MenuImagePreprocessingError(
+      "SOURCE_IMAGES_TOTAL_TOO_LARGE",
+      "The selected photos are too large to prepare together. Remove a few pages.",
+    );
+  }
+}
+
+export interface MenuImageDecoderDependencies {
+  createBitmap: ((file: File) => Promise<ImageBitmap>) | null;
+  createObjectURL(file: Blob): string;
+  revokeObjectURL(url: string): void;
+  createImage(): HTMLImageElement;
+}
+
+export interface DecodedMenuImage {
+  source: CanvasImageSource;
+  width: number;
+  height: number;
+  dispose(): void;
+}
+
+const browserDecoderDependencies = (): MenuImageDecoderDependencies => ({
+  createBitmap:
+    typeof createImageBitmap === "function"
+      ? (file) => createImageBitmap(file, { imageOrientation: "from-image" })
+      : null,
+  createObjectURL: (file) => URL.createObjectURL(file),
+  revokeObjectURL: (url) => URL.revokeObjectURL(url),
+  createImage: () => new Image(),
+});
+
+export async function decodeMenuImage(
+  file: File,
+  dependencies: MenuImageDecoderDependencies = browserDecoderDependencies(),
+): Promise<DecodedMenuImage> {
+  if (dependencies.createBitmap) {
+    try {
+      const bitmap = await dependencies.createBitmap(file);
+      if (bitmap.width > 0 && bitmap.height > 0) {
+        let disposed = false;
+        return {
+          source: bitmap,
+          width: bitmap.width,
+          height: bitmap.height,
+          dispose() {
+            if (disposed) return;
+            disposed = true;
+            bitmap.close();
+          },
+        };
+      }
+      bitmap.close();
+    } catch {
+      // Continue to the browser image-element fallback.
+    }
+  }
+
+  const objectUrl = dependencies.createObjectURL(file);
+  const image = dependencies.createImage();
+  let disposed = false;
+  const dispose = () => {
+    if (disposed) return;
+    disposed = true;
+    image.onload = null;
+    image.onerror = null;
+    image.src = "";
+    dependencies.revokeObjectURL(objectUrl);
+  };
+
+  try {
+    if (typeof image.decode === "function") {
+      image.src = objectUrl;
+      await image.decode();
+    } else {
+      await new Promise<void>((resolve, reject) => {
+        image.onload = () => resolve();
+        image.onerror = () => reject(new Error("Image element failed to load."));
+        image.src = objectUrl;
+      });
+    }
+    if (image.naturalWidth <= 0 || image.naturalHeight <= 0) {
+      throw new Error("Decoded image dimensions are invalid.");
+    }
+    return {
+      source: image,
+      width: image.naturalWidth,
+      height: image.naturalHeight,
+      dispose,
+    };
+  } catch {
+    dispose();
+    throw new MenuImagePreprocessingError(
+      "IMAGE_DECODE_FAILED",
+      "This menu image could not be read. Choose a different JPEG, PNG, or WEBP image.",
+    );
   }
 }
 
@@ -124,18 +233,10 @@ async function preprocessOneMenuImage(
   outputIndex: number,
   forceReadabilityFloor = false,
 ): Promise<File> {
-  let bitmap: ImageBitmap;
-  try {
-    bitmap = await createImageBitmap(file, { imageOrientation: "from-image" });
-  } catch {
-    throw new MenuImagePreprocessingError(
-      "IMAGE_DECODE_FAILED",
-      `Menu page ${outputIndex + 1} could not be read. Choose a different JPEG, PNG, or WEBP image.`,
-    );
-  }
+  const decoded = await decodeMenuImage(file);
 
   try {
-    const originalLongEdge = Math.max(bitmap.width, bitmap.height);
+    const originalLongEdge = Math.max(decoded.width, decoded.height);
     const readableFloor = Math.min(profile.minLongEdge, originalLongEdge);
     let longEdge = forceReadabilityFloor
       ? readableFloor
@@ -143,7 +244,7 @@ async function preprocessOneMenuImage(
     let quality = forceReadabilityFloor ? profile.minQuality : profile.initialQuality;
 
     while (true) {
-      const dimensions = scaledDimensions(bitmap.width, bitmap.height, longEdge);
+      const dimensions = scaledDimensions(decoded.width, decoded.height, longEdge);
       const canvas = document.createElement("canvas");
       canvas.width = dimensions.width;
       canvas.height = dimensions.height;
@@ -158,7 +259,7 @@ async function preprocessOneMenuImage(
       context.fillRect(0, 0, dimensions.width, dimensions.height);
       context.imageSmoothingEnabled = true;
       context.imageSmoothingQuality = "high";
-      context.drawImage(bitmap, 0, 0, dimensions.width, dimensions.height);
+      context.drawImage(decoded.source, 0, 0, dimensions.width, dimensions.height);
 
       const blob = await canvasToBlob(canvas, quality);
       if (blob.size <= byteBudget) {
@@ -185,7 +286,7 @@ async function preprocessOneMenuImage(
       );
     }
   } finally {
-    bitmap.close();
+    decoded.dispose();
   }
 }
 
