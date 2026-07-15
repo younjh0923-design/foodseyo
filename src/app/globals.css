@@ -1,0 +1,149 @@
+@import "tailwindcss";
+
+:root {
+  color-scheme: light;
+  --canvas: #f4f1eb;
+  --surface: #fffdf9;
+  --text: #191815;
+  --text-secondary: #706d67;
+  --text-muted: #96918a;
+  --border: #e7e1d8;
+  --border-strong: #d9d2c8;
+  --primary: #215e40;
+  --primary-pressed: #184a32;
+  --soft-green: #eaf2ed;
+  --accent: #de7844;
+  --soft-orange: #fff0e6;
+  --destructive: #b7433c;
+  --disabled-bg: #e2ded7;
+  --disabled-text: #9a958d;
+
+  /* Compatibility aliases for existing feature components. */
+  --app: var(--surface);
+  --outer: var(--canvas);
+  --ink: var(--text);
+  --muted: var(--text-secondary);
+  --line: var(--border);
+  --orange: var(--accent);
+  --orange-soft: var(--soft-orange);
+  --green: var(--primary);
+  --green-soft: var(--soft-green);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-width: 320px;
+  min-height: 100%;
+  background: var(--canvas);
+  color: var(--text);
+}
+
+body {
+  min-width: 320px;
+  min-height: 100dvh;
+  margin: 0;
+  background: var(--canvas);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+button,
+a,
+input,
+textarea,
+select {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
+:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--primary) 28%, transparent);
+  outline-offset: 3px;
+}
+
+::selection {
+  background: var(--soft-orange);
+}
+
+.serif-title {
+  font-family: inherit;
+  letter-spacing: -0.035em;
+}
+
+.scrollbar-none {
+  scrollbar-width: none;
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+.safe-top {
+  padding-top: calc(1rem + env(safe-area-inset-top, 0px));
+}
+
+.safe-bottom {
+  padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+}
+
+.sticky-safe-bottom {
+  padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+}
+
+.page-padding {
+  padding-inline: clamp(1rem, 5vw, 1.5rem);
+}
+
+.floating-action {
+  right: max(1rem, calc((100vw - 430px) / 2 + 1rem));
+  bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+}
+
+@keyframes soft-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.soft-spin {
+  animation: soft-spin 0.9s linear infinite;
+}
+
+@media (max-width: 430px) {
+  input,
+  textarea,
+  select {
+    font-size: 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
