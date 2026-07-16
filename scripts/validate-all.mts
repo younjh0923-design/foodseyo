@@ -3,3 +3,4 @@ await import("./validate-analysis-orchestration.mts");
 await import("./validate-menu-image-analysis.mts");
 await import("./validate-menu-image-hardening.mts");
 await import("./validate-home-entry-ui.mts");
+await import("./validate-menu-analysis-completion.mts");

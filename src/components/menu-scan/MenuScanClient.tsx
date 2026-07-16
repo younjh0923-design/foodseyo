@@ -2,7 +2,7 @@
 
 import { Camera, Images, LoaderCircle, ScanLine, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import { BottomSheet } from "@/components/common/BottomSheet";
 import { ConfirmationDialog } from "@/components/common/ConfirmationDialog";
 import { PrimaryButton, SecondaryButton } from "@/components/common/Controls";
@@ -10,11 +10,21 @@ import { useImageIntake } from "@/components/intake/ImageIntakeProvider";
 import { PageHeader } from "@/components/common/PageHeader";
 import { MobileShell } from "@/components/layout/MobileShell";
 import {
-  getSafeMenuAnalysisErrorMessage,
+  getSafeMenuAnalysisFailure,
   parseMenuAnalysisResponse,
 } from "@/lib/menu-analysis-client";
 import { preprocessMenuImages } from "@/lib/menu-image-preprocessing";
 import { prepareMenuScanAppend } from "@/lib/image-intake";
+import {
+  INITIAL_MENU_ANALYSIS_UI_STATE,
+  MENU_ANALYSIS_STORAGE_WARNING,
+  MENU_ANALYSIS_TIMEOUT_MESSAGE,
+  createMenuAnalysisAttemptGate,
+  createMenuAnalysisSuccessSummary,
+  isMenuAnalysisActive,
+  menuAnalysisUiReducer,
+  startMenuAnalysisWatchdog,
+} from "@/lib/menu-analysis-ui-state";
 import { tryWriteCurrentAnalysis } from "@/lib/storage";
 import { MAX_MENU_IMAGE_COUNT } from "@/services/menu-analysis/menu-upload-validation";
 
@@ -22,12 +32,6 @@ interface MenuPage {
   id: string;
   file: File;
   url: string;
-}
-
-interface AnalysisSummary {
-  status: "complete" | "partial" | "failed";
-  restaurantName: string | null;
-  dishCount: number;
 }
 
 function makeId() {
@@ -43,31 +47,41 @@ export function MenuScanClient() {
   const galleryRef = useRef<HTMLInputElement>(null);
   const pagesRef = useRef<MenuPage[]>([]);
   const abortRef = useRef<AbortController | null>(null);
+  const watchdogCancelRef = useRef<(() => void) | null>(null);
+  const feedbackRef = useRef<HTMLElement>(null);
+  const attemptGateRef = useRef(createMenuAnalysisAttemptGate());
   const [pages, setPages] = useState<MenuPage[]>([]);
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [discardOpen, setDiscardOpen] = useState(false);
-  const [analyzing, setAnalyzing] = useState(false);
-  const [analysisError, setAnalysisError] = useState<string | null>(null);
-  const [analysisSummary, setAnalysisSummary] = useState<AnalysisSummary | null>(null);
-  const [storageWarning, setStorageWarning] = useState<string | null>(null);
+  const [analysisUi, dispatchAnalysisUi] = useReducer(
+    menuAnalysisUiReducer,
+    INITIAL_MENU_ANALYSIS_UI_STATE,
+  );
+  const analyzing = isMenuAnalysisActive(analysisUi);
 
   useEffect(
     () => () => {
+      watchdogCancelRef.current?.();
+      watchdogCancelRef.current = null;
       abortRef.current?.abort();
+      const activeAttemptId = attemptGateRef.current.current();
+      if (activeAttemptId !== null) {
+        attemptGateRef.current.release(activeAttemptId);
+      }
       pagesRef.current.forEach((page) => URL.revokeObjectURL(page.url));
     },
     [],
   );
 
   const appendFiles = useCallback((files: readonly File[]) => {
-    if (!files.length || analyzing) return;
+    if (!files.length || attemptGateRef.current.current() !== null) return;
     const result = prepareMenuScanAppend(
       pagesRef.current.map((page) => page.file),
       files,
     );
     if (result.kind === "cancelled") return;
     if (result.kind === "invalid") {
-      setAnalysisError(result.message);
+      dispatchAnalysisUi({ type: "INPUT_REJECTED", message: result.message });
       return;
     }
 
@@ -81,10 +95,8 @@ export function MenuScanClient() {
       pagesRef.current = next;
       return next;
     });
-    setAnalysisError(null);
-    setAnalysisSummary(null);
-    setStorageWarning(null);
-  }, [analyzing]);
+    dispatchAnalysisUi({ type: "IMAGES_CHANGED" });
+  }, []);
 
   useEffect(() => {
     const handoffTimer = window.setTimeout(() => {
@@ -95,7 +107,7 @@ export function MenuScanClient() {
   }, [appendFiles, consumePendingFiles]);
 
   const removePage = (id: string) => {
-    if (analyzing) return;
+    if (attemptGateRef.current.current() !== null) return;
     setPages((current) => {
       const removed = current.find((page) => page.id === id);
       if (removed) URL.revokeObjectURL(removed.url);
@@ -103,9 +115,7 @@ export function MenuScanClient() {
       pagesRef.current = next;
       return next;
     });
-    setAnalysisError(null);
-    setAnalysisSummary(null);
-    setStorageWarning(null);
+    dispatchAnalysisUi({ type: "IMAGES_CHANGED" });
     if (previewId === id) setPreviewId(null);
   };
 
@@ -119,6 +129,10 @@ export function MenuScanClient() {
 
   const discardAndLeave = () => {
     abortRef.current?.abort();
+    const activeAttemptId = attemptGateRef.current.current();
+    if (activeAttemptId !== null) {
+      attemptGateRef.current.release(activeAttemptId);
+    }
     pagesRef.current.forEach((page) => URL.revokeObjectURL(page.url));
     pagesRef.current = [];
     setPages([]);
@@ -127,50 +141,108 @@ export function MenuScanClient() {
   };
 
   const analyze = async () => {
-    if (!pages.length || analyzing) return;
+    if (!pagesRef.current.length) return;
+    const attemptId = attemptGateRef.current.begin();
+    if (attemptId === null) return;
+
+    const selectedFiles = pagesRef.current.map((page) => page.file);
     const controller = new AbortController();
     abortRef.current = controller;
-    setAnalyzing(true);
-    setAnalysisError(null);
-    setAnalysisSummary(null);
-    setStorageWarning(null);
+    dispatchAnalysisUi({ type: "ATTEMPT_STARTED", attemptId });
+    let timedOut = false;
+    let cancelWatchdog = () => {};
 
     try {
-      const preparedImages = await preprocessMenuImages(pages.map((page) => page.file));
-      if (controller.signal.aborted) return;
+      const preparedImages = await preprocessMenuImages(selectedFiles);
+      if (controller.signal.aborted) {
+        if (attemptGateRef.current.isCurrent(attemptId)) {
+          dispatchAnalysisUi({ type: "ABORTED", attemptId });
+        }
+        return;
+      }
 
       const formData = new FormData();
       preparedImages.forEach((file) => formData.append("images", file));
+      dispatchAnalysisUi({
+        type: "REQUEST_STARTED",
+        attemptId,
+        startedAt: Date.now(),
+      });
+      cancelWatchdog = startMenuAnalysisWatchdog(() => {
+        if (!attemptGateRef.current.isCurrent(attemptId)) return;
+        timedOut = true;
+        watchdogCancelRef.current = null;
+        controller.abort();
+        attemptGateRef.current.release(attemptId);
+        if (abortRef.current === controller) abortRef.current = null;
+        dispatchAnalysisUi({
+          type: "FAILED",
+          attemptId,
+          message: MENU_ANALYSIS_TIMEOUT_MESSAGE,
+          errorKind: "timeout",
+        });
+      });
+      watchdogCancelRef.current = cancelWatchdog;
       const response = await fetch("/api/analyze/menu-images", {
         method: "POST",
         body: formData,
         signal: controller.signal,
       });
       const analysis = await parseMenuAnalysisResponse(response);
+      if (!attemptGateRef.current.isCurrent(attemptId)) return;
+
+      const summary = createMenuAnalysisSuccessSummary(analysis);
+      dispatchAnalysisUi({ type: "SUCCEEDED", attemptId, summary });
       const storedForNextScreen = tryWriteCurrentAnalysis(analysis);
-      setAnalysisSummary({
-        status: analysis.status,
-        restaurantName: analysis.payload.restaurant?.name ?? null,
-        dishCount: analysis.payload.menu?.dishes.length ?? 0,
-      });
-      setStorageWarning(
-        storedForNextScreen
-          ? null
-          : "Menu analysis succeeded, but this browser could not keep the result for the next screen.",
-      );
+      if (!storedForNextScreen) {
+        dispatchAnalysisUi({
+          type: "STORAGE_WARNING",
+          attemptId,
+          message: MENU_ANALYSIS_STORAGE_WARNING,
+        });
+      }
     } catch (error) {
-      const safeMessage = getSafeMenuAnalysisErrorMessage(
-        error,
-        controller.signal.aborted,
-      );
-      if (safeMessage) setAnalysisError(safeMessage);
+      if (!attemptGateRef.current.isCurrent(attemptId)) return;
+      const failure = getSafeMenuAnalysisFailure(error, {
+        signalAborted: controller.signal.aborted,
+        timedOut,
+      });
+      if (failure) {
+        dispatchAnalysisUi({ type: "FAILED", attemptId, ...failure });
+      } else {
+        dispatchAnalysisUi({ type: "ABORTED", attemptId });
+      }
     } finally {
+      cancelWatchdog();
+      if (watchdogCancelRef.current === cancelWatchdog) {
+        watchdogCancelRef.current = null;
+      }
       if (abortRef.current === controller) {
         abortRef.current = null;
-        setAnalyzing(false);
       }
+      attemptGateRef.current.release(attemptId);
+      dispatchAnalysisUi({ type: "FINALIZED", attemptId });
     }
   };
+
+  const feedbackKey =
+    analysisUi.phase === "success" || analysisUi.phase === "error"
+      ? `${analysisUi.phase}:${analysisUi.attemptId ?? "input"}`
+      : null;
+
+  useEffect(() => {
+    if (!feedbackKey) return;
+    const frame = window.requestAnimationFrame(() => {
+      const prefersReducedMotion = window.matchMedia(
+        "(prefers-reduced-motion: reduce)",
+      ).matches;
+      feedbackRef.current?.scrollIntoView({
+        block: "nearest",
+        behavior: prefersReducedMotion ? "auto" : "smooth",
+      });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [feedbackKey]);
 
   const preview = pages.find((page) => page.id === previewId) ?? null;
   const previewNumber = preview
@@ -218,7 +290,11 @@ export function MenuScanClient() {
             {pages.length ? pageStatus : "No images yet."}
           </div>
           <div aria-live="polite" aria-atomic="true" className="sr-only">
-            {analyzing ? "Uploading and analyzing your menu." : ""}
+            {analysisUi.phase === "preparing"
+              ? "Preparing your menu images."
+              : analysisUi.phase === "requesting"
+                ? "Uploading and analyzing your menu."
+                : ""}
           </div>
 
           {!pages.length ? (
@@ -312,35 +388,43 @@ export function MenuScanClient() {
             </section>
           )}
 
-          {analysisError ? (
+          {analysisUi.phase === "error" ? (
             <p
+              ref={(node) => {
+                feedbackRef.current = node;
+              }}
               role="alert"
-              className="mt-4 rounded-[18px] border border-red-200 bg-red-50 px-4 py-3 text-sm leading-5 text-[var(--destructive)]"
+              className="mt-4 scroll-mb-32 rounded-[18px] border border-red-200 bg-red-50 px-4 py-3 text-sm leading-5 text-[var(--destructive)]"
             >
-              {analysisError}
+              {analysisUi.message}
             </p>
           ) : null}
 
-          {analysisSummary ? (
+          {analysisUi.phase === "success" ? (
             <section
+              ref={(node) => {
+                feedbackRef.current = node;
+              }}
+              role="status"
               aria-live="polite"
-              className="mt-4 rounded-[20px] border border-[var(--border)] bg-[var(--soft-green)] px-4 py-4"
+              aria-atomic="true"
+              className="mt-4 scroll-mb-32 rounded-[20px] border border-[var(--border)] bg-[var(--soft-green)] px-4 py-4"
             >
               <h2 className="font-bold">Menu analysis complete</h2>
               <p className="mt-1 text-sm leading-5 text-[var(--text-secondary)]">
-                {analysisSummary.restaurantName ?? "Restaurant not confirmed"} ·{" "}
-                {analysisSummary.dishCount} dishes · {analysisSummary.status}
+                {analysisUi.summary.restaurantLabel} · {analysisUi.summary.dishCount}{" "}
+                {analysisUi.summary.dishCount === 1 ? "dish" : "dishes"} ·{" "}
+                {analysisUi.summary.status}
               </p>
+              {analysisUi.storageWarning ? (
+                <p
+                  role="status"
+                  className="mt-3 rounded-[16px] border border-amber-200 bg-amber-50 px-3 py-2 text-sm leading-5 text-[var(--text-secondary)]"
+                >
+                  {analysisUi.storageWarning}
+                </p>
+              ) : null}
             </section>
-          ) : null}
-
-          {storageWarning ? (
-            <p
-              role="status"
-              className="mt-3 rounded-[18px] border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-5 text-[var(--text-secondary)]"
-            >
-              {storageWarning}
-            </p>
           ) : null}
         </main>
 
@@ -353,9 +437,13 @@ export function MenuScanClient() {
             {analyzing ? (
               <LoaderCircle aria-hidden="true" className="soft-spin size-5" />
             ) : null}
-            {analyzing
-              ? "Uploading and analyzing your menu…"
-              : "Analyze menu"}
+            {analysisUi.phase === "preparing"
+              ? "Preparing your menu images…"
+              : analysisUi.phase === "requesting"
+                ? "Uploading and analyzing your menu…"
+                : analysisUi.phase === "success"
+                  ? "Analyze again"
+                  : "Analyze menu"}
           </PrimaryButton>
           <p className="mt-2 text-center text-[11px] leading-4 text-[var(--text-muted)]">
             Images are used for this analysis only and are not stored permanently.

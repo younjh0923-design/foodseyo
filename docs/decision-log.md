@@ -385,3 +385,27 @@ This log records accepted product and architecture decisions frozen in T2. Chang
 - **Impact:** Browser refresh may clear staged files. This is accepted. Existing session-only analysis and privacy rules remain intact.
 - **Status:** Accepted
 - **Date:** 2026-07-15
+
+## D-049 — Represent menu analysis completion as an explicit UI phase
+
+- **Decision:** Menu Scan uses mutually exclusive `idle`, `preparing`, `requesting`, `success`, and `error` phases. Request cleanup may release resources but must not reset a completed success or error state.
+- **Reason:** A Production iPhone request returned HTTP 200 and ended loading without leaving visible success or error feedback.
+- **Impact:** Success remains visible until the user starts another analysis or changes the selected images. Storage failure is represented as a warning inside the success state.
+- **Status:** Accepted
+- **Date:** 2026-07-15
+
+## D-050 — Add a client-side analysis watchdog
+
+- **Decision:** Menu Scan aborts a request that remains unresolved beyond a 105-second client watchdog, which is longer than the provider and Route limits.
+- **Reason:** Mobile network or platform failures can leave fetch pending even after server-side execution boundaries.
+- **Impact:** Users receive a safe timeout message and can retry instead of remaining in indefinite loading.
+- **Status:** Accepted
+- **Date:** 2026-07-15
+
+## D-051 — Prevent concurrent menu-analysis submissions
+
+- **Decision:** Menu Scan permits only one active analysis request, ignores duplicate submissions, and prevents stale responses from overwriting the latest attempt.
+- **Reason:** Repeated taps during ambiguous loading can generate duplicate paid API calls and conflicting UI state.
+- **Impact:** The button is disabled during active work, double taps produce one request, and retries become available only after completion.
+- **Status:** Accepted
+- **Date:** 2026-07-15

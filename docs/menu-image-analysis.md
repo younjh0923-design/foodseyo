@@ -1,6 +1,6 @@
 # Foodseyo Menu Image Analysis
 
-**Status:** Implemented and production-hardened for T5.1; Home intake unified in T5.2
+**Status:** Implemented and production-hardened through T5.3; Home intake unified in T5.2
 
 **Date:** 2026-07-15
 
@@ -148,9 +148,19 @@ Missing optional reviews, freshness, images, or restaurant confirmation does not
 
 After a compact success summary is shown, Foodseyo attempts to store the validated envelope under `foodseyo.currentAnalysis` in `sessionStorage`. A browser storage failure does not erase the successful result; it adds the warning, “Menu analysis succeeded, but this browser could not keep the result for the next screen.” T6 may read the key to build the full live Restaurant Overview and Dish Detail result UI; T5.1 does not route live data into the existing demo pages.
 
+T5.3 makes completion an explicit mutually exclusive UI phase: `idle`, `preparing`, `requesting`, `success`, or `error`. Loading is derived only from `preparing` and `requesting`; request cleanup releases timers and controllers without resetting a completed success or error. Starting another analysis or changing the selected images clears stale feedback, while ordinary re-renders and the one-shot Home provider cleanup do not.
+
+A valid HTTP 200 body must still pass the strict API response schema, contain `ok: true`, contain a canonical analysis, and have a non-failed analysis status. Malformed JSON, HTML, an HTTP/body status mismatch, `ok: false` under HTTP 200, or an invalid canonical payload becomes a safe response error rather than returning silently to idle. The success summary uses a confirmed or likely restaurant label when available, otherwise `Restaurant not confirmed`, followed by the canonical dish count and `complete` or `partial` status.
+
+The confirmed Production symptom was not an API-contract failure: iPhone Safari requests ended with HTTP 200 and loading stopped, but success and error feedback was inserted after the image grid without moving the newly rendered panel into the current mobile viewport. The same visibility issue was possible in any browser with a short viewport; it was not proven Safari-specific. T5.3 keeps the compact panel on Menu Scan, gives it live-region semantics and mobile scroll margin, and calls `scrollIntoView({ block: "nearest" })` without taking focus. Reduced-motion preferences are respected. The post-success button reads **Analyze again**; no T6 navigation or `View results` action is added.
+
+One synchronous in-memory attempt gate permits only one active analysis, blocks fast duplicate taps before React can re-render, and assigns monotonic attempt IDs so late responses cannot replace a newer state. A 105-second client watchdog starts at the request boundary, after preprocessing. It is longer than the 80-second provider timeout and 90-second Route maximum, uses `AbortController` plus `setTimeout` for Safari compatibility, and shows: “The menu analysis took too long. Try again with fewer or clearer images.” Manual abort remains silent. Timers are cleared on settlement and unmount, and retry is available after success or error.
+
+Post-fix automated and local responsive verification is documented in [menu-analysis-completion-ui.md](./menu-analysis-completion-ui.md). The original iPhone Safari symptom is confirmed; post-deployment verification on the user’s physical iPhone remains a user QA step.
+
 ## Automatic tests
 
-`pnpm test` runs 11 contract checks, 73 orchestration checks, 91 menu-image checks, 86 T5.1 hardening checks, and 72 T5.2 Home-entry checks: **333 assertions total**. The suites use injected fake providers and make zero network calls. In addition to the existing analysis coverage, T5.2 checks exact Home copy, honest link handling, accepted schemes, source safety, camera/gallery selection rules, order preservation, one-shot transient consumption, Strict Mode handoff structure, direct Menu Scan compatibility, object URL ownership, accessibility labels, and the absence of persistence or demo fallback.
+`pnpm test` runs 11 contract checks, 73 orchestration checks, 91 menu-image checks, 86 T5.1 hardening checks, 72 T5.2 Home-entry checks, and 75 T5.3 completion checks: **408 assertions total**. The suites use injected fake providers and make zero network calls. In addition to the existing analysis coverage, T5.2 checks exact Home copy, honest link handling, accepted schemes, source safety, camera/gallery selection rules, order preservation, one-shot transient consumption, Strict Mode handoff structure, direct Menu Scan compatibility, object URL ownership, accessibility labels, and the absence of persistence or demo fallback. T5.3 checks explicit phase transitions, success and error persistence, safe response parsing, storage-warning separation, duplicate blocking, stale attempt protection, watchdog behavior, mobile feedback visibility source guards, and the absence of T6 navigation.
 
 ## Optional live smoke test
 

@@ -1,6 +1,6 @@
 # Foodseyo Shared Analysis Flow
 
-**Status:** Updated for T5.1 menu-image analysis hardening
+**Status:** Updated through T5.3 menu-analysis completion handling
 
 **Date:** 2026-07-15
 
@@ -128,6 +128,23 @@ Menu images
 T5.1 hardens this path with 1-10 ordered JPEG, PNG, or WEBP inputs. The browser applies 25,000,000-byte per-file and 100,000,000-byte source-set guards, then adaptively preprocesses toward 3,800,000 bytes while retaining a readability floor. The route and analyzer independently enforce the 4,000,000-byte processed total before all images are sent in one GPT-5.6 Responses API request with no web tools. The resulting narrow Structured Output is deterministically adapted and passed through the shared orchestrator. See [menu-image-analysis.md](./menu-image-analysis.md).
 
 Web research, reviews, and official freshness comparison remain later enrichment capabilities and are not silently performed by the T5 menu-image analyzer.
+
+### Menu Scan completion state
+
+T5.3 keeps the result on Menu Scan until T6 exists:
+
+```text
+idle
+→ preparing browser images
+→ requesting one menu analysis
+→ strict HTTP/body/schema validation
+→ success summary OR safe persistent error
+→ request resource cleanup without resetting feedback
+```
+
+Success remains visible through ordinary re-renders and is cleared only by a new attempt or an image-set mutation. The canonical result is then written to `foodseyo.currentAnalysis`; a storage failure adds a warning inside success instead of changing the analysis to failure. A synchronous attempt gate blocks duplicate submissions, monotonic attempt IDs ignore late responses, and a 105-second client watchdog ends an unresolved browser request after the existing 80-second provider and 90-second Route limits.
+
+The Production symptom that triggered T5.3 was a mobile visibility defect: completion or error UI was rendered below the image list without being brought into the current viewport. The compact feedback panel now uses live-region semantics, mobile scroll margin, and reduced-motion-aware nearest scrolling. This behavior is general rather than Safari-only, although the symptom was first confirmed on iPhone Safari. Full live result navigation remains deferred to T6.
 
 Even without a confirmed restaurant, Foodseyo should provide:
 
