@@ -33,23 +33,16 @@ import {
   tryWriteCurrentAnalysis,
 } from "../src/lib/storage.ts";
 import { MAX_MENU_IMAGE_COUNT } from "../src/services/menu-analysis/menu-image-limits.ts";
+import {
+  captureError,
+  createValidationSuite,
+  installNetworkGuard,
+} from "./test-support/validation.mts";
 
-const passedChecks: string[] = [];
-const verify = (condition: boolean, label: string) => {
-  if (!condition) {
-    throw new Error(`Menu analysis completion validation failed: ${label}`);
-  }
-  passedChecks.push(label);
-};
-
-const captureError = async (operation: () => Promise<unknown>): Promise<unknown> => {
-  try {
-    await operation();
-    return null;
-  } catch (error) {
-    return error;
-  }
-};
+const { verify, report } = createValidationSuite(
+  "Foodseyo menu analysis completion validation",
+  "Menu analysis completion validation failed",
+);
 
 const summary: AnalysisSuccessSummary = {
   status: "complete",
@@ -542,15 +535,10 @@ verify(
   "loading copy and canonical result path are frozen",
 );
 
-const originalFetch = globalThis.fetch;
-let networkCalls = 0;
-globalThis.fetch = (() => {
-  networkCalls += 1;
-  throw new Error("Completion validation must not call the network.");
-}) as typeof fetch;
-globalThis.fetch = originalFetch;
-verify(networkCalls === 0, "completion validation makes zero network calls");
-
-console.log(
-  `Foodseyo menu analysis completion validation: ${passedChecks.length} checks passed.`,
+const networkGuard = installNetworkGuard(
+  "Completion validation must not call the network.",
 );
+networkGuard.restore();
+verify(networkGuard.callCount === 0, "completion validation makes zero network calls");
+
+report();

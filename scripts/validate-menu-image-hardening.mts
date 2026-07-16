@@ -7,7 +7,7 @@ import {
   MENU_ANALYSIS_RESPONSE_JSON_MESSAGE,
   MENU_ANALYSIS_RESPONSE_MISMATCH_MESSAGE,
   SAFE_MENU_ANALYSIS_ERROR_MESSAGE,
-  getSafeMenuAnalysisErrorMessage,
+  getSafeMenuAnalysisFailure,
   parseMenuAnalysisResponse,
 } from "../src/lib/menu-analysis-client.ts";
 import {
@@ -59,20 +59,21 @@ import type {
   MenuVisionProvider,
   MenuVisionProviderInput,
 } from "../src/services/menu-analysis/menu-vision-provider.ts";
+import {
+  captureError,
+  createValidationSuite,
+  installNetworkGuard,
+} from "./test-support/validation.mts";
 
-const passedChecks: string[] = [];
-const verify = (condition: boolean, label: string) => {
-  if (!condition) throw new Error(`Menu image hardening validation failed: ${label}`);
-  passedChecks.push(label);
-};
-const captureError = async (operation: () => Promise<unknown>): Promise<unknown> => {
-  try {
-    await operation();
-    return null;
-  } catch (error) {
-    return error;
-  }
-};
+const { verify, report } = createValidationSuite(
+  "Foodseyo menu image production hardening validation",
+  "Menu image hardening validation failed",
+);
+const safeMessage = (error: unknown, signalAborted = false): string | null =>
+  getSafeMenuAnalysisFailure(error, {
+    signalAborted,
+    timedOut: false,
+  })?.message ?? null;
 const clone = <T>(value: T): T => structuredClone(value);
 
 const modelFixture: MenuImageModelOutput = {
@@ -550,7 +551,7 @@ const validApiError = await captureError(() =>
   }),
 );
 verify(
-  getSafeMenuAnalysisErrorMessage(validApiError, false) === safeApiMessage,
+  safeMessage(validApiError) === safeApiMessage,
   "schema-validated API error message is accepted",
 );
 const invalidJsonError = await captureError(() =>
@@ -562,21 +563,18 @@ const invalidJsonError = await captureError(() =>
   }),
 );
 verify(
-  getSafeMenuAnalysisErrorMessage(invalidJsonError, false) ===
-    MENU_ANALYSIS_RESPONSE_JSON_MESSAGE,
+  safeMessage(invalidJsonError) === MENU_ANALYSIS_RESPONSE_JSON_MESSAGE,
   "invalid JSON uses the categorized safe message",
 );
 const htmlError = await captureError(() =>
   parseMenuAnalysisResponse(new Response("<html>Vercel failure</html>", { status: 502 })),
 );
 verify(
-  getSafeMenuAnalysisErrorMessage(htmlError, false) ===
-    MENU_ANALYSIS_RESPONSE_JSON_MESSAGE,
+  safeMessage(htmlError) === MENU_ANALYSIS_RESPONSE_JSON_MESSAGE,
   "HTML response uses the categorized safe message",
 );
 verify(
-  getSafeMenuAnalysisErrorMessage(new TypeError("Failed to fetch"), false) ===
-    SAFE_MENU_ANALYSIS_ERROR_MESSAGE,
+  safeMessage(new TypeError("Failed to fetch")) === SAFE_MENU_ANALYSIS_ERROR_MESSAGE,
   "network TypeError uses the generic safe message",
 );
 const preprocessingError = new MenuImagePreprocessingError(
@@ -584,16 +582,15 @@ const preprocessingError = new MenuImagePreprocessingError(
   "Safe preprocessing guidance.",
 );
 verify(
-  getSafeMenuAnalysisErrorMessage(preprocessingError, false) ===
-    "Safe preprocessing guidance.",
+  safeMessage(preprocessingError) === "Safe preprocessing guidance.",
   "preprocessing error retains its safe message",
 );
 verify(
-  getSafeMenuAnalysisErrorMessage(new Error("technical stack detail"), true) === null,
+  safeMessage(new Error("technical stack detail"), true) === null,
   "aborted analysis stays silent",
 );
 verify(
-  !getSafeMenuAnalysisErrorMessage(new Error("QuotaExceededError raw"), false)?.includes(
+  !safeMessage(new Error("QuotaExceededError raw"))?.includes(
     "QuotaExceededError",
   ),
   "unexpected technical messages are never exposed",
@@ -610,8 +607,7 @@ const mismatchedStatusError = await captureError(() =>
   }),
 );
 verify(
-  getSafeMenuAnalysisErrorMessage(mismatchedStatusError, false) ===
-    MENU_ANALYSIS_RESPONSE_MISMATCH_MESSAGE,
+  safeMessage(mismatchedStatusError) === MENU_ANALYSIS_RESPONSE_MISMATCH_MESSAGE,
   "HTTP and schema status mismatch uses a categorized error",
 );
 
@@ -779,12 +775,9 @@ verify(
 );
 
 // Actual Request/Response route boundary with an injected provider.
-const originalFetch = globalThis.fetch;
-let networkCalls = 0;
-globalThis.fetch = (() => {
-  networkCalls += 1;
-  throw new Error("Automatic hardening tests must not call the network.");
-}) as typeof fetch;
+const networkGuard = installNetworkGuard(
+  "Automatic hardening tests must not call the network.",
+);
 const formRequest = (
   files: ReadonlyArray<{ bytes: Uint8Array; type: string }> = [],
   stringImage = false,
@@ -903,8 +896,8 @@ verify(
     !rawFailureText.toLowerCase().includes("authorization"),
   "Route response leaks no provider or credential detail",
 );
-verify(networkCalls === 0, "Route boundary tests make zero network calls");
-globalThis.fetch = originalFetch;
+verify(networkGuard.callCount === 0, "Route boundary tests make zero network calls");
+networkGuard.restore();
 
 // Prompt and one-request policy remain unchanged except for concision hardening.
 const request = buildOpenAIMenuResponseRequest(
@@ -935,6 +928,4 @@ verify(
   "request continues to use high image detail",
 );
 
-console.log(
-  `Foodseyo menu image production hardening validation: ${passedChecks.length} checks passed.`,
-);
+report();

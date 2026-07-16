@@ -37,6 +37,8 @@ export interface MenuAnalysisObservation {
   readonly correlationId: string;
   readonly httpStatus: number;
   readonly durationMs: number;
+  readonly openAiDurationMs: number | null;
+  readonly serverValidationDurationMs: number | null;
   readonly responseByteLength: number;
   readonly failureStageCode: MenuAnalysisObservationStage;
   readonly structuralErrorCount: number;
@@ -138,6 +140,9 @@ export function createMenuAnalysisPostHandler(
     const startedAt = now();
     const correlationId =
       dependencies.createCorrelationId?.() ?? globalThis.crypto.randomUUID();
+    let openAiDurationMs: number | null = null;
+    let providerCompletedAt: number | null = null;
+    let serverValidationDurationMs: number | null = null;
     const logObservation =
       dependencies.logObservation ?? defaultLogObservation;
     const observe = (
@@ -153,6 +158,8 @@ export function createMenuAnalysisPostHandler(
           correlationId,
           httpStatus: status,
           durationMs: Math.max(0, Math.round(now() - startedAt)),
+          openAiDurationMs,
+          serverValidationDurationMs,
           responseByteLength: byteLength,
           ...details,
         });
@@ -194,8 +201,22 @@ export function createMenuAnalysisPostHandler(
       const validatedImages = await validateUploadedMenuImages(imageEntries as File[]);
       const restaurantName = validateRestaurantName(formData.get("restaurantName"));
       const provider = dependencies.createProvider();
+      const measuredProvider: MenuVisionProvider = {
+        async analyzeMenuImages(input) {
+          const providerStartedAt = now();
+          try {
+            return await provider.analyzeMenuImages(input);
+          } finally {
+            providerCompletedAt = now();
+            openAiDurationMs = Math.max(
+              0,
+              Math.round(providerCompletedAt - providerStartedAt),
+            );
+          }
+        },
+      };
       const registry = createAnalyzerRegistry({
-        menu_images: createMenuImagesAnalyzer({ provider }),
+        menu_images: createMenuImagesAnalyzer({ provider: measuredProvider }),
       });
       const analysis = await analyzeFoodseyoInput(
         {
@@ -209,6 +230,12 @@ export function createMenuAnalysisPostHandler(
           analyzerRegistry: registry,
         },
       );
+      if (providerCompletedAt !== null) {
+        serverValidationDurationMs = Math.max(
+          0,
+          Math.round(now() - providerCompletedAt),
+        );
+      }
 
       const result = createJsonResponse(
         { ok: true, analysis },
@@ -222,6 +249,15 @@ export function createMenuAnalysisPostHandler(
       });
       return result.response;
     } catch (error) {
+      if (
+        providerCompletedAt !== null &&
+        serverValidationDurationMs === null
+      ) {
+        serverValidationDurationMs = Math.max(
+          0,
+          Math.round(now() - providerCompletedAt),
+        );
+      }
       const safe = mapMenuAnalysisError(error);
       const result = createJsonResponse(
         safe.body,

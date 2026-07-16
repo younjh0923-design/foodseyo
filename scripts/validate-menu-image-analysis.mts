@@ -44,19 +44,19 @@ import {
   parseStoredCurrentAnalysis,
   serializeCurrentAnalysis,
 } from "../src/lib/storage.ts";
+import {
+  captureError,
+  createValidationSuite,
+  installNetworkGuard,
+} from "./test-support/validation.mts";
 
-const passedChecks: string[] = [];
-let networkCalls = 0;
-const originalFetch = globalThis.fetch;
-globalThis.fetch = (() => {
-  networkCalls += 1;
-  throw new Error("Network calls are forbidden in automatic menu-analysis tests.");
-}) as typeof fetch;
-
-const verify = (condition: boolean, label: string) => {
-  if (!condition) throw new Error(`Menu image analysis validation failed: ${label}`);
-  passedChecks.push(label);
-};
+const { verify, report } = createValidationSuite(
+  "Foodseyo menu image analysis validation",
+  "Menu image analysis validation failed",
+);
+const networkGuard = installNetworkGuard(
+  "Network calls are forbidden in automatic menu-analysis tests.",
+);
 
 const clone = <T>(value: T): T => structuredClone(value);
 
@@ -218,15 +218,6 @@ const analyzeWithProvider = async (
     now: () => new Date("2026-07-15T12:00:00.000Z"),
     createAnalysisId: () => "menu-analysis-test-id",
   });
-
-const captureError = async (operation: () => Promise<unknown>): Promise<unknown> => {
-  try {
-    await operation();
-    return null;
-  } catch (error) {
-    return error;
-  }
-};
 
 const makeUpload = (
   type: string,
@@ -410,7 +401,7 @@ const requestJson = JSON.stringify(openAIRequest);
 verify(requestJson.includes('"detail":"high"'), "80 OpenAI images use high detail");
 verify(!("tools" in openAIRequest), "81 OpenAI request has no tools");
 verify(resolveMenuAnalysisModel(undefined) === "gpt-5.6" && ALLOWED_MENU_ANALYSIS_MODELS.includes("gpt-5.6-terra"), "82 model comes from allowed server config");
-verify(networkCalls === 0, "83 automatic tests make no network calls");
+verify(networkGuard.callCount === 0, "automatic tests make no network calls");
 
 // L. Ten-image adaptive preprocessing policy (84-90)
 verify(MAX_MENU_IMAGE_COUNT === 10, "84 client and server share a ten-image maximum");
@@ -443,8 +434,8 @@ try {
 } catch {
   tenImageClientSelectionAccepted = false;
 } finally {
-  globalThis.fetch = originalFetch;
+  networkGuard.restore();
 }
 verify(tenImageClientSelectionAccepted, "91 client selection accepts exactly ten images");
 
-console.log(`Foodseyo menu image analysis validation: ${passedChecks.length} checks passed.`);
+report();

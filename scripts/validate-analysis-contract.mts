@@ -11,13 +11,12 @@ import {
   RestaurantMatchStatusSchema,
   ReviewConsensusSchema,
 } from "../src/domain/foodseyo-analysis.ts";
+import { createValidationSuite } from "./test-support/validation.mts";
 
-const passedChecks: string[] = [];
-
-const verify = (condition: boolean, label: string) => {
-  if (!condition) throw new Error(`Contract validation failed: ${label}`);
-  passedChecks.push(label);
-};
+const { verify, report } = createValidationSuite(
+  "Foodseyo analysis contract validation",
+  "Contract validation failed",
+);
 
 verify(
   FoodseyoAnalysisSchema.safeParse(demoFoodseyoAnalysis).success,
@@ -152,4 +151,4 @@ verify(
   "payload converts to a strict JSON Schema",
 );
 
-console.log(`Foodseyo analysis contract validation: ${passedChecks.length} checks passed.`);
+report();

@@ -1,11 +1,11 @@
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
+import { createValidationSuite } from "./test-support/validation.mts";
 
-const passedChecks: string[] = [];
-const verify = (condition: boolean, label: string) => {
-  if (!condition) throw new Error(`MVP scope validation failed: ${label}`);
-  passedChecks.push(label);
-};
+const { verify, report } = createValidationSuite(
+  "Foodseyo MVP scope validation",
+  "MVP scope validation failed",
+);
 const read = (path: string) => readFile(path, "utf8");
 
 const [
@@ -30,6 +30,10 @@ const [
   productDocs,
   liveDocs,
   decisionLog,
+  agentsGuide,
+  packageJson,
+  readme,
+  menuDocs,
 ] = await Promise.all([
   read("src/components/home/HomeClient.tsx"),
   read("src/components/menu-scan/MenuScanClient.tsx"),
@@ -52,6 +56,10 @@ const [
   read("docs/product-rules.md"),
   read("docs/live-analysis-results.md"),
   read("docs/decision-log.md"),
+  read("AGENTS.md"),
+  read("package.json"),
+  read("README.md"),
+  read("docs/menu-image-analysis.md"),
 ]);
 
 const activeProductSource = [
@@ -128,5 +136,16 @@ verify(productDocs.includes("Later:** map-app share-to-Foodseyo integration"), "
 verify(productDocs.includes("No share extension or inbound map-app share flow exists today"), "map-app sharing is not claimed as implemented");
 verify(!/passport/i.test(inputDocs + productDocs + liveDocs), "active scope docs contain no Passport claim");
 verify(decisionLog.includes("D-059 — Align the MVP around menu photos and links"), "scope change is appended to the decision log");
+verify(decisionLog.includes("D-060 — Optimize the workflow without changing product behavior"), "R1 decision is appended to the decision log");
+verify(agentsGuide.includes("Never run a real OpenAI request") && agentsGuide.includes("pnpm verify:full"), "AGENTS guide freezes paid-call and full-verify rules");
+verify(agentsGuide.includes("T7 link analysis and map-app sharing have not started"), "AGENTS guide keeps future scope inactive");
+verify(
+  ["verify:quick", "verify:menu", "verify:results", "verify:full"].every((name) =>
+    packageJson.includes(`"${name}"`),
+  ),
+  "package scripts expose all four verification tiers",
+);
+verify(readme.includes("R1 — non-functional codebase and development workflow optimization"), "README roadmap includes R1");
+verify(menuDocs.includes("T5.5 superseded that UI") && menuDocs.includes("one native multi-file picker"), "technical docs distinguish historical Bottom Sheet from current native picker");
 
-console.log(`Foodseyo MVP scope validation: ${passedChecks.length} checks passed.`);
+report();

@@ -12,7 +12,9 @@ import {
   SAFE_MENU_ANALYSIS_ERROR_MESSAGE,
   getSafeMenuAnalysisFailure,
   parseMenuAnalysisResponse,
+  type MenuAnalysisResponseObservation,
 } from "../src/lib/menu-analysis-client.ts";
+import { logMenuAnalysisClientObservation } from "../src/lib/menu-analysis-observability.ts";
 import {
   MENU_ANALYSIS_NAVIGATION_WARNING,
   MENU_ANALYSIS_STORAGE_WARNING,
@@ -37,22 +39,16 @@ import {
 } from "../src/services/menu-analysis/menu-analysis-post-handler.ts";
 import type { MenuImageModelOutput } from "../src/services/menu-analysis/menu-image-model-schema.ts";
 import type { MenuVisionProvider } from "../src/services/menu-analysis/menu-vision-provider.ts";
+import {
+  captureError,
+  createValidationSuite,
+  installNetworkGuard,
+} from "./test-support/validation.mts";
 
-const passedChecks: string[] = [];
-const verify = (condition: boolean, label: string) => {
-  if (!condition) {
-    throw new Error(`Menu response boundary validation failed: ${label}`);
-  }
-  passedChecks.push(label);
-};
-const captureError = async (operation: () => Promise<unknown>) => {
-  try {
-    await operation();
-    return null;
-  } catch (error) {
-    return error;
-  }
-};
+const { verify, report } = createValidationSuite(
+  "Foodseyo menu response boundary validation",
+  "Menu response boundary validation failed",
+);
 
 const correlationId = "123e4567-e89b-12d3-a456-426614174000";
 const response = (body: unknown, status = 200): Response =>
@@ -104,10 +100,25 @@ const createSyntheticAnalysis = (dishCount: number): FoodseyoAnalysis => {
 // Small and large valid HTTP 200 JSON responses.
 const smallAnalysis = createSyntheticAnalysis(1);
 const smallBody = JSON.stringify({ ok: true, analysis: smallAnalysis });
-const parsedSmall = await parseMenuAnalysisResponse(response(smallBody));
+const smallParseObservations: MenuAnalysisResponseObservation[] = [];
+const smallParseTimes = [100, 112];
+const parsedSmall = await parseMenuAnalysisResponse(response(smallBody), {
+  now: () => smallParseTimes.shift() ?? 112,
+  observe: (observation) => smallParseObservations.push(observation),
+});
 verify(parsedSmall.payload.menu?.dishes.length === 1, "small valid 200 JSON parses");
 const smallBytes = new TextEncoder().encode(smallBody).byteLength;
 verify(smallBytes > 0, "small response byte length is measurable");
+const smallParseObservation = smallParseObservations[0];
+verify(smallParseObservations.length === 1, "valid response records one client parse observation");
+verify(smallParseObservation?.failureStageCode === "success", "valid response records the success stage");
+verify(smallParseObservation?.responseByteLength === smallBytes, "client records exact response bytes");
+verify(smallParseObservation?.clientParseValidationMs === 12, "client parse and validation duration is measurable");
+verify(
+  smallParseObservation?.structuralErrorCount === 0 &&
+    smallParseObservation.semanticErrorCount === 0,
+  "valid response records zero structural and semantic errors",
+);
 
 const largeAnalysis = createSyntheticAnalysis(31);
 const largeBody = JSON.stringify({ ok: true, analysis: largeAnalysis });
@@ -140,11 +151,19 @@ for (const [label, body] of [
   verify(safeFailure(error)?.message === MENU_ANALYSIS_RESPONSE_JSON_MESSAGE, `${label} 200 response uses safe JSON copy`);
 }
 
+const invalidSchemaObservations: MenuAnalysisResponseObservation[] = [];
 const invalidSchemaError = await captureError(() =>
-  parseMenuAnalysisResponse(response({ ok: true, analysis: {} })),
+  parseMenuAnalysisResponse(response({ ok: true, analysis: {} }), {
+    observe: (observation) => invalidSchemaObservations.push(observation),
+  }),
 );
 verify(safeFailure(invalidSchemaError)?.errorKind === "response_schema", "invalid API schema is categorized");
 verify(safeFailure(invalidSchemaError)?.message === MENU_ANALYSIS_RESPONSE_SCHEMA_MESSAGE, "invalid API schema uses safe copy");
+verify(
+  invalidSchemaObservations[0]?.failureStageCode === "response_schema" &&
+    invalidSchemaObservations[0].structuralErrorCount > 0,
+  "invalid API schema records only its structural issue count",
+);
 
 const mismatchError = await captureError(() =>
   parseMenuAnalysisResponse(
@@ -178,11 +197,19 @@ verify(safeFailure(emptyError)?.message === MENU_ANALYSIS_EMPTY_MENU_MESSAGE, "e
 const semanticAnalysis = createSyntheticAnalysis(1);
 if (!semanticAnalysis.payload.menu) throw new Error("Synthetic menu is required.");
 semanticAnalysis.payload.menu.dishes[0].categoryId = "missing-category";
+const semanticObservations: MenuAnalysisResponseObservation[] = [];
 const semanticError = await captureError(() =>
-  parseMenuAnalysisResponse(response({ ok: true, analysis: semanticAnalysis })),
+  parseMenuAnalysisResponse(response({ ok: true, analysis: semanticAnalysis }), {
+    observe: (observation) => semanticObservations.push(observation),
+  }),
 );
 verify(safeFailure(semanticError)?.errorKind === "semantic_validation", "semantic validation failure is categorized");
 verify(safeFailure(semanticError)?.message === MENU_ANALYSIS_SEMANTIC_MESSAGE, "semantic validation uses safe copy");
+verify(
+  semanticObservations[0]?.failureStageCode === "semantic_validation" &&
+    semanticObservations[0].semanticErrorCount > 0,
+  "semantic failure records only its semantic issue count",
+);
 
 const networkFailure = safeFailure(new TypeError("private network detail"));
 verify(networkFailure?.errorKind === "network", "network TypeError remains a distinct category");
@@ -272,7 +299,7 @@ const provider: MenuVisionProvider = {
   },
 };
 let observation: MenuAnalysisObservation | null = null;
-const times = [1_000, 1_025];
+const times = [1_000, 1_005, 1_015, 1_020, 1_025];
 const handler = createMenuAnalysisPostHandler({
   createProvider: () => provider,
   createCorrelationId: () => correlationId,
@@ -287,12 +314,9 @@ formData.append(
   new Blob([new Uint8Array([0xff, 0xd8, 0xff, 0xdb, 1])], { type: "image/jpeg" }),
   "synthetic.jpg",
 );
-const originalFetch = globalThis.fetch;
-let networkCalls = 0;
-globalThis.fetch = (() => {
-  networkCalls += 1;
-  throw new Error("Response boundary tests must not call the network.");
-}) as typeof fetch;
+const networkGuard = installNetworkGuard(
+  "Response boundary tests must not call the network.",
+);
 const routeResponse = await handler(
   new Request("http://localhost/api/analyze/menu-images", {
     method: "POST",
@@ -300,13 +324,15 @@ const routeResponse = await handler(
   }),
 );
 const routeText = await routeResponse.text();
-globalThis.fetch = originalFetch;
+networkGuard.restore();
 verify(routeResponse.status === 200, "fake-provider server success returns 200");
 verify(MenuAnalysisApiSuccessSchema.safeParse(JSON.parse(routeText)).success, "server success body remains API-schema valid");
 verify(routeResponse.headers.get(MENU_ANALYSIS_CORRELATION_HEADER) === correlationId, "server success includes correlation header");
 verify(observation !== null, "server records one safe observation");
 verify(observation?.httpStatus === 200 && observation.failureStageCode === "success", "success observation records status and stage");
 verify(observation?.durationMs === 25, "observation records duration only");
+verify(observation?.openAiDurationMs === 10, "observation records the provider request duration");
+verify(observation?.serverValidationDurationMs === 5, "observation records post-provider canonical validation duration");
 verify(observation?.responseByteLength === new TextEncoder().encode(routeText).byteLength, "observation records exact response byte length");
 verify(observation?.structuralErrorCount === 0 && observation.semanticErrorCount === 0, "success observation records zero validation errors");
 verify(
@@ -316,13 +342,50 @@ verify(
       "durationMs",
       "failureStageCode",
       "httpStatus",
+      "openAiDurationMs",
       "responseByteLength",
       "semanticErrorCount",
+      "serverValidationDurationMs",
       "structuralErrorCount",
     ].join("|"),
   "observation contains only approved fields",
 );
 verify(!JSON.stringify(observation).includes("Synthetic dish"), "observation contains no menu content");
+
+const clientLogs: Array<{ label: string; value: unknown }> = [];
+logMenuAnalysisClientObservation(
+  {
+    referenceCode: "123E4567",
+    httpStatus: 200,
+    clientPreprocessMs: 12,
+    requestTotalMs: 250,
+    responseByteLength: smallBytes,
+    clientParseValidationMs: 12,
+    storageMs: 2,
+    failureStageCode: "success",
+    structuralErrorCount: 0,
+    semanticErrorCount: 0,
+  },
+  (label, value) => clientLogs.push({ label, value }),
+);
+verify(clientLogs.length === 1, "client observation emits one safe record");
+verify(
+  Object.keys(clientLogs[0]?.value ?? {}).sort().join("|") ===
+    [
+      "clientParseValidationMs",
+      "clientPreprocessMs",
+      "failureStageCode",
+      "httpStatus",
+      "referenceCode",
+      "requestTotalMs",
+      "responseByteLength",
+      "semanticErrorCount",
+      "storageMs",
+      "structuralErrorCount",
+    ].join("|"),
+  "client observation contains only approved fields",
+);
+verify(!JSON.stringify(clientLogs).includes("Synthetic dish"), "client observation contains no menu content");
 
 const structural = describeMenuAnalysisFailure(
   new AnalysisStructuralValidationError([
@@ -349,7 +412,7 @@ const envelope = describeMenuAnalysisFailure(
   ]),
 );
 verify(envelope.failureStageCode === "envelope_validation" && envelope.structuralErrorCount === 1, "envelope validation records only its count");
-verify(networkCalls === 0, "regression suite makes zero network calls");
+verify(networkGuard.callCount === 0, "regression suite makes zero network calls");
 
 const clientSource = await readFile("src/lib/menu-analysis-client.ts", "utf8");
 const handlerSource = await readFile(
@@ -365,6 +428,4 @@ verify(
 );
 verify(!handlerSource.includes("JSON.stringify(error)"), "server never serializes raw errors into logs");
 
-console.log(
-  `Foodseyo menu response boundary validation: ${passedChecks.length} checks passed (small=${smallBytes}B, 31-dish=${largeBytes}B).`,
-);
+report(` (small=${smallBytes}B, 31-dish=${largeBytes}B)`);

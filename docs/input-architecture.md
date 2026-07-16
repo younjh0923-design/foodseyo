@@ -1,6 +1,6 @@
 # Foodseyo MVP Input Architecture
 
-**Status:** T5.5 scope alignment
+**Status:** R1 internal optimization; T5.5 product scope unchanged
 
 **Date:** 2026-07-16
 
@@ -49,6 +49,7 @@ Validated analysis is stored under `foodseyo.currentAnalysis` in `sessionStorage
 - T5–T5.4.1 — menu-image vertical slice complete
 - T5.5 — MVP scope alignment cleanup
 - T6 — cancelled from the MVP
+- R1 — internal codebase and development workflow optimization
 - T7 — restaurant/menu link analysis, next product feature
 - T8 — restaurant identification, reconsider after T7
 - Later — map-app share-to-Foodseyo integration

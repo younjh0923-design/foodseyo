@@ -22,12 +22,15 @@ import {
   serializeCurrentAnalysis,
   tryWriteCurrentAnalysis,
 } from "../src/lib/storage.ts";
+import {
+  createValidationSuite,
+  installNetworkGuard,
+} from "./test-support/validation.mts";
 
-const passedChecks: string[] = [];
-const verify = (condition: boolean, label: string) => {
-  if (!condition) throw new Error(`Live analysis result validation failed: ${label}`);
-  passedChecks.push(label);
-};
+const { verify, report } = createValidationSuite(
+  "Foodseyo live analysis result validation",
+  "Live analysis result validation failed",
+);
 const cloneAnalysis = () => structuredClone(demoFoodseyoAnalysis) as FoodseyoAnalysis;
 const summary = createMenuAnalysisSuccessSummary(demoFoodseyoAnalysis);
 const requesting = (attemptId = 1): MenuAnalysisUiState => ({
@@ -266,15 +269,12 @@ verify(recoverySource.includes("No menu results yet") && recoverySource.includes
 verify(recoverySource.includes("Dish not found") && recoverySource.includes("This dish is not available in the current menu analysis."), "invalid dish uses exact recovery copy");
 verify(recoverySource.includes("Loading menu results…"), "hydration-safe loading copy exists");
 
-const originalFetch = globalThis.fetch;
-let networkCalls = 0;
-globalThis.fetch = (() => {
-  networkCalls += 1;
-  throw new Error("Live result validation must not call the network.");
-}) as typeof fetch;
+const networkGuard = installNetworkGuard(
+  "Live result validation must not call the network.",
+);
 createLiveAnalysisOverview(demoFoodseyoAnalysis);
 createLiveDishDetail(demoFoodseyoAnalysis, firstDish.id);
-globalThis.fetch = originalFetch;
-verify(networkCalls === 0, "live result validation makes zero network calls");
+networkGuard.restore();
+verify(networkGuard.callCount === 0, "live result validation makes zero network calls");
 
-console.log(`Foodseyo live analysis result validation: ${passedChecks.length} checks passed.`);
+report();

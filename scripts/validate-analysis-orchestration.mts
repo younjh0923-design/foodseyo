@@ -23,13 +23,12 @@ import {
   type SemanticRuleCode,
   type TransientImageInput,
 } from "../src/services/analysis/index.ts";
+import { createValidationSuite } from "./test-support/validation.mts";
 
-const passedChecks: string[] = [];
-
-const verify = (condition: boolean, label: string) => {
-  if (!condition) throw new Error(`Orchestration validation failed: ${label}`);
-  passedChecks.push(label);
-};
+const { verify, report } = createValidationSuite(
+  "Foodseyo analysis orchestration validation",
+  "Orchestration validation failed",
+);
 
 const clonePayload = (): FoodseyoAnalysisPayload =>
   FoodseyoAnalysisPayloadSchema.parse(structuredClone(demoFoodseyoAnalysis.payload));
@@ -705,4 +704,4 @@ verify(
   "orchestration preserves the complete canonical demo fixture",
 );
 
-console.log(`Foodseyo analysis orchestration validation: ${passedChecks.length} checks passed.`);
+report();

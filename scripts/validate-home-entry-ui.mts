@@ -12,12 +12,15 @@ import {
   prepareMenuScanAppend,
   stagePendingImageIntake,
 } from "../src/lib/image-intake.ts";
+import {
+  createValidationSuite,
+  installNetworkGuard,
+} from "./test-support/validation.mts";
 
-const passedChecks: string[] = [];
-const verify = (condition: boolean, label: string) => {
-  if (!condition) throw new Error(`Home entry validation failed: ${label}`);
-  passedChecks.push(label);
-};
+const { verify, report } = createValidationSuite(
+  "Foodseyo Home entry validation",
+  "Home entry validation failed",
+);
 
 const homeSource = await readFile("src/components/home/HomeClient.tsx", "utf8");
 const providerSource = await readFile(
@@ -53,12 +56,9 @@ verify(
 verify(!/passport/i.test(JSON.stringify(HOME_ENTRY_COPY)), "Home copy contains no Passport");
 
 // Honest, local-only link behavior.
-const originalFetch = globalThis.fetch;
-let networkCalls = 0;
-globalThis.fetch = (() => {
-  networkCalls += 1;
-  throw new Error("Home entry validation must not call the network.");
-}) as typeof fetch;
+const networkGuard = installNetworkGuard(
+  "Home entry validation must not call the network.",
+);
 verify(checkRestaurantLink("   ").kind === "empty", "empty link produces no result");
 verify(
   checkRestaurantLink("not a URL").message === INVALID_RESTAURANT_LINK_MESSAGE,
@@ -206,7 +206,7 @@ verify(
   "transient-image privacy copy remains",
 );
 
-globalThis.fetch = originalFetch;
-verify(networkCalls === 0, "Home entry validation makes zero network calls");
+networkGuard.restore();
+verify(networkGuard.callCount === 0, "Home entry validation makes zero network calls");
 
-console.log(`Foodseyo Home entry validation: ${passedChecks.length} checks passed.`);
+report();

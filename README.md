@@ -34,20 +34,23 @@ pnpm dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
-Quality checks:
+Development checks:
 
 ```bash
-pnpm lint
-pnpm typecheck
-pnpm test
-pnpm build
+pnpm verify:quick    # lint, typecheck, and fast contract/scope regressions
+pnpm verify:menu     # intake, preprocessing, API boundary, completion, storage
+pnpm verify:results  # Overview, Dish Detail, session loading, result navigation
+pnpm verify:full     # final lint, typecheck, all tests, build, and security checks
 ```
+
+`pnpm test` remains the complete network-free regression suite for compatibility. It never runs the opt-in paid smoke command.
 
 ## MVP roadmap
 
 - T5–T5.4.1 — menu-image vertical slice complete
 - T5.5 — MVP scope alignment cleanup
 - T6 — cancelled from the MVP
+- R1 — non-functional codebase and development workflow optimization
 - T7 — restaurant/menu link analysis, next product feature
 - T8 — restaurant identification, to be reconsidered after T7
 - Later — map-app share-to-Foodseyo integration

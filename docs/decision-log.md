@@ -359,6 +359,7 @@ This log records accepted product and architecture decisions frozen in T2. Chang
 - **Decision:** The MVP Home shows one restaurant/menu link field, Food Passport, and one unified image-input action. Nearby search, recent analysis, fixed demo cards, and separate camera/gallery/screenshot cards are not shown on Home.
 - **Reason:** The first screen should minimize decision load and prioritize the two ways users already have restaurant context: a public link or an image. Food Passport remains visible as personalization rather than as an analysis input.
 - **Impact:** The Home layout becomes brand, one question, one explanation, one link field, and two action cards. Nearby and history remain deferred without deleting their architecture.
+- **Historical note:** The Food Passport and two-card details in this decision were superseded by D-059.
 - **Status:** Accepted
 - **Date:** 2026-07-15
 
@@ -367,6 +368,7 @@ This log records accepted product and architecture decisions frozen in T2. Chang
 - **Decision:** The Scan or upload action opens one Bottom Sheet where the user chooses Take a photo or Choose from photos. The file picker opens directly from the Home user gesture, and selected Files are handed to Menu Scan through transient in-memory state.
 - **Reason:** Mobile browsers may block a file picker that is automatically opened after Route navigation because the original user activation has been lost.
 - **Impact:** Home owns the initial hidden file inputs. Menu Scan consumes staged files once, creates and cleans its own preview object URLs, and remains usable when opened directly.
+- **Historical note:** The custom Bottom Sheet and split camera/gallery inputs were superseded by D-059's single native picker.
 - **Status:** Accepted
 - **Date:** 2026-07-15
 
@@ -455,6 +457,7 @@ This log records accepted product and architecture decisions frozen in T2. Chang
 - **Decision:** Live result views display only source-grounded canonical menu information and conservative Food Passport comparisons.
 - **Reason:** The current analysis does not contain verified sales, review, pricing, cross-contact, or restaurant-preparation data suitable for those claims.
 - **Impact:** The Live UI does not claim best sellers, ratings, prices, popularity, or allergy safety.
+- **Historical note:** The Food Passport comparison portion was removed by D-059; the evidence and safety constraints remain active.
 - **Status:** Accepted
 - **Date:** 2026-07-15
 
@@ -471,5 +474,13 @@ This log records accepted product and architecture decisions frozen in T2. Chang
 - **Decision:** The active MVP entry surfaces are `menu_images` and the `restaurant_link` field. Menu photos use one native multi-file picker with no `capture` hint. The former Food Passport UI, provider, storage, and comparison logic are removed. T6 is cancelled; T7 link analysis is next; T8 identification is reconsidered after T7; map-app share-to-Foodseyo remains Later.
 - **Reason:** The team narrowed the MVP to the evidence flows needed for the competition experience and removed profile setup and unsupported image-intake promises that increased decision load without strengthening the live menu vertical slice.
 - **Impact:** Home has one full-width menu-photo CTA below the link field. Live results retain menu-derived ingredients and cautious allergy/dietary information but perform no stored-user comparison. Schema-v1 `restaurant_photo`, `restaurant_screen`, and `user_provided_screen` values remain parseable only for backward compatibility; they have no active UI, route, provider override, or successful live analyzer.
+- **Status:** Accepted
+- **Date:** 2026-07-16
+
+## D-060 — Optimize the workflow without changing product behavior
+
+- **Decision:** R1 introduces repository-level agent guidance, targeted and full verification commands, small shared validation helpers, one repository security check, and privacy-safe latency timing at existing analysis boundaries. The T5.5 user experience, analysis behavior, API contract, canonical schema, model, provider, prompt, and image policy remain unchanged.
+- **Reason:** Repeated development work needs a faster feedback loop and a single durable rule source without weakening the complete network-free regression suite or exposing sensitive menu data.
+- **Impact:** `verify:quick`, `verify:menu`, and `verify:results` support focused iteration; `verify:full` remains the pre-commit authority. Schema-v1 legacy input values remain deprecated compatibility types and inaccessible from active product flows. T7 remains the next product feature and is not implemented by R1.
 - **Status:** Accepted
 - **Date:** 2026-07-16

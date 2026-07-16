@@ -30,7 +30,7 @@ T5 does not add restaurant web research, public reviews, menu-freshness verifica
 
 No raw image, data URL, base64 payload, browser `File`, API key, exact location, or original filename is copied into the canonical result.
 
-T5.2 adds a second entry into the same capture session. Home's **Scan or upload** Bottom Sheet opens its camera or gallery picker directly from the user gesture, validates selected Files with the existing client rules, and stages them in an app-level in-memory provider. Menu Scan consumes the set once, clears it, and then owns preview object URL creation and cleanup. Direct Menu Scan entry remains supported. The handoff has no persistence, Base64 conversion, URL query, canonical File field, Blob service, or demo fallback.
+Historically, T5.2 used a custom **Scan or upload** Bottom Sheet with separate camera and gallery branches. T5.5 superseded that UI: Home now activates one native multi-file picker directly from the user gesture and stages validated Files in the same app-level in-memory provider. Menu Scan consumes the set once, clears it, and then owns preview object URL creation and cleanup. Direct Menu Scan entry remains supported. The handoff has no persistence, Base64 conversion, URL query, canonical File field, Blob service, or demo fallback.
 
 ## Client preprocessing and payload budget
 
@@ -163,6 +163,10 @@ Completion safeguards are documented in [menu-analysis-completion-ui.md](./menu-
 `pnpm test` covers persistence confirmation, automatic navigation, failure fallbacks, all session read states, Overview mapping, encoded Dish navigation, Dish Detail, menu-derived ingredient/caution rendering, scoped cleanup, response boundaries, and MVP-scope guards. The suite prints the actual assertion count at runtime and makes zero network calls. It does not run a paid OpenAI smoke.
 
 After the first T5.4 Production iPhone retest, response-boundary regression coverage was added without changing the model, provider, prompt, token limit, timeout, or one-request policy. HTTP 200 is no longer treated as one generic client outcome: body read, JSON parsing, API schema, HTTP/body consistency, failed status, empty menu, and semantic validation have separate safe categories. Server responses carry a random correlation header and log only status/timing/byte-length/stage/count metadata. Synthetic 1-dish and 31-dish canonical bodies are parsed network-free; the runtime suite reports their actual byte lengths.
+
+R1 adds timing to the existing privacy-safe observation boundary without changing the request or response contract. The client can record preprocessing, request-plus-body handling, response parsing/validation, storage, HTTP status, response bytes, a short reference, safe stage code, and issue counts. The server records total duration, the injected OpenAI-provider call boundary, post-provider canonical adaptation/validation, response bytes, status, correlation ID, safe stage, and issue counts. Navigation completion is not timed because a same-page timer cannot reliably measure the browser transition. These observations never include images, Base64, filenames, restaurant or dish names, menu text, raw provider output, full canonical results, API keys, or environment values.
+
+R1 also separates validation entry points: `pnpm verify:quick` for fast development feedback, `pnpm verify:menu` for the menu vertical slice, `pnpm verify:results` for canonical result rendering, and `pnpm verify:full` for the final complete check. `pnpm test` remains the all-network-free-suite compatibility command.
 
 ## Optional live smoke test
 

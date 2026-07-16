@@ -1,6 +1,6 @@
 # Foodseyo Product Rules
 
-**Status:** Normative MVP definition through T5.5
+**Status:** Normative MVP definition through R1 (no product behavior change from T5.5)
 
 **Date:** 2026-07-16
 
@@ -101,6 +101,7 @@ The `FoodseyoAnalysis` schema version remains `1.0.0`. Legacy `restaurant_photo`
 - **T5–T5.4.1:** menu-image vertical slice complete.
 - **T5.5:** MVP Scope Alignment Cleanup.
 - **T6:** cancelled from the MVP.
+- **R1:** internal codebase and development workflow optimization; no product behavior change.
 - **T7:** restaurant/menu link analysis, next product feature.
 - **T8:** restaurant identification, reconsider after T7.
 - **Later:** map-app share-to-Foodseyo integration.

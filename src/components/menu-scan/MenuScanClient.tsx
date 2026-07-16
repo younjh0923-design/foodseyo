@@ -12,7 +12,13 @@ import { MobileShell } from "@/components/layout/MobileShell";
 import {
   getSafeMenuAnalysisFailure,
   parseMenuAnalysisResponse,
+  type MenuAnalysisResponseObservation,
 } from "@/lib/menu-analysis-client";
+import {
+  logMenuAnalysisClientObservation,
+  roundedDuration,
+  type MenuAnalysisClientStage,
+} from "@/lib/menu-analysis-observability";
 import { preprocessMenuImages } from "@/lib/menu-image-preprocessing";
 import { prepareMenuScanAppend } from "@/lib/image-intake";
 import {
@@ -162,9 +168,36 @@ export function MenuScanClient() {
     let timedOut = false;
     let navigationStarted = false;
     let cancelWatchdog = () => {};
+    let clientPreprocessMs: number | null = null;
+    let requestStartedAt: number | null = null;
+    let requestTotalMs: number | null = null;
+    let responseObservation: MenuAnalysisResponseObservation | null = null;
+    let storageStartedAt: number | null = null;
+    let storageMs: number | null = null;
+    const logAttempt = (failureStageCode: MenuAnalysisClientStage) => {
+      logMenuAnalysisClientObservation({
+        referenceCode: responseObservation?.referenceCode ?? null,
+        httpStatus: responseObservation?.httpStatus ?? null,
+        clientPreprocessMs,
+        requestTotalMs,
+        responseByteLength: responseObservation?.responseByteLength ?? null,
+        clientParseValidationMs:
+          responseObservation?.clientParseValidationMs ?? null,
+        storageMs,
+        failureStageCode,
+        structuralErrorCount:
+          responseObservation?.structuralErrorCount ?? 0,
+        semanticErrorCount: responseObservation?.semanticErrorCount ?? 0,
+      });
+    };
 
     try {
+      const preprocessStartedAt = performance.now();
       const preparedImages = await preprocessMenuImages(selectedFiles);
+      clientPreprocessMs = roundedDuration(
+        preprocessStartedAt,
+        performance.now(),
+      );
       if (controller.signal.aborted) {
         if (attemptGateRef.current.isCurrent(attemptId)) {
           dispatchAnalysisUi({ type: "ABORTED", attemptId });
@@ -194,17 +227,26 @@ export function MenuScanClient() {
         });
       });
       watchdogCancelRef.current = cancelWatchdog;
+      requestStartedAt = performance.now();
       const response = await fetch("/api/analyze/menu-images", {
         method: "POST",
         body: formData,
         signal: controller.signal,
       });
-      const analysis = await parseMenuAnalysisResponse(response);
+      const analysis = await parseMenuAnalysisResponse(response, {
+        observe: (observation) => {
+          responseObservation = observation;
+        },
+      });
+      requestTotalMs = roundedDuration(requestStartedAt, performance.now());
       if (!attemptGateRef.current.isCurrent(attemptId)) return;
 
       const summary = createMenuAnalysisSuccessSummary(analysis);
+      storageStartedAt = performance.now();
       const storedForNextScreen = tryWriteCurrentAnalysis(analysis);
+      storageMs = roundedDuration(storageStartedAt, performance.now());
       if (!storedForNextScreen) {
+        logAttempt("storage");
         dispatchAnalysisUi({
           type: "STORAGE_FAILED",
           attemptId,
@@ -213,6 +255,7 @@ export function MenuScanClient() {
         return;
       }
 
+      logAttempt("success");
       dispatchAnalysisUi({ type: "PERSISTED", attemptId, summary });
       navigationStarted = true;
       let hardNavigationAttempted = false;
@@ -247,14 +290,22 @@ export function MenuScanClient() {
         tryHardNavigationOnce();
       }
     } catch (error) {
+      if (requestStartedAt !== null && requestTotalMs === null) {
+        requestTotalMs = roundedDuration(requestStartedAt, performance.now());
+      }
+      if (storageStartedAt !== null && storageMs === null) {
+        storageMs = roundedDuration(storageStartedAt, performance.now());
+      }
       if (!attemptGateRef.current.isCurrent(attemptId)) return;
       const failure = getSafeMenuAnalysisFailure(error, {
         signalAborted: controller.signal.aborted,
         timedOut,
       });
       if (failure) {
+        logAttempt(failure.errorKind);
         dispatchAnalysisUi({ type: "FAILED", attemptId, ...failure });
       } else {
+        logAttempt("aborted");
         dispatchAnalysisUi({ type: "ABORTED", attemptId });
       }
     } finally {

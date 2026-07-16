@@ -38,6 +38,30 @@ export interface MenuAnalysisResponseLike {
   text(): Promise<string>;
 }
 
+export interface MenuAnalysisResponseObservation {
+  readonly referenceCode: string | null;
+  readonly httpStatus: number | null;
+  readonly responseByteLength: number | null;
+  readonly clientParseValidationMs: number | null;
+  readonly failureStageCode:
+    | "success"
+    | "api"
+    | "response_body"
+    | "response_json"
+    | "response_schema"
+    | "response_mismatch"
+    | "failed_analysis"
+    | "empty_menu"
+    | "semantic_validation";
+  readonly structuralErrorCount: number;
+  readonly semanticErrorCount: number;
+}
+
+export interface ParseMenuAnalysisResponseOptions {
+  readonly now?: () => number;
+  readonly observe?: (observation: MenuAnalysisResponseObservation) => void;
+}
+
 export class SafeMenuAnalysisClientError extends Error {
   readonly kind: Exclude<
     MenuAnalysisUiErrorKind,
@@ -71,25 +95,57 @@ const toReferenceCode = (value: string | null): string | null => {
 
 export async function parseMenuAnalysisResponse(
   response: MenuAnalysisResponseLike,
+  options: ParseMenuAnalysisResponseOptions = {},
 ): Promise<FoodseyoAnalysis> {
+  const now = options.now ?? (() => performance.now());
   const referenceCode = toReferenceCode(
     response.headers?.get(MENU_ANALYSIS_CORRELATION_HEADER) ?? null,
   );
+  const httpStatus = response.status ?? null;
+  let responseByteLength: number | null = null;
+  let parseStartedAt: number | null = null;
+  const observe = (
+    failureStageCode: MenuAnalysisResponseObservation["failureStageCode"],
+    structuralErrorCount = 0,
+    semanticErrorCount = 0,
+  ): void => {
+    if (!options.observe) return;
+    try {
+      options.observe({
+        referenceCode,
+        httpStatus,
+        responseByteLength,
+        clientParseValidationMs:
+          parseStartedAt === null
+            ? null
+            : Math.max(0, Math.round(now() - parseStartedAt)),
+        failureStageCode,
+        structuralErrorCount,
+        semanticErrorCount,
+      });
+    } catch {
+      // Observability must never change response handling.
+    }
+  };
   let responseText: string;
   try {
     responseText = await response.text();
   } catch {
+    observe("response_body");
     throw new SafeMenuAnalysisClientError(
       MENU_ANALYSIS_RESPONSE_BODY_MESSAGE,
       "response_body",
       referenceCode,
     );
   }
+  responseByteLength = new TextEncoder().encode(responseText).byteLength;
+  parseStartedAt = now();
 
   let responseBody: unknown;
   try {
     responseBody = JSON.parse(responseText);
   } catch {
+    observe("response_json");
     throw new SafeMenuAnalysisClientError(
       MENU_ANALYSIS_RESPONSE_JSON_MESSAGE,
       "response_json",
@@ -99,6 +155,7 @@ export async function parseMenuAnalysisResponse(
 
   const parsed = MenuAnalysisApiResponseSchema.safeParse(responseBody);
   if (!parsed.success) {
+    observe("response_schema", parsed.error.issues.length);
     throw new SafeMenuAnalysisClientError(
       MENU_ANALYSIS_RESPONSE_SCHEMA_MESSAGE,
       "response_schema",
@@ -106,6 +163,7 @@ export async function parseMenuAnalysisResponse(
     );
   }
   if (response.ok !== parsed.data.ok) {
+    observe("response_mismatch");
     throw new SafeMenuAnalysisClientError(
       MENU_ANALYSIS_RESPONSE_MISMATCH_MESSAGE,
       "response_mismatch",
@@ -113,6 +171,7 @@ export async function parseMenuAnalysisResponse(
     );
   }
   if (!parsed.data.ok) {
+    observe("api");
     throw new SafeMenuAnalysisClientError(
       parsed.data.error.message,
       "api",
@@ -120,6 +179,7 @@ export async function parseMenuAnalysisResponse(
     );
   }
   if (parsed.data.analysis.status === "failed") {
+    observe("failed_analysis");
     throw new SafeMenuAnalysisClientError(
       MENU_ANALYSIS_FAILED_STATUS_MESSAGE,
       "failed_analysis",
@@ -127,19 +187,25 @@ export async function parseMenuAnalysisResponse(
     );
   }
   if (!parsed.data.analysis.payload.menu?.dishes.length) {
+    observe("empty_menu");
     throw new SafeMenuAnalysisClientError(
       MENU_ANALYSIS_EMPTY_MENU_MESSAGE,
       "empty_menu",
       referenceCode,
     );
   }
-  if (validateAnalysisSemantics(parsed.data.analysis.payload).errors.length > 0) {
+  const semanticErrors = validateAnalysisSemantics(
+    parsed.data.analysis.payload,
+  ).errors;
+  if (semanticErrors.length > 0) {
+    observe("semantic_validation", 0, semanticErrors.length);
     throw new SafeMenuAnalysisClientError(
       MENU_ANALYSIS_SEMANTIC_MESSAGE,
       "semantic_validation",
       referenceCode,
     );
   }
+  observe("success");
   return parsed.data.analysis;
 }
 
@@ -180,14 +246,4 @@ export function getSafeMenuAnalysisFailure(
     errorKind: error instanceof TypeError ? "network" : "response_body",
     referenceCode: null,
   };
-}
-
-export function getSafeMenuAnalysisErrorMessage(
-  error: unknown,
-  signalAborted: boolean,
-): string | null {
-  return getSafeMenuAnalysisFailure(error, {
-    signalAborted,
-    timedOut: false,
-  })?.message ?? null;
 }
