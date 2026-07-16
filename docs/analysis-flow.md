@@ -63,6 +63,8 @@ Restaurant identity resolution uses available signals and follows the identity s
 
 Never display numeric match probability. Location alone cannot produce `confirmed`.
 
+Canonical `1.1.1` also separates status from provenance and identity scope. A user-entered name without matching source evidence is `likely/user_declared/restaurant`; a source-stated name is `confirmed/source_stated/restaurant`; compatible user and source names are `confirmed/source_and_user`; a mismatch stays `unconfirmed/source_and_user/unknown` with neither identity selected. Branch scope requires preserved branch-specific evidence such as a source-stated address or phone, not a restaurant name or location hint alone.
+
 ## Stage 4 — Research missing or useful information
 
 OpenAI Responses API web search is the default research provider. Research may add:
@@ -146,7 +148,7 @@ Normal success requires storage readback validation and does not show a completi
 
 `/analysis` and `/analysis/dishes/[dishId]` read the validated canonical result after hydration and make zero result-page network calls. Refresh works in the same tab. Missing, invalid, unsupported, failed, zero-dish, or unavailable session data uses a safe recovery state and never Demo fallback. Dish navigation uses canonical IDs; category and dish order are preserved. Menu-derived ingredients, dietary clues, uncertainty, and allergy cautions remain visible without comparison to stored user settings.
 
-C1 is a consistency checkpoint before C2 and T7. C1.2 now computes ordered-image source identity before the existing provider call, then normalizes and validates the provider consistency object, renders deterministic wording, and creates canonical `1.1.0` identity metadata before the shared analysis boundary. It does not add another provider call, cache, database, or link analyzer.
+C1 is a consistency checkpoint before C2 and T7. C1.2 computes ordered-image source identity before the existing provider call, then normalizes and validates the provider consistency object and renders deterministic wording. C1.2.1 creates canonical `1.1.1` with explicit restaurant provenance and scope before the shared analysis boundary. It does not add another provider call, cache, database, or link analyzer.
 
 A synchronous attempt gate still blocks duplicate submissions, monotonic attempt IDs ignore late responses, and a 105-second client watchdog ends an unresolved browser request after the existing 80-second provider and 90-second Route limits. T5.3 feedback scrolling remains for abnormal completion and errors. Full details are in [menu-analysis-completion-ui.md](./menu-analysis-completion-ui.md) and [live-analysis-results.md](./live-analysis-results.md).
 

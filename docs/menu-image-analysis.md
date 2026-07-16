@@ -1,6 +1,6 @@
 # Foodseyo Menu Image Analysis
 
-**Status:** C1.2 consistency integrated into the existing T5 live vertical slice
+**Status:** C1.2.1 restaurant-resolution semantics on the existing C1.2 live slice
 
 **Date:** 2026-07-15
 
@@ -127,13 +127,16 @@ The deterministic adapter creates one `uploaded_menu` evidence record per submit
 
 Restaurant resolution follows these rules:
 
-- an explicit user name → `confirmed` / `explicit_input`;
-- a visible name plus address, phone, or website → `confirmed` / `direct_evidence`;
-- visible name only → `likely`;
-- no identity signal → `unconfirmed`;
-- location is not used and cannot confirm identity.
+- a user name without source corroboration → `likely` / `user_declared` / restaurant scope;
+- a name or logo stated by the menu source → `confirmed` / `source_stated` / restaurant scope;
+- compatible user and source names → `confirmed` / `source_and_user`;
+- conflicting user and source names → `unconfirmed` / `source_and_user` / unknown scope with `restaurant_name_mismatch`;
+- location evidence without a name → unresolved `location_only` / unknown scope;
+- no identity evidence → `unconfirmed` / `none` / unknown scope.
 
-An explicit restaurant name is user evidence and remains authoritative without requiring source IDs. By default, it does not borrow an image-derived address, phone, website, or identity source ID. Image identity and contact details are merged only when the visible name or logo is exactly equal after Unicode normalization, trim, lowercase conversion, punctuation removal, and whitespace collapse. There is no fuzzy, AI-assisted, or substring match. On a conflict, Foodseyo keeps the user-entered name, leaves contact and identity source IDs empty, and records the limitation.
+User input and source-extracted signals remain separate through the adapter. Compatibility uses Unicode normalization, trim, lowercase conversion, punctuation removal, and whitespace collapse; there is no fuzzy, AI-assisted, or substring match. Conflict keeps two separate candidates, selects neither, exposes no combined display name, and creates no restaurant entity. Source-stated address or phone evidence may establish branch scope; a restaurant name, generic website, or location hint alone cannot. The provider schema and one-call provider boundary are unchanged.
+
+New live results use canonical `1.1.1`. Strict `1.0.0` and `1.1.0` session results remain readable; missing provenance fields receive only the conservative reader fallback `none` / `unknown` and are never upgraded to confirmed branch identity.
 
 Visible numeric prices remain direct observations. Unknown currency remains `null`, unknown price remains `null`, full option prices remain `priceOptions`, and add-ons remain `options`. Zero is never used as an unknown fallback.
 

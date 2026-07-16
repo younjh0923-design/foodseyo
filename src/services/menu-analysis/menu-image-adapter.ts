@@ -71,6 +71,11 @@ const normalizeRestaurantName = (value: string): string =>
     .replace(/\s+/g, " ")
     .trim();
 
+const sanitizeRestaurantDisplayName = (value: string | null | undefined): string | null => {
+  const sanitized = value?.normalize("NFKC").trim().replace(/\s+/gu, " ");
+  return sanitized || null;
+};
+
 const toEvidenceId = (index: number): string => `uploaded-menu-image-${index + 1}`;
 
 const validateSourceImageIndex = (index: number, imageCount: number): void => {
@@ -377,83 +382,142 @@ const resolveRestaurant = (
   userEnteredRestaurantName: string | null,
 ): { resolution: RestaurantResolution; restaurant: Restaurant | null } => {
   const allocateId = createIdAllocator();
-  const userName = userEnteredRestaurantName?.trim() || null;
+  const userName = sanitizeRestaurantDisplayName(userEnteredRestaurantName);
   const nameSignal = output.restaurantSignals.find(
     (signal) => signal.kind === "name" || signal.kind === "logo_text",
   );
   const addressSignal = output.restaurantSignals.find((signal) => signal.kind === "address");
   const phoneSignal = output.restaurantSignals.find((signal) => signal.kind === "phone");
   const websiteSignal = output.restaurantSignals.find((signal) => signal.kind === "website");
-  const visibleName = nameSignal?.value ?? null;
-  const restaurantName = userName ?? visibleName;
+  const sourceName = sanitizeRestaurantDisplayName(nameSignal?.value);
+  const sourceIdentitySignals = [nameSignal, addressSignal, phoneSignal, websiteSignal].filter(
+    (signal): signal is NonNullable<typeof signal> => signal !== undefined,
+  );
+  const sourceIds = evidenceIdsForIndexes(
+    sourceIdentitySignals.map((signal) => signal.sourceImageIndex),
+    imageCount,
+  );
+  const locationSourceIds = addressSignal
+    ? evidenceIdsForIndexes([addressSignal.sourceImageIndex], imageCount)
+    : [];
+  const sourceScope = addressSignal || phoneSignal ? "branch" : "restaurant";
 
-  if (!restaurantName) {
+  if (!userName && !sourceName) {
+    const hasLocationEvidence = locationSourceIds.length > 0;
     return {
       resolution: {
         status: "unconfirmed",
+        basis: hasLocationEvidence ? "location_only" : "none",
+        scope: "unknown",
         candidates: [],
         selectedCandidateId: null,
         confirmedBy: null,
-        sourceIds: [],
-        limitations: ["No reliable restaurant identity was visible in the uploaded menu."],
+        sourceIds: locationSourceIds,
+        limitations: [
+          hasLocationEvidence
+            ? "Location evidence alone does not identify or confirm a restaurant branch."
+            : "No reliable restaurant identity was visible in the uploaded menu.",
+        ],
       },
       restaurant: null,
     };
   }
 
   const normalizedUserName = userName ? normalizeRestaurantName(userName) : "";
-  const normalizedVisibleName = visibleName ? normalizeRestaurantName(visibleName) : "";
-  const explicitNameMatchesVisibleName = Boolean(
+  const normalizedSourceName = sourceName ? normalizeRestaurantName(sourceName) : "";
+  const namesAreCompatible = Boolean(
     normalizedUserName &&
-      normalizedVisibleName &&
-      normalizedUserName === normalizedVisibleName,
+      normalizedSourceName &&
+      normalizedUserName === normalizedSourceName,
   );
-  const matchedIdentitySignals = explicitNameMatchesVisibleName
-    ? [nameSignal, addressSignal, phoneSignal, websiteSignal].filter(
-        (signal): signal is NonNullable<typeof signal> => signal !== undefined,
-      )
-    : [];
-  const directSignalIndexes = output.restaurantSignals.map(
-    (signal) => signal.sourceImageIndex,
-  );
-  const sourceIds = userName
-    ? evidenceIdsForIndexes(
-        matchedIdentitySignals.map((signal) => signal.sourceImageIndex),
-        imageCount,
-      )
-    : evidenceIdsForIndexes(directSignalIndexes, imageCount);
-  const canMergeImageIdentity = !userName || explicitNameMatchesVisibleName;
+
+  if (userName && sourceName && !namesAreCompatible) {
+    const userCandidateId = allocateId("restaurant", userName, 1);
+    const sourceCandidateId = allocateId("restaurant", sourceName, 2);
+    return {
+      resolution: {
+        status: "unconfirmed",
+        basis: "source_and_user",
+        scope: "unknown",
+        conflictCode: "restaurant_name_mismatch",
+        candidates: [
+          {
+            id: userCandidateId,
+            name: userName,
+            address: null,
+            website: null,
+            cuisineLabels: [],
+            matchReasons: ["Restaurant name entered by the user"],
+            sourceIds: [],
+            selectedByUser: false,
+          },
+          {
+            id: sourceCandidateId,
+            name: sourceName,
+            address: addressSignal?.value ?? null,
+            website: safeUrl(websiteSignal?.value),
+            cuisineLabels: [],
+            matchReasons: ["Different restaurant name or logo text visible in the uploaded menu"],
+            sourceIds,
+            selectedByUser: false,
+          },
+        ],
+        selectedCandidateId: null,
+        confirmedBy: null,
+        sourceIds,
+        limitations: [
+          "The entered restaurant name conflicts with the restaurant name visible in the uploaded menu.",
+          "Foodseyo did not select or combine either identity.",
+        ],
+      },
+      restaurant: null,
+    };
+  }
+
+  const restaurantName = userName ?? sourceName;
+  if (!restaurantName) {
+    throw new MenuAnalysisError(
+      "CANONICAL_ADAPTER_FAILED",
+      "Restaurant identity could not be resolved safely.",
+    );
+  }
+  const corroborated = Boolean(userName && sourceName && namesAreCompatible);
+  const sourceStated = Boolean(sourceName);
+  const canMergeSourceIdentity = sourceStated && (!userName || corroborated);
+  const candidateSourceIds = canMergeSourceIdentity ? sourceIds : [];
   const candidateId = allocateId("restaurant", restaurantName, 1);
   const candidate = {
     id: candidateId,
     name: restaurantName,
-    address: canMergeImageIdentity ? (addressSignal?.value ?? null) : null,
-    website: canMergeImageIdentity ? safeUrl(websiteSignal?.value) : null,
+    address: canMergeSourceIdentity ? (addressSignal?.value ?? null) : null,
+    website: canMergeSourceIdentity ? safeUrl(websiteSignal?.value) : null,
     cuisineLabels: [],
-    matchReasons: userName
+    matchReasons: corroborated
       ? [
           "Restaurant name entered by the user",
-          ...(explicitNameMatchesVisibleName
-            ? ["Visible restaurant name conservatively matches the entered name"]
-            : []),
+          "Restaurant name or logo text visible in the uploaded menu",
         ]
-      : ["Restaurant name or logo text visible in the uploaded menu"],
-    sourceIds,
+      : sourceStated
+        ? ["Restaurant name or logo text visible in the uploaded menu"]
+        : ["Restaurant name entered by the user"],
+    sourceIds: candidateSourceIds,
     selectedByUser: false,
   };
-  const directIdentityConfirmed =
-    !userName && Boolean(nameSignal && (addressSignal || phoneSignal || websiteSignal));
-  const confirmed = Boolean(userName) || directIdentityConfirmed;
 
-  if (!confirmed) {
+  if (!sourceStated) {
     return {
       resolution: {
         status: "likely",
+        basis: "user_declared",
+        scope: "restaurant",
+        displayName: restaurantName,
         candidates: [candidate],
         selectedCandidateId: candidateId,
         confirmedBy: null,
-        sourceIds,
-        limitations: ["A visible name alone requires user confirmation."],
+        sourceIds: [],
+        limitations: [
+          "The restaurant name was entered by the user and was not independently corroborated by the uploaded menu.",
+        ],
       },
       restaurant: null,
     };
@@ -462,31 +526,34 @@ const resolveRestaurant = (
   return {
     resolution: {
       status: "confirmed",
+      basis: corroborated ? "source_and_user" : "source_stated",
+      scope: sourceScope,
+      displayName: restaurantName,
       candidates: [candidate],
       selectedCandidateId: candidateId,
-      confirmedBy: userName ? "explicit_input" : "direct_evidence",
+      confirmedBy: corroborated ? "explicit_input" : "direct_evidence",
       sourceIds,
       limitations: [
-        ...(userName
+        ...(corroborated
           ? [
-              "Restaurant identity is based on explicit user input.",
-              "The entered restaurant name was not verified against public web data.",
-              explicitNameMatchesVisibleName
-                ? "Only conservatively matching image-derived identity and contact signals were merged."
-                : "Conflicting or unmatched image-derived identity and contact signals were not merged.",
+              "The entered restaurant name is corroborated by a compatible name visible in the uploaded menu.",
             ]
           : [
-              "Restaurant identity is based only on direct signals visible in uploaded menu images.",
+              "Restaurant identity is based on a name or logo visible in the uploaded menu.",
             ]),
+        sourceScope === "branch"
+          ? "Branch scope is based only on source-stated address or phone evidence."
+          : "No branch-specific identity was confirmed.",
+        "The restaurant identity was not verified against public web data.",
       ],
     },
     restaurant: {
       id: candidateId,
       name: restaurantName,
       summary: null,
-      address: canMergeImageIdentity ? (addressSignal?.value ?? null) : null,
-      phone: canMergeImageIdentity ? (phoneSignal?.value ?? null) : null,
-      website: canMergeImageIdentity ? safeUrl(websiteSignal?.value) : null,
+      address: addressSignal?.value ?? null,
+      phone: phoneSignal?.value ?? null,
+      website: safeUrl(websiteSignal?.value),
       cuisineLabels: [],
       priceLevel: null,
       publicLocation: null,

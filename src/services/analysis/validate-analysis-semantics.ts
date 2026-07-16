@@ -3,6 +3,7 @@ import type {
   ClaimEvidence,
   Dish,
   FoodseyoAnalysisPayload,
+  RestaurantResolution,
 } from "../../domain/foodseyo-analysis.ts";
 import type {
   SemanticProblem,
@@ -45,6 +46,10 @@ const createWarning = (
   relatedEntityIds: [...relatedEntityIds],
   recoverable: true,
 });
+
+const hasResolutionProvenance = (
+  resolution: FoodseyoAnalysisPayload["restaurantResolution"],
+): resolution is RestaurantResolution => "basis" in resolution && "scope" in resolution;
 
 export function validateAnalysisSemantics(
   payload: FoodseyoAnalysisPayload,
@@ -181,6 +186,84 @@ export function validateAnalysisSemantics(
       "NOT_ATTEMPTED_HAS_CONFIRMED_BY",
       "Restaurant matching marked not_attempted must not have confirmedBy.",
     );
+  }
+
+  if (hasResolutionProvenance(resolution)) {
+    if (
+      resolution.status === "confirmed" &&
+      resolution.basis !== "source_stated" &&
+      resolution.basis !== "source_and_user"
+    ) {
+      addError(
+        "RESTAURANT_PROVENANCE_INVALID",
+        "A confirmed restaurant requires source-stated identity evidence.",
+      );
+    }
+
+    if (
+      resolution.basis === "user_declared" &&
+      (resolution.status !== "likely" || resolution.scope !== "restaurant")
+    ) {
+      addError(
+        "RESTAURANT_PROVENANCE_INVALID",
+        "A user-declared restaurant without source corroboration must remain a likely restaurant-level candidate.",
+      );
+    }
+
+    if (
+      resolution.basis === "location_only" &&
+      (resolution.status === "confirmed" || resolution.scope === "branch")
+    ) {
+      addError(
+        "RESTAURANT_SCOPE_INVALID",
+        "Location-only evidence cannot confirm a restaurant or branch.",
+      );
+    }
+
+    if (
+      resolution.basis === "none" &&
+      (resolution.status === "confirmed" ||
+        resolution.status === "likely" ||
+        resolution.scope !== "unknown")
+    ) {
+      addError(
+        "RESTAURANT_PROVENANCE_INVALID",
+        "A restaurant resolution without evidence must remain unresolved.",
+      );
+    }
+
+    if (resolution.conflictCode === "restaurant_name_mismatch") {
+      if (
+        resolution.status !== "unconfirmed" ||
+        resolution.basis !== "source_and_user" ||
+        resolution.scope !== "unknown" ||
+        resolution.selectedCandidateId !== null ||
+        resolution.confirmedBy !== null
+      ) {
+        addError(
+          "RESTAURANT_CONFLICT_INVALID",
+          "Conflicting restaurant names must remain unconfirmed without a selected identity.",
+        );
+      }
+    }
+
+    if (resolution.scope === "branch") {
+      const selectedCandidate = resolution.candidates.find(
+        (candidate) => candidate.id === resolution.selectedCandidateId,
+      );
+      const branchEvidenceExists = Boolean(
+        payload.restaurant?.address?.trim() ||
+          payload.restaurant?.phone?.trim() ||
+          (resolution.confirmedBy === "user_confirmation" &&
+            selectedCandidate?.selectedByUser === true),
+      );
+      if (resolution.status !== "confirmed" || !branchEvidenceExists) {
+        addError(
+          "RESTAURANT_SCOPE_INVALID",
+          "Branch scope requires a confirmed resolution with branch-specific evidence.",
+        );
+      }
+    }
   }
 
   if (

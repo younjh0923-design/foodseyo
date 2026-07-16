@@ -1,5 +1,6 @@
 import {
   FOODSEYO_ANALYSIS_LEGACY_SCHEMA_VERSION,
+  FOODSEYO_ANALYSIS_PREVIOUS_SCHEMA_VERSION,
   FOODSEYO_ANALYSIS_SCHEMA_VERSION,
   FoodseyoAnalysisSchema,
   type ConsistentFoodseyoAnalysis,
@@ -7,6 +8,7 @@ import {
 import { demoFoodseyoAnalysis } from "../src/data/demoFoodseyoAnalysis.ts";
 import {
   createAnalysisResultFingerprint,
+  createAnalysisConsistencyVersionMetadata,
   createDishFingerprint,
   createSourceFingerprint,
   validateAnalysisConsistency,
@@ -19,14 +21,20 @@ import {
   RICHNESS_LEVELS,
   TEXTURES,
 } from "../src/lib/analysis-consistency/profile.ts";
-import { createLiveAnalysisOverview, createLiveDishDetail } from "../src/lib/live-analysis-results.ts";
+import {
+  createLiveAnalysisOverview,
+  createLiveDishDetail,
+  getRestaurantResolutionProvenance,
+} from "../src/lib/live-analysis-results.ts";
 import { parseCurrentAnalysisStorageValue, serializeCurrentAnalysis } from "../src/lib/storage.ts";
 import {
   analyzeFoodseyoInput,
   createAnalyzerRegistry,
+  validateAnalysisSemantics,
   type TransientImageInput,
 } from "../src/services/analysis/index.ts";
 import { finalizeLiveDishConsistency } from "../src/services/menu-analysis/menu-image-consistency.ts";
+import { adaptMenuImageModelOutput } from "../src/services/menu-analysis/menu-image-adapter.ts";
 import {
   MenuImageModelOutputSchema,
   type MenuImageModelOutput,
@@ -223,13 +231,14 @@ const analysis = (await analyzeFoodseyoInput(
 
 verify(events.join(",") === "hash-0,hash-1,source,provider", "source fingerprint is complete before the provider call");
 verify(providerCalls === 1, "live integration invokes exactly one provider call");
-verify(analysis.schemaVersion === FOODSEYO_ANALYSIS_SCHEMA_VERSION, "new live analysis emits canonical 1.1.0");
+verify(analysis.schemaVersion === FOODSEYO_ANALYSIS_SCHEMA_VERSION, "new live analysis emits canonical 1.1.1");
 verify(FoodseyoAnalysisSchema.safeParse(analysis).success, "canonical vNext envelope parses");
 verify(analysis.analysisMetadata.versions.modelVersion === modelVersion, "metadata records the effective model version");
 verify(analysis.analysisMetadata.versions.promptVersion === MENU_IMAGE_PROMPT_VERSION, "metadata records the prompt version");
 verify(analysis.analysisMetadata.versions.providerSchemaVersion === MENU_IMAGE_PROVIDER_SCHEMA_VERSION, "metadata records the provider schema version");
 verify(analysis.analysisMetadata.versions.canonicalSchemaVersion === FOODSEYO_ANALYSIS_SCHEMA_VERSION, "metadata records the canonical schema version");
 verify(analysis.analysisMetadata.versions.consistencyProfileVersion === "foodseyo-consistency-v1", "metadata records the consistency profile version");
+verify(analysis.payload.restaurantResolution.status === "unconfirmed" && analysis.payload.restaurantResolution.basis === "none" && analysis.payload.restaurantResolution.scope === "unknown", "no restaurant evidence stays conservatively unresolved");
 
 const dish = analysis.payload.menu?.dishes[0];
 if (!dish) throw new Error("Synthetic vNext dish is required.");
@@ -251,11 +260,169 @@ const expectedDishFingerprint = await createDishFingerprint({
 });
 verify(dish.analysisIdentity.dishFingerprint === expectedDishFingerprint, "dish fingerprint uses source-stated evidence only");
 verify(dish.analysisIdentity.resultFingerprint === (await createAnalysisResultFingerprint({ dishFingerprint: expectedDishFingerprint, consistency: dish.consistency, versions: analysis.analysisMetadata.versions })), "result fingerprint is separate and includes normalized result identity");
+const previousVersions = createAnalysisConsistencyVersionMetadata({
+  modelVersion,
+  promptVersion: MENU_IMAGE_PROMPT_VERSION,
+  providerSchemaVersion: MENU_IMAGE_PROVIDER_SCHEMA_VERSION,
+  canonicalSchemaVersion: FOODSEYO_ANALYSIS_PREVIOUS_SCHEMA_VERSION,
+});
+verify(
+  dish.analysisIdentity.resultFingerprint !==
+    (await createAnalysisResultFingerprint({
+      dishFingerprint: expectedDishFingerprint,
+      consistency: dish.consistency,
+      versions: previousVersions,
+    })),
+  "result fingerprint changes when canonical schema version changes from 1.1.0 to 1.1.1",
+);
 verify(!JSON.stringify(analysis).includes(orderedHashes[0]) && !JSON.stringify(analysis).includes(orderedHashes[1]), "canonical result stores no ordered image content hashes");
 verify(!JSON.stringify(analysis).includes("Uint8Array") && !JSON.stringify(analysis).includes("base64"), "canonical result stores no raw image or Base64 payload");
 
+const adaptRestaurantCase = async (
+  restaurantSignals: MenuImageModelOutput["restaurantSignals"],
+  userEnteredRestaurantName: string | null,
+) =>
+  adaptMenuImageModelOutput({
+    modelOutput: { ...structuredClone(modelOutput), restaurantSignals: [...restaurantSignals] },
+    imageCount: 2,
+    userEnteredRestaurantName,
+    sourceFingerprint: analysis.analysisMetadata.sourceFingerprint,
+    versions: analysis.analysisMetadata.versions,
+  });
+
+const userOnly = await adaptRestaurantCase([], "  User Declared Cafe  ");
+verify(
+  userOnly.restaurantResolution.status === "likely" &&
+    userOnly.restaurantResolution.basis === "user_declared" &&
+    userOnly.restaurantResolution.scope === "restaurant" &&
+    userOnly.restaurantResolution.displayName === "User Declared Cafe" &&
+    userOnly.restaurant === null,
+  "a user-declared restaurant without source corroboration is likely, never confirmed",
+);
+
+const sourceOnly = await adaptRestaurantCase(
+  [{ kind: "name", value: "Source Stated Cafe", sourceImageIndex: 0 }],
+  null,
+);
+verify(
+  sourceOnly.restaurantResolution.status === "confirmed" &&
+    sourceOnly.restaurantResolution.basis === "source_stated" &&
+    sourceOnly.restaurantResolution.scope === "restaurant" &&
+    sourceOnly.restaurant?.name === "Source Stated Cafe",
+  "a source-stated restaurant name confirms restaurant-level identity",
+);
+
+const corroborated = await adaptRestaurantCase(
+  [{ kind: "logo_text", value: "source stated cafe", sourceImageIndex: 0 }],
+  "Source-Stated Cafe",
+);
+verify(
+  corroborated.restaurantResolution.status === "confirmed" &&
+    corroborated.restaurantResolution.basis === "source_and_user" &&
+    corroborated.restaurantResolution.scope === "restaurant",
+  "compatible user and source names produce confirmed source-and-user provenance",
+);
+
+const conflicting = await adaptRestaurantCase(
+  [{ kind: "name", value: "Different Source Cafe", sourceImageIndex: 0 }],
+  "User Declared Cafe",
+);
+verify(
+  conflicting.restaurantResolution.status === "unconfirmed" &&
+    conflicting.restaurantResolution.basis === "source_and_user" &&
+    conflicting.restaurantResolution.scope === "unknown" &&
+    conflicting.restaurantResolution.conflictCode === "restaurant_name_mismatch" &&
+    conflicting.restaurantResolution.selectedCandidateId === null &&
+    conflicting.restaurantResolution.displayName === undefined &&
+    conflicting.restaurant === null,
+  "conflicting user and source names remain unconfirmed without silently selecting one identity",
+);
+verify(
+  conflicting.restaurantResolution.candidates.length === 2 &&
+    conflicting.restaurantResolution.candidates.some((candidate) => candidate.name === "User Declared Cafe") &&
+    conflicting.restaurantResolution.candidates.some((candidate) => candidate.name === "Different Source Cafe"),
+  "restaurant-name conflict preserves two separate candidates without combining names",
+);
+
+const locationOnly = await adaptRestaurantCase(
+  [{ kind: "address", value: "100 Synthetic Avenue", sourceImageIndex: 0 }],
+  null,
+);
+verify(
+  locationOnly.restaurantResolution.status === "unconfirmed" &&
+    locationOnly.restaurantResolution.basis === "location_only" &&
+    locationOnly.restaurantResolution.scope === "unknown" &&
+    locationOnly.restaurant === null,
+  "location-only evidence never confirms a restaurant or branch",
+);
+
+const branchSpecific = await adaptRestaurantCase(
+  [
+    { kind: "name", value: "Source Stated Cafe", sourceImageIndex: 0 },
+    { kind: "address", value: "100 Synthetic Avenue", sourceImageIndex: 0 },
+  ],
+  null,
+);
+verify(
+  branchSpecific.restaurantResolution.status === "confirmed" &&
+    branchSpecific.restaurantResolution.scope === "branch" &&
+    branchSpecific.restaurant?.address === "100 Synthetic Avenue",
+  "branch scope requires preserved branch-specific source evidence",
+);
+verify(
+  [userOnly, sourceOnly, corroborated, conflicting, locationOnly, branchSpecific].every(
+    (payload) =>
+      payload.menu?.dishes[0]?.analysisIdentity.dishFingerprint ===
+      dish.analysisIdentity.dishFingerprint,
+  ),
+  "restaurant-resolution provenance does not change the source or dish fingerprint inputs",
+);
+verify(
+  [userOnly, sourceOnly, corroborated, conflicting, locationOnly, branchSpecific].every(
+    (payload) => validateAnalysisSemantics(payload).errors.length === 0,
+  ),
+  "all deterministic restaurant-resolution cases pass semantic validation",
+);
+const invalidUserConfirmation = structuredClone(userOnly);
+invalidUserConfirmation.restaurantResolution.status = "confirmed";
+invalidUserConfirmation.restaurantResolution.confirmedBy = "explicit_input";
+verify(
+  validateAnalysisSemantics(invalidUserConfirmation).errors.some(
+    (error) => error.code === "RESTAURANT_PROVENANCE_INVALID",
+  ),
+  "semantic validation rejects user declaration as confirmed restaurant identity",
+);
+
 const serialized = serializeCurrentAnalysis(analysis);
-verify(parseCurrentAnalysisStorageValue(serialized).status === "success", "session storage accepts canonical 1.1.0");
+const currentRead = parseCurrentAnalysisStorageValue(serialized);
+verify(currentRead.status === "success", "session storage accepts canonical 1.1.1");
+verify(
+  currentRead.status === "success" &&
+    getRestaurantResolutionProvenance(currentRead.analysis.payload.restaurantResolution).basis === "none" &&
+    getRestaurantResolutionProvenance(currentRead.analysis.payload.restaurantResolution).scope === "unknown",
+  "canonical 1.1.1 restaurant provenance survives serialization and storage readback",
+);
+
+const previousCandidate = structuredClone(analysis) as unknown as Record<string, unknown>;
+previousCandidate.schemaVersion = FOODSEYO_ANALYSIS_PREVIOUS_SCHEMA_VERSION;
+const previousPayload = previousCandidate.payload as Record<string, unknown>;
+const previousResolution = previousPayload.restaurantResolution as Record<string, unknown>;
+delete previousResolution.basis;
+delete previousResolution.scope;
+delete previousResolution.displayName;
+delete previousResolution.conflictCode;
+const previousMetadata = previousCandidate.analysisMetadata as Record<string, unknown>;
+const previousMetadataVersions = previousMetadata.versions as Record<string, unknown>;
+previousMetadataVersions.canonicalSchemaVersion = FOODSEYO_ANALYSIS_PREVIOUS_SCHEMA_VERSION;
+const previousRead = parseCurrentAnalysisStorageValue(JSON.stringify(previousCandidate));
+verify(previousRead.status === "success", "session storage still accepts canonical 1.1.0 without provenance fields");
+verify(
+  previousRead.status === "success" &&
+    getRestaurantResolutionProvenance(previousRead.analysis.payload.restaurantResolution).basis === "none" &&
+    getRestaurantResolutionProvenance(previousRead.analysis.payload.restaurantResolution).scope === "unknown" &&
+    createLiveAnalysisOverview(previousRead.analysis).categories.length > 0,
+  "canonical 1.1.0 receives conservative reader fallback and remains renderable",
+);
 verify(demoFoodseyoAnalysis.schemaVersion === FOODSEYO_ANALYSIS_LEGACY_SCHEMA_VERSION, "legacy demo remains canonical 1.0.0");
 verify(parseCurrentAnalysisStorageValue(serializeCurrentAnalysis(demoFoodseyoAnalysis)).status === "success", "session storage still accepts canonical 1.0.0");
 const futureVersion = JSON.parse(serialized) as Record<string, unknown>;

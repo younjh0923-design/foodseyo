@@ -1,6 +1,6 @@
 # Foodseyo Canonical Live Results
 
-**Status:** C1.2 canonical vNext rendering with legacy compatibility
+**Status:** C1.2.1 canonical `1.1.1` rendering with `1.0.0`/`1.1.0` compatibility
 
 **Date:** 2026-07-16
 
@@ -18,7 +18,7 @@ Refresh works in the same tab. New tabs, browser restarts, other devices, perman
 
 ## Overview
 
-For canonical `1.1.0`, Overview cards use stored deterministic taste, flavor, heat, richness, and texture wording. Canonical `1.0.0` keeps its existing display fields. The Overview retains:
+For canonical `1.1.0` and `1.1.1`, Overview cards use stored deterministic taste, flavor, heat, richness, and texture wording. Canonical `1.0.0` keeps its existing display fields. The Overview retains:
 
 - restaurant name and match status;
 - dishes found and extraction status;
@@ -30,9 +30,11 @@ For canonical `1.1.0`, Overview cards use stored deterministic taste, flavor, he
 
 There is no personalization card or empty personalization state. Removing it does not leave a reserved spacer between the summary/limitations and the remaining content.
 
+Canonical `1.1.1` may use its sanitized `displayName`, but UI labels still come from the public status vocabulary and never expose `basis`, `scope`, or `conflictCode`. A user-declared-only name renders as a likely match, not a verified restaurant or branch. For `1.0.0` and `1.1.0`, the reader derives `basis: none` and `scope: unknown` only as a conservative internal fallback while preserving the existing display behavior.
+
 ## Dish Detail
 
-Dish Detail shows nonempty canonical name, description, expectations, menu-derived ingredients, dietary/allergy caution notes, ordering notes, uncertainty, and the canonical safety notice. In `1.1.0`, stated ingredients and typical-but-unconfirmed ingredients have separate headings; uncertain ingredients are not rendered as confirmed tags and use the fixed summary `Some ingredients could not be confirmed.` It performs no comparison against stored user allergies, diets, or spice settings.
+Dish Detail shows nonempty canonical name, description, expectations, menu-derived ingredients, dietary/allergy caution notes, ordering notes, uncertainty, and the canonical safety notice. In `1.1.0` and `1.1.1`, stated ingredients and typical-but-unconfirmed ingredients have separate headings; uncertain ingredients are not rendered as confirmed tags and use the fixed summary `Some ingredients could not be confirmed.` It performs no comparison against stored user allergies, diets, or spice settings.
 
 Menu-derived ingredient evidence and conservative uncertainty remain intact. Unknown information is never converted into a safety claim, and users are told to confirm ingredients and cross-contact with restaurant staff.
 

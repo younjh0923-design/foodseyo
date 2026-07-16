@@ -169,7 +169,7 @@ Issues are deduplicated by code plus a stable, order-independent set of related-
 
 The orchestrator owns:
 
-- the analyzer-selected supported schema version (`1.0.0` legacy or `1.1.0` live consistency);
+- the analyzer-selected supported schema version (`1.0.0` legacy, `1.1.0` compatibility, or `1.1.1` live consistency);
 - `analysisId`;
 - `generatedAt`;
 - final status;
@@ -177,7 +177,7 @@ The orchestrator owns:
 - final schema validation;
 - JSON serialization verification.
 
-Default IDs use `crypto.randomUUID`. The clock and ID factory are injectable, which makes demo tests deterministic without hardcoding production values. Legacy analyzers default to `1.0.0`; the live menu-image analyzer explicitly supplies `1.1.0` and its validated source/version metadata.
+Default IDs use `crypto.randomUUID`. The clock and ID factory are injectable, which makes demo tests deterministic without hardcoding production values. Legacy analyzers default to `1.0.0`; the live menu-image analyzer explicitly supplies `1.1.1` and its validated source/version metadata. The reader continues to accept the historical `1.1.0` consistency envelope.
 
 ## Image reuse safety
 
@@ -218,7 +218,7 @@ Future restaurant-photo, screen, link, nearby, and research providers connect th
 
 The canonical envelope is validated again before session persistence and on every Live result read. `src/lib/live-analysis-results.ts` is a pure view-model adapter above the orchestrator: it preserves canonical category and dish ordering, resolves safe Dish links, and maps nonempty presentation sections including menu-derived ingredients and cautions. It does not mutate the envelope or call an analyzer, provider, OpenAI, web research, review source, restaurant endpoint, or any other network service.
 
-`/analysis` is the canonical result destination, and only `menu_images` is live. T6 is cancelled from the MVP. C1.1/C1.1.1 establish the contract and identity foundations; C1.2 integrates them into the existing menu-image analyzer. C2 is next, T7 link analysis follows C2, and T8 identification will be reconsidered after T7.
+`/analysis` is the canonical result destination, and only `menu_images` is live. T6 is cancelled from the MVP. C1.1/C1.1.1 establish the contract and identity foundations; C1.2 integrates them into the existing menu-image analyzer; C1.2.1 corrects restaurant provenance without another provider call. C2 is next, T7 link analysis follows C2, and T8 identification will be reconsidered after T7.
 
 ## T5 transport boundary
 

@@ -1,6 +1,6 @@
 # Foodseyo Unified Analysis Data Contract
 
-**Status:** Canonical `1.0.0` compatibility plus C1.2 `1.1.0` live results
+**Status:** Canonical `1.0.0`/`1.1.0` compatibility plus C1.2.1 `1.1.1` live results
 
 **Date:** 2026-07-16
 
@@ -10,7 +10,7 @@ The canonical contract is implemented in `src/domain/foodseyo-analysis.ts`. Zod 
 
 `FoodseyoAnalysis` is the app-managed envelope:
 
-- `schemaVersion`: supported literal `1.0.0` or `1.1.0`;
+- `schemaVersion`: supported literal `1.0.0`, `1.1.0`, or `1.1.1`;
 - `analysisId`: an app-generated string;
 - `generatedAt`: an ISO 8601 string;
 - `status`: `complete`, `partial`, or `failed`;
@@ -94,7 +94,11 @@ Restaurant match status is one of:
 - `unconfirmed`
 - `not_attempted`
 
-Resolution stores candidates, a nullable selected candidate ID, a nullable confirmation method, source IDs, and limitations. It has no numeric confidence field. A restaurant may be `null` while a partial analysis still contains useful general dish knowledge.
+Canonical `1.1.1` additionally records resolution provenance as `source_stated`, `user_declared`, `source_and_user`, `location_only`, or `none`, plus identity scope as `restaurant`, `branch`, or `unknown`. A safe optional display name is presentation data only. Conflicting user and source names stay `unconfirmed` with `restaurant_name_mismatch`; neither name is silently selected or combined.
+
+A user-declared name alone is `likely`, never `confirmed`. A restaurant name stated directly in the uploaded menu confirms restaurant-level identity; address or phone evidence is required before the menu-image adapter uses branch scope. Location alone never confirms a restaurant or branch. Resolution stores candidates, a nullable selected candidate ID, a nullable confirmation method, source IDs, and limitations. It has no numeric confidence field. A restaurant may be `null` while a partial analysis still contains useful general dish knowledge.
+
+Existing `1.0.0` and `1.1.0` objects retain their strict historical shape. The reader derives the conservative presentation fallback `basis: none` and `scope: unknown` when those fields are absent; it does not rewrite stored legacy results or upgrade ambiguous identity into a confirmed branch.
 
 ## Menu and dishes
 
@@ -190,7 +194,9 @@ Information gaps and operational failure are distinct. For example, restaurant i
 
 ## C1 consistency contract and vNext
 
-C1.1 established the independent `foodseyo-consistency-v1` foundation. C1.2 adds canonical `1.1.0` for new live `menu_images` results while preserving the strict legacy `1.0.0` schema and display behavior. Each vNext dish contains normalized `consistency`, deterministic `consistencyWording`, and separate dish/result identity. The envelope contains the source fingerprint plus `modelVersion`, `promptVersion`, `providerSchemaVersion`, `canonicalSchemaVersion`, and `consistencyProfileVersion`.
+C1.1 established the independent `foodseyo-consistency-v1` foundation. C1.2 added canonical `1.1.0`; C1.2.1 adds canonical `1.1.1` restaurant provenance while preserving strict `1.0.0` and `1.1.0` parsing and display behavior. Each consistency-era dish contains normalized `consistency`, deterministic `consistencyWording`, and separate dish/result identity. The envelope contains the source fingerprint plus `modelVersion`, `promptVersion`, `providerSchemaVersion`, `canonicalSchemaVersion`, and `consistencyProfileVersion`.
+
+Only `canonicalSchemaVersion` changes for C1.2.1. The model, prompt, provider schema, and consistency profile versions remain unchanged. Result fingerprints therefore change naturally, while source and dish fingerprint inputs do not.
 
 The contract separates basic tastes, flavor notes, heat, richness, textures, and free-form ingredient evidence. Ingredient evidence is `stated`, `typical`, or `uncertain`; typical or uncertain information never becomes a stated restaurant fact. The source fingerprint uses pre-provider source identity, including ordered SHA-256 content hashes and count for menu images. Raw image hashes are not stored in the canonical result. The dish fingerprint accepts source-stated dish evidence only. Normalized consistency, deterministic wording, and all five version fields belong to a separate result fingerprint. These identities do not enable cache reuse, database storage, or provider bypass in C1.2.
 
@@ -220,6 +226,8 @@ Runtime details are defined in [analysis-orchestration.md](./analysis-orchestrat
 
 ## T5.4 browser read contract
 
-The browser session reader supports legacy `1.0.0` and vNext `1.1.0`, and distinguishes valid data, a missing/empty key, invalid JSON, invalid schema or semantics, unsupported future versions, `failed` status, a zero-dish result, and unavailable session storage. Only a valid, non-failed result with at least one dish may render Live Overview or Dish Detail. No canonical data is copied into a URL, local storage, IndexedDB, or a database.
+The browser session reader supports legacy `1.0.0`, C1.2 `1.1.0`, and current `1.1.1`, and distinguishes valid data, a missing/empty key, invalid JSON, invalid schema or semantics, unsupported future versions, `failed` status, a zero-dish result, and unavailable session storage. Only a valid, non-failed result with at least one dish may render Live Overview or Dish Detail. No canonical data is copied into a URL, local storage, IndexedDB, or a database.
+
+Future C2 mapping must evaluate `status`, `basis`, and `scope` together. `likely/user_declared/restaurant` is candidate evidence only, not a confirmed `restaurant_location` relationship. `confirmed/source_stated/restaurant` confirms restaurant-level identity while leaving the branch unresolved. A branch link is allowed only when `status` is confirmed, `scope` is branch, and the branch-specific evidence remains preserved.
 
 `foodseyo.currentAnalysis` is the only active Foodseyo storage key. T5.5 removes the former user-profile key and all active local-storage reads and writes. Removing the current result must not clear unrelated browser storage.

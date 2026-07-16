@@ -234,42 +234,46 @@ const explicitConflict = await adaptFixture({
   userEnteredRestaurantName: "Different Restaurant",
 });
 verify(
-  explicitConflict.restaurantResolution.status === "confirmed" &&
-    explicitConflict.restaurantResolution.confirmedBy === "explicit_input",
-  "explicit input confirms the user-entered identity",
+  explicitConflict.restaurantResolution.status === "unconfirmed" &&
+    explicitConflict.restaurantResolution.basis === "source_and_user" &&
+    explicitConflict.restaurantResolution.scope === "unknown" &&
+    explicitConflict.restaurantResolution.conflictCode === "restaurant_name_mismatch",
+  "conflicting explicit and source names remain unconfirmed",
 );
 verify(
-  explicitConflict.restaurant?.name === "Different Restaurant" &&
-    explicitConflict.restaurantResolution.candidates[0]?.name === "Different Restaurant",
-  "explicit input owns restaurant and candidate names",
+  explicitConflict.restaurant === null &&
+    explicitConflict.restaurantResolution.candidates.some(
+      (candidate) => candidate.name === "Different Restaurant",
+    ) &&
+    explicitConflict.restaurantResolution.candidates.some(
+      (candidate) => candidate.name === "North Star Kitchen",
+    ),
+  "conflict preserves separate user and source candidates without selecting a restaurant",
 );
 verify(
-  explicitConflict.restaurantResolution.sourceIds.length === 0 &&
-    explicitConflict.restaurant?.sourceIds.length === 0 &&
-    explicitConflict.restaurantResolution.candidates[0]?.sourceIds.length === 0,
-  "explicit-only identity borrows no image source IDs",
+  explicitConflict.restaurantResolution.sourceIds.length > 0 &&
+    explicitConflict.restaurantResolution.candidates[0]?.sourceIds.length === 0 &&
+    (explicitConflict.restaurantResolution.candidates[1]?.sourceIds.length ?? 0) > 0,
+  "conflict keeps source evidence only on the source-stated candidate",
 );
 verify(
-  explicitConflict.restaurant?.address === null &&
-    explicitConflict.restaurant?.phone === null &&
-    explicitConflict.restaurant?.website === null,
-  "conflicting image contact data is not merged",
+  explicitConflict.restaurantResolution.selectedCandidateId === null &&
+    explicitConflict.restaurantResolution.confirmedBy === null &&
+    explicitConflict.restaurantResolution.displayName === undefined,
+  "conflict exposes no selected or combined identity",
 );
 verify(
   explicitConflict.restaurantResolution.limitations.some((item) =>
-    item.includes("explicit user input"),
+    item.includes("conflicts"),
   ) &&
     explicitConflict.restaurantResolution.limitations.some((item) =>
-      item.includes("not verified against public web"),
-    ) &&
-    explicitConflict.restaurantResolution.limitations.some((item) =>
-      item.includes("not merged"),
+      item.includes("did not select or combine"),
     ),
-  "explicit conflict limitations record provenance and non-merge",
+  "conflict limitations record mismatch and non-selection",
 );
 verify(
   validateAnalysisSemantics(explicitConflict).errors.length === 0,
-  "confirmed explicit input without source IDs passes semantics",
+  "unconfirmed conflict with separated evidence passes semantics",
 );
 const directWithoutSources = await adaptFixture({
   modelOutput: modelFixture,
@@ -307,8 +311,10 @@ const punctuationOnlyConflict = await adaptFixture({
   userEnteredRestaurantName: "???",
 });
 verify(
-  punctuationOnlyConflict.restaurant?.address === null &&
-    punctuationOnlyConflict.restaurantResolution.sourceIds.length === 0,
+  punctuationOnlyConflict.restaurant === null &&
+    punctuationOnlyConflict.restaurantResolution.status === "unconfirmed" &&
+    punctuationOnlyConflict.restaurantResolution.conflictCode ===
+      "restaurant_name_mismatch",
   "empty normalized names are never treated as a conservative match",
 );
 

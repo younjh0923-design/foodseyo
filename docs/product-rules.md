@@ -1,6 +1,6 @@
 # Foodseyo Product Rules
 
-**Status:** Normative MVP definition through C1.2
+**Status:** Normative MVP definition through C1.2.1
 
 **Date:** 2026-07-16
 
@@ -63,6 +63,8 @@ Foodseyo distinguishes:
 
 General knowledge must never be presented as restaurant-confirmed. Restaurant match signals create candidates, not automatic confirmation. A `likely` match is not a numeric confidence score and should be communicated as uncertain.
 
+A user-entered restaurant name is a declaration, not independent verification. Without compatible source-stated identity it remains `likely` at restaurant scope. Source-stated names may confirm restaurant-level identity; branch scope requires preserved branch-specific evidence. Conflicting user and source names remain unconfirmed and neither identity is silently selected or combined. Location alone never confirms a restaurant or branch.
+
 Price, currency, ingredients, preparation, dietary status, review claims, popularity, and freshness must retain their actual evidence basis. Missing evidence stays missing.
 
 ## Allergy and dietary safety
@@ -84,7 +86,7 @@ Dish imagery must have source and reuse-rights metadata. Unverified or unclear-r
 
 ## Canonical compatibility
 
-The canonical reader supports legacy `FoodseyoAnalysis` `1.0.0` and live consistency `1.1.0`. Legacy `restaurant_photo` and `restaurant_screen` enum branches and `user_provided_screen` evidence remain parseable only to avoid an unrelated migration. No Home control, public API route, provider override, or successful live analyzer exposes them; the default registry returns a typed capability-unavailable error.
+The canonical reader supports legacy `FoodseyoAnalysis` `1.0.0`, C1.2 `1.1.0`, and current `1.1.1`. Missing provenance in the two older versions receives only the conservative reader fallback `basis: none` and `scope: unknown`. Legacy `restaurant_photo` and `restaurant_screen` enum branches and `user_provided_screen` evidence remain parseable only to avoid an unrelated migration. No Home control, public API route, provider override, or successful live analyzer exposes them; the default registry returns a typed capability-unavailable error.
 
 ## Out of MVP
 
@@ -103,7 +105,8 @@ The canonical reader supports legacy `FoodseyoAnalysis` `1.0.0` and live consist
 - **T6:** cancelled from the MVP.
 - **R1:** internal codebase and development workflow optimization; no product behavior change.
 - **C1.1 / C1.1.1:** consistency and fingerprint foundations completed.
-- **C1.2:** current live menu-image consistency integration.
+- **C1.2:** live menu-image consistency integration completed.
+- **C1.2.1:** restaurant-resolution provenance correction current.
 - **C2.1:** relational data model foundation (next).
 - **C2.2:** exact menu snapshot cache.
 - **C2.3:** dish-level reuse.

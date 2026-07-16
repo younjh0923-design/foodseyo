@@ -53,10 +53,10 @@ pnpm verify:full     # final lint, typecheck, all tests, build, and security che
 - T6 — cancelled from the MVP
 - R1 — non-functional codebase and development workflow optimization
 - C1.1 / C1.1.1 — consistency and fingerprint foundations (completed)
-- C1.2 — live menu-image consistency integration (current)
+- C1.2 — live menu-image consistency integration (completed)
+- C1.2.1 — restaurant-resolution provenance correction (current)
 - C2.1–C2.4 — relational model and cache-safety checkpoints (next)
 - T7 — restaurant/menu link analysis after C2
-- T7 — restaurant/menu link analysis after C1
 - T8 — restaurant identification, to be reconsidered after T7
 - Later — map-app share-to-Foodseyo integration
 

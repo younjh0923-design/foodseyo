@@ -1,6 +1,5 @@
 import {
   FOODSEYO_ANALYSIS_LEGACY_SCHEMA_VERSION,
-  FOODSEYO_ANALYSIS_SCHEMA_VERSION,
   FoodseyoAnalysisSchema,
   type AnalysisMetadata,
   type AnalysisIssue,
@@ -45,7 +44,7 @@ export function createAnalysisEnvelope(
     inputContext,
     payload,
     issues,
-    ...(schemaVersion === FOODSEYO_ANALYSIS_SCHEMA_VERSION
+    ...(schemaVersion !== FOODSEYO_ANALYSIS_LEGACY_SCHEMA_VERSION
       ? { analysisMetadata: dependencies.analysisMetadata }
       : {}),
   };

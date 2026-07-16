@@ -341,17 +341,19 @@ verify(!("bytes" in result) && !JSON.stringify(result).includes("Uint8Array"), "
 verify(typeof JSON.stringify(result) === "string", "23 final result is JSON serializable");
 
 // D. Restaurant resolution (24-29)
-const userNamed = await adaptFixture({ modelOutput: validModelFixture, imageCount: 2, userEnteredRestaurantName: "User Pick" });
-verify(userNamed.restaurantResolution.status === "confirmed" && userNamed.restaurantResolution.confirmedBy === "explicit_input", "24 user name confirms explicit input");
-verify(result.payload.restaurantResolution.status === "confirmed" && result.payload.restaurantResolution.confirmedBy === "direct_evidence", "25 name plus direct signal confirms restaurant");
+const userNameOnlyModel = clone(validModelFixture);
+userNameOnlyModel.restaurantSignals = [];
+const userNamed = await adaptFixture({ modelOutput: userNameOnlyModel, imageCount: 2, userEnteredRestaurantName: "User Pick" });
+verify(userNamed.restaurantResolution.status === "likely" && userNamed.restaurantResolution.basis === "user_declared" && userNamed.restaurantResolution.scope === "restaurant", "24 user name alone remains a likely declaration");
+verify(result.payload.restaurantResolution.status === "confirmed" && result.payload.restaurantResolution.confirmedBy === "direct_evidence" && result.payload.restaurantResolution.basis === "source_stated", "25 source-stated name confirms restaurant identity");
 const nameOnlyModel = clone(validModelFixture);
 nameOnlyModel.restaurantSignals = [{ kind: "name", value: "Name Only", sourceImageIndex: 0 }];
 const nameOnly = await adaptFixture({ modelOutput: nameOnlyModel, imageCount: 2, userEnteredRestaurantName: null });
-verify(nameOnly.restaurantResolution.status === "likely", "26 visible name alone is likely");
+verify(nameOnly.restaurantResolution.status === "confirmed" && nameOnly.restaurantResolution.scope === "restaurant", "26 visible source name confirms restaurant scope only");
 const noSignalModel = clone(validModelFixture);
 noSignalModel.restaurantSignals = [];
 const noSignal = await adaptFixture({ modelOutput: noSignalModel, imageCount: 2, userEnteredRestaurantName: null });
-verify(noSignal.restaurantResolution.status === "unconfirmed", "27 no identity signal is unconfirmed");
+verify(noSignal.restaurantResolution.status === "unconfirmed" && noSignal.restaurantResolution.basis === "none" && noSignal.restaurantResolution.scope === "unknown", "27 no identity signal is conservatively unresolved");
 verify(!JSON.stringify(result.payload.restaurantResolution).includes("confidence"), "28 no numeric confidence is emitted");
 verify(result.payload.restaurant?.publicLocation === null && result.inputContext.type === "menu_images" && !result.inputContext.locationUsed, "29 location does not confirm identity");
 

@@ -3,7 +3,12 @@ import type {
   Dish,
   ConsistentDish,
   FoodseyoAnalysis,
+  LegacyRestaurantResolution,
   MenuCategory,
+  RestaurantIdentityScope,
+  RestaurantResolution,
+  RestaurantResolutionBasis,
+  RestaurantResolutionConflictCode,
 } from "../domain/foodseyo-analysis.ts";
 
 const cleanText = (value: string | null | undefined): string | null => {
@@ -84,6 +89,32 @@ export interface LiveAnalysisOverviewView {
   readonly orderingGuidance: LiveOrderingGuidanceView | null;
 }
 
+export interface RestaurantResolutionProvenanceView {
+  readonly basis: RestaurantResolutionBasis;
+  readonly scope: RestaurantIdentityScope;
+  readonly displayName: string | null;
+  readonly conflictCode: RestaurantResolutionConflictCode | null;
+}
+
+export function getRestaurantResolutionProvenance(
+  resolution: LegacyRestaurantResolution | RestaurantResolution,
+): RestaurantResolutionProvenanceView {
+  if (!("basis" in resolution) || !("scope" in resolution)) {
+    return {
+      basis: "none",
+      scope: "unknown",
+      displayName: null,
+      conflictCode: null,
+    };
+  }
+  return {
+    basis: resolution.basis,
+    scope: resolution.scope,
+    displayName: cleanText(resolution.displayName),
+    conflictCode: resolution.conflictCode ?? null,
+  };
+}
+
 const toDishCard = (dish: Dish): LiveDishCardView => ({
   id: dish.id,
   href: liveDishPath(dish.id),
@@ -130,6 +161,7 @@ export function createLiveAnalysisOverview(
   const dishes = uniqueDishes(menu?.dishes ?? []);
   const categories = uniqueCategories(menu?.categories ?? []);
   const resolution = analysis.payload.restaurantResolution;
+  const resolutionProvenance = getRestaurantResolutionProvenance(resolution);
   const selectedCandidate = resolution.selectedCandidateId
     ? resolution.candidates.find(
         (candidate) => candidate.id === resolution.selectedCandidateId,
@@ -139,7 +171,11 @@ export function createLiveAnalysisOverview(
   const canNameRestaurant =
     resolution.status === "confirmed" || resolution.status === "likely";
   const restaurantName = canNameRestaurant
-    ? firstText(analysis.payload.restaurant?.name, candidate?.name) ??
+    ? firstText(
+        resolutionProvenance.displayName,
+        analysis.payload.restaurant?.name,
+        candidate?.name,
+      ) ??
       "Restaurant not confirmed"
     : "Restaurant not confirmed";
   const restaurantMatchLabel =

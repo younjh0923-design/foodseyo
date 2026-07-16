@@ -1,6 +1,6 @@
 # Foodseyo Analysis Consistency Contract
 
-**Status:** C1.2 live `menu_images` integration
+**Status:** C1.2.1 canonical provenance correction on the C1.2 live integration
 
 **Profile:** `foodseyo-consistency-v1`
 
@@ -37,7 +37,7 @@ Ingredient duplicates merge after limited, explicit name normalization. Evidence
 
 The English renderer uses profile order, fixed intensity terms, and Oxford-comma lists. It renders each axis separately and never mixes stated with typical ingredient evidence. Examples include `Mostly savory, with mild sweetness.`, `Smoky and garlicky.`, `Mild heat.`, `Tender and juicy.`, `Listed ingredients: Lamb, onion, and parsley.`, and `Typically may include: Cumin and coriander.` Unknown heat and richness are omitted; uncertain ingredients use the fixed summary `Some ingredients could not be confirmed.` rather than a speculative list.
 
-New canonical `1.1.0` live results store both the normalized profile and its deterministic wording. Legacy `1.0.0` results keep their existing free-form rendering and are never backfilled by guessing.
+Canonical `1.1.0` and `1.1.1` results store both the normalized profile and its deterministic wording. Legacy `1.0.0` results keep their existing free-form rendering and are never backfilled by guessing. C1.2.1 changes only the canonical schema version and restaurant-resolution provenance; model, prompt, provider schema, consistency profile, source fingerprint, and dish fingerprint inputs remain unchanged.
 
 ## Canonical serialization and fingerprints
 
@@ -67,4 +67,4 @@ Repeated live submissions still execute the existing OpenAI request. C1.2 reduce
 
 The semantic validator emits safe issue codes and field paths for unsupported values, invalid intensity, duplicates, tag limits, ordering, missing or multiple levels, `spiced` misuse, defined texture contradictions, ingredient name/basis/merge errors, missing version metadata, malformed fingerprint inputs, and noncanonical serialization. Messages never echo menu, dish, ingredient, restaurant, or source text.
 
-`pnpm verify:consistency` runs the C1.1 synthetic repeatability fixtures. `pnpm verify:consistency-integration` uses synthetic image bytes and a fake provider to verify the live pre-provider source identity boundary, one provider call, structured normalization and safe degradation, canonical `1.1.0`, five-part metadata, separated dish/result identity, deterministic UI rendering, `1.0.0` compatibility, zero OpenAI calls, and zero external network calls.
+`pnpm verify:consistency` runs the C1.1 synthetic repeatability fixtures. `pnpm verify:consistency-integration` uses synthetic image bytes and a fake provider to verify the live pre-provider source identity boundary, one provider call, structured normalization and safe degradation, canonical `1.1.1`, five-part metadata, separated dish/result identity, deterministic UI rendering, `1.0.0`/`1.1.0` compatibility, restaurant provenance cases, zero OpenAI calls, and zero external network calls.

@@ -16,9 +16,11 @@ import {
 } from "../lib/analysis-consistency/profile.ts";
 
 export const FOODSEYO_ANALYSIS_LEGACY_SCHEMA_VERSION = "1.0.0" as const;
-export const FOODSEYO_ANALYSIS_SCHEMA_VERSION = "1.1.0" as const;
+export const FOODSEYO_ANALYSIS_PREVIOUS_SCHEMA_VERSION = "1.1.0" as const;
+export const FOODSEYO_ANALYSIS_SCHEMA_VERSION = "1.1.1" as const;
 export const FOODSEYO_ANALYSIS_SUPPORTED_SCHEMA_VERSIONS = [
   FOODSEYO_ANALYSIS_LEGACY_SCHEMA_VERSION,
+  FOODSEYO_ANALYSIS_PREVIOUS_SCHEMA_VERSION,
   FOODSEYO_ANALYSIS_SCHEMA_VERSION,
 ] as const;
 export type FoodseyoAnalysisSchemaVersion =
@@ -45,6 +47,24 @@ export const RestaurantMatchStatusSchema = z.enum([
   "likely",
   "unconfirmed",
   "not_attempted",
+]);
+
+export const RestaurantResolutionBasisSchema = z.enum([
+  "source_stated",
+  "user_declared",
+  "source_and_user",
+  "location_only",
+  "none",
+]);
+
+export const RestaurantIdentityScopeSchema = z.enum([
+  "restaurant",
+  "branch",
+  "unknown",
+]);
+
+export const RestaurantResolutionConflictCodeSchema = z.enum([
+  "restaurant_name_mismatch",
 ]);
 
 export const AvailabilitySchema = z.enum([
@@ -262,13 +282,25 @@ export const RestaurantCandidateSchema = z.strictObject({
   selectedByUser: z.boolean(),
 });
 
-export const RestaurantResolutionSchema = z.strictObject({
+const LegacyRestaurantResolutionShape = {
   status: RestaurantMatchStatusSchema,
   candidates: z.array(RestaurantCandidateSchema),
   selectedCandidateId: z.string().nullable(),
   confirmedBy: RestaurantConfirmedBySchema.nullable(),
   sourceIds: z.array(z.string().min(1)),
   limitations: z.array(z.string()),
+} as const;
+
+export const LegacyRestaurantResolutionSchema = z.strictObject(
+  LegacyRestaurantResolutionShape,
+);
+
+export const RestaurantResolutionSchema = z.strictObject({
+  ...LegacyRestaurantResolutionShape,
+  basis: RestaurantResolutionBasisSchema,
+  scope: RestaurantIdentityScopeSchema,
+  displayName: z.string().min(1).optional(),
+  conflictCode: RestaurantResolutionConflictCodeSchema.optional(),
 });
 
 export const PublicLocationSchema = z.strictObject({
@@ -354,12 +386,21 @@ export const DishConsistencyWordingSchema = z.strictObject({
   uncertainIngredients: z.string().min(1).nullable(),
 });
 
-export const AnalysisConsistencyVersionMetadataSchema = z.strictObject({
+const AnalysisConsistencyVersionMetadataShape = {
   modelVersion: z.string().regex(VERSION_TOKEN_PATTERN),
   promptVersion: z.string().regex(VERSION_TOKEN_PATTERN),
   providerSchemaVersion: z.string().regex(VERSION_TOKEN_PATTERN),
-  canonicalSchemaVersion: z.literal(FOODSEYO_ANALYSIS_SCHEMA_VERSION),
   consistencyProfileVersion: z.literal(ANALYSIS_CONSISTENCY_PROFILE_VERSION),
+} as const;
+
+export const PreviousAnalysisConsistencyVersionMetadataSchema = z.strictObject({
+  ...AnalysisConsistencyVersionMetadataShape,
+  canonicalSchemaVersion: z.literal(FOODSEYO_ANALYSIS_PREVIOUS_SCHEMA_VERSION),
+});
+
+export const AnalysisConsistencyVersionMetadataSchema = z.strictObject({
+  ...AnalysisConsistencyVersionMetadataShape,
+  canonicalSchemaVersion: z.literal(FOODSEYO_ANALYSIS_SCHEMA_VERSION),
 });
 
 export const DishAnalysisIdentitySchema = z.strictObject({
@@ -367,8 +408,17 @@ export const DishAnalysisIdentitySchema = z.strictObject({
   resultFingerprint: z.string().regex(ANALYSIS_RESULT_FINGERPRINT_PATTERN),
 });
 
-export const AnalysisMetadataSchema = z.strictObject({
+const AnalysisMetadataShape = {
   sourceFingerprint: z.string().regex(SOURCE_FINGERPRINT_PATTERN),
+} as const;
+
+export const PreviousAnalysisMetadataSchema = z.strictObject({
+  ...AnalysisMetadataShape,
+  versions: PreviousAnalysisConsistencyVersionMetadataSchema,
+});
+
+export const AnalysisMetadataSchema = z.strictObject({
+  ...AnalysisMetadataShape,
   versions: AnalysisConsistencyVersionMetadataSchema,
 });
 
@@ -530,7 +580,7 @@ export const AnalysisIssueSchema = z.strictObject({
 });
 
 export const FoodseyoAnalysisPayloadSchema = z.strictObject({
-  restaurantResolution: RestaurantResolutionSchema,
+  restaurantResolution: LegacyRestaurantResolutionSchema,
   restaurant: RestaurantSchema.nullable(),
   menu: MenuSchema.nullable(),
   orderingGuidance: OrderingGuidanceSchema.nullable(),
@@ -538,9 +588,14 @@ export const FoodseyoAnalysisPayloadSchema = z.strictObject({
   allergySafetyNotice: z.literal(ALLERGY_SAFETY_NOTICE),
 });
 
-export const ConsistentFoodseyoAnalysisPayloadSchema =
+export const PreviousConsistentFoodseyoAnalysisPayloadSchema =
   FoodseyoAnalysisPayloadSchema.extend({
     menu: ConsistentMenuSchema.nullable(),
+  });
+
+export const ConsistentFoodseyoAnalysisPayloadSchema =
+  PreviousConsistentFoodseyoAnalysisPayloadSchema.extend({
+    restaurantResolution: RestaurantResolutionSchema,
   });
 
 export const LegacyFoodseyoAnalysisSchema = z.strictObject({
@@ -551,6 +606,17 @@ export const LegacyFoodseyoAnalysisSchema = z.strictObject({
   inputContext: InputContextSchema,
   payload: FoodseyoAnalysisPayloadSchema,
   issues: z.array(AnalysisIssueSchema),
+});
+
+export const PreviousConsistentFoodseyoAnalysisSchema = z.strictObject({
+  schemaVersion: z.literal(FOODSEYO_ANALYSIS_PREVIOUS_SCHEMA_VERSION),
+  analysisId: z.string().min(1),
+  generatedAt: z.string().datetime({ offset: true }),
+  status: AnalysisStatusSchema,
+  inputContext: InputContextSchema,
+  payload: PreviousConsistentFoodseyoAnalysisPayloadSchema,
+  issues: z.array(AnalysisIssueSchema),
+  analysisMetadata: PreviousAnalysisMetadataSchema,
 });
 
 export const ConsistentFoodseyoAnalysisSchema = z.strictObject({
@@ -566,12 +632,22 @@ export const ConsistentFoodseyoAnalysisSchema = z.strictObject({
 
 export const FoodseyoAnalysisSchema = z.discriminatedUnion("schemaVersion", [
   LegacyFoodseyoAnalysisSchema,
+  PreviousConsistentFoodseyoAnalysisSchema,
   ConsistentFoodseyoAnalysisSchema,
 ]);
 
 export type InputType = z.infer<typeof InputTypeSchema>;
 export type AnalysisStatus = z.infer<typeof AnalysisStatusSchema>;
 export type RestaurantMatchStatus = z.infer<typeof RestaurantMatchStatusSchema>;
+export type RestaurantResolutionBasis = z.infer<
+  typeof RestaurantResolutionBasisSchema
+>;
+export type RestaurantIdentityScope = z.infer<
+  typeof RestaurantIdentityScopeSchema
+>;
+export type RestaurantResolutionConflictCode = z.infer<
+  typeof RestaurantResolutionConflictCodeSchema
+>;
 export type Availability = z.infer<typeof AvailabilitySchema>;
 export type ClaimBasis = z.infer<typeof ClaimBasisSchema>;
 export type EvidenceSourceType = z.infer<typeof EvidenceSourceTypeSchema>;
@@ -589,6 +665,9 @@ export type EvidenceItem = z.infer<typeof EvidenceItemSchema>;
 export type ClaimEvidence = z.infer<typeof ClaimEvidenceSchema>;
 export type InputContext = z.infer<typeof InputContextSchema>;
 export type RestaurantCandidate = z.infer<typeof RestaurantCandidateSchema>;
+export type LegacyRestaurantResolution = z.infer<
+  typeof LegacyRestaurantResolutionSchema
+>;
 export type RestaurantResolution = z.infer<typeof RestaurantResolutionSchema>;
 export type Restaurant = z.infer<typeof RestaurantSchema>;
 export type Money = z.infer<typeof MoneySchema>;
@@ -602,8 +681,14 @@ export type DishConsistencyWording = z.infer<
 export type AnalysisConsistencyVersionMetadata = z.infer<
   typeof AnalysisConsistencyVersionMetadataSchema
 >;
+export type PreviousAnalysisConsistencyVersionMetadata = z.infer<
+  typeof PreviousAnalysisConsistencyVersionMetadataSchema
+>;
 export type DishAnalysisIdentity = z.infer<typeof DishAnalysisIdentitySchema>;
 export type AnalysisMetadata = z.infer<typeof AnalysisMetadataSchema>;
+export type PreviousAnalysisMetadata = z.infer<
+  typeof PreviousAnalysisMetadataSchema
+>;
 export type RestaurantSpecificDishInfo = z.infer<
   typeof RestaurantSpecificDishInfoSchema
 >;
@@ -625,14 +710,21 @@ export type AnalysisIssue = z.infer<typeof AnalysisIssueSchema>;
 export type LegacyFoodseyoAnalysisPayload = z.infer<
   typeof FoodseyoAnalysisPayloadSchema
 >;
+export type PreviousConsistentFoodseyoAnalysisPayload = z.infer<
+  typeof PreviousConsistentFoodseyoAnalysisPayloadSchema
+>;
 export type ConsistentFoodseyoAnalysisPayload = z.infer<
   typeof ConsistentFoodseyoAnalysisPayloadSchema
 >;
 export type FoodseyoAnalysisPayload =
   | LegacyFoodseyoAnalysisPayload
+  | PreviousConsistentFoodseyoAnalysisPayload
   | ConsistentFoodseyoAnalysisPayload;
 export type LegacyFoodseyoAnalysis = z.infer<
   typeof LegacyFoodseyoAnalysisSchema
+>;
+export type PreviousConsistentFoodseyoAnalysis = z.infer<
+  typeof PreviousConsistentFoodseyoAnalysisSchema
 >;
 export type ConsistentFoodseyoAnalysis = z.infer<
   typeof ConsistentFoodseyoAnalysisSchema
