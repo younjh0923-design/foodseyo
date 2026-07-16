@@ -1,4 +1,6 @@
 import {
+  ConsistentFoodseyoAnalysisPayloadSchema,
+  FOODSEYO_ANALYSIS_SCHEMA_VERSION,
   FoodseyoAnalysisPayloadSchema,
   type FoodseyoAnalysis,
 } from "../../domain/foodseyo-analysis.ts";
@@ -37,7 +39,11 @@ export async function analyzeFoodseyoInput(
   }, options.analyzerRegistry);
 
   const normalizedCandidate = normalizeAnalysisPayloadCandidate(draft.payloadCandidate);
-  const payloadResult = FoodseyoAnalysisPayloadSchema.safeParse(normalizedCandidate);
+  const payloadSchema =
+    draft.schemaVersion === FOODSEYO_ANALYSIS_SCHEMA_VERSION
+      ? ConsistentFoodseyoAnalysisPayloadSchema
+      : FoodseyoAnalysisPayloadSchema;
+  const payloadResult = payloadSchema.safeParse(normalizedCandidate);
   if (!payloadResult.success) {
     throw new AnalysisStructuralValidationError(
       payloadResult.error.issues.map((issue) => ({
@@ -70,6 +76,8 @@ export async function analyzeFoodseyoInput(
     {
       createAnalysisId: options.createAnalysisId ?? defaultCreateAnalysisId,
       now: options.now ?? (() => new Date()),
+      schemaVersion: draft.schemaVersion,
+      analysisMetadata: draft.analysisMetadata,
     },
   );
 

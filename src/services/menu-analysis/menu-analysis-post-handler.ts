@@ -202,6 +202,7 @@ export function createMenuAnalysisPostHandler(
       const restaurantName = validateRestaurantName(formData.get("restaurantName"));
       const provider = dependencies.createProvider();
       const measuredProvider: MenuVisionProvider = {
+        modelVersion: provider.modelVersion,
         async analyzeMenuImages(input) {
           const providerStartedAt = now();
           try {

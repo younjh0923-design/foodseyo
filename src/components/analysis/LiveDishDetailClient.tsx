@@ -69,6 +69,42 @@ export function LiveDishDetailClient({ dishId }: { readonly dishId: string }) {
             </section>
           ) : null}
 
+          {detail.statedIngredients.length ? (
+            <section aria-labelledby="stated-ingredients-title">
+              <h2 id="stated-ingredients-title" className="text-xl font-bold">
+                Ingredients listed on the menu
+              </h2>
+              <ul className="mt-3 flex flex-wrap gap-2">
+                {detail.statedIngredients.map((ingredient) => (
+                  <li key={ingredient} className="rounded-full bg-[var(--canvas)] px-3 py-2 text-xs font-semibold">
+                    {ingredient}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
+
+          {detail.typicalIngredients.length ? (
+            <section aria-labelledby="typical-ingredients-title">
+              <h2 id="typical-ingredients-title" className="text-xl font-bold">
+                Typical ingredients (not confirmed)
+              </h2>
+              <ul className="mt-3 flex flex-wrap gap-2">
+                {detail.typicalIngredients.map((ingredient) => (
+                  <li key={ingredient} className="rounded-full bg-[var(--canvas)] px-3 py-2 text-xs font-semibold">
+                    {ingredient}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
+
+          {detail.uncertainIngredientsSummary ? (
+            <p className="text-sm leading-5 text-[var(--text-secondary)]">
+              {detail.uncertainIngredientsSummary}
+            </p>
+          ) : null}
+
           {detail.dietaryNotes.length ? (
             <section aria-labelledby="dietary-title">
               <h2 id="dietary-title" className="text-xl font-bold">Dietary and allergy notes</h2>

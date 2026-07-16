@@ -34,11 +34,51 @@ const tasteNouns: Readonly<Record<NormalizedBasicTaste["value"], string>> = {
   savory: "savory taste",
 };
 
+const tasteAdjectives: Readonly<Record<NormalizedBasicTaste["value"], string>> = {
+  sweet: "sweet",
+  salty: "salty",
+  sour: "sour",
+  bitter: "bitter",
+  savory: "savory",
+};
+
 const renderTaste = (taste: NormalizedBasicTaste): string => {
   const noun = tasteNouns[taste.value];
   if (taste.intensity === 1) return `mild ${noun}`;
   if (taste.intensity === 3) return `prominent ${noun}`;
   return noun;
+};
+
+const renderBasicTastes = (
+  tastes: readonly NormalizedBasicTaste[],
+): string | null => {
+  if (tastes.length === 0) return null;
+  if (tastes.length === 1) {
+    const [taste] = tastes;
+    if (taste.intensity === 1) {
+      return `Slightly ${tasteAdjectives[taste.value]}.`;
+    }
+    if (taste.intensity === 2) {
+      return `${capitalize(tasteAdjectives[taste.value])}.`;
+    }
+    return `Prominent ${tasteNouns[taste.value]}.`;
+  }
+
+  if (tastes.length === 2) {
+    const prominent = tastes.find((taste) => taste.intensity === 3);
+    const mild = tastes.find((taste) => taste.intensity === 1);
+    if (prominent && mild) {
+      return `Mostly ${tasteAdjectives[prominent.value]}, with mild ${tasteNouns[mild.value]}.`;
+    }
+  }
+
+  return `${capitalize(
+    formatList(
+      tastes.map((taste) =>
+        taste.intensity === 2 ? tasteAdjectives[taste.value] : renderTaste(taste),
+      ),
+    ),
+  )}.`;
 };
 
 const heatWording: Readonly<Record<HeatLevel, string | null>> = {
@@ -78,9 +118,7 @@ export function renderDishConsistencyWording(
   );
 
   return {
-    basicTastes: consistency.basicTastes.length
-      ? `${capitalize(formatList(consistency.basicTastes.map(renderTaste)))}.`
-      : null,
+    basicTastes: renderBasicTastes(consistency.basicTastes),
     flavorNotes: consistency.flavorNotes.length
       ? `${capitalize(formatList(consistency.flavorNotes))}.`
       : null,
@@ -96,7 +134,7 @@ export function renderDishConsistencyWording(
       ? `Typically may include: ${formatList(typical)}.`
       : null,
     uncertainIngredients: hasUncertain
-      ? "Other possible ingredients could not be confirmed."
+      ? "Some ingredients could not be confirmed."
       : null,
   };
 }

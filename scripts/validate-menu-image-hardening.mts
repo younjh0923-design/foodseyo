@@ -39,6 +39,7 @@ import {
 import { createMenuAnalysisPostHandler } from "../src/services/menu-analysis/menu-analysis-post-handler.ts";
 import { MenuAnalysisError } from "../src/services/menu-analysis/menu-analysis-errors.ts";
 import { adaptMenuImageModelOutput } from "../src/services/menu-analysis/menu-image-adapter.ts";
+import { createMenuAnalysisVersionMetadata } from "../src/services/menu-analysis/menu-analysis-versions.ts";
 import {
   MAX_MENU_IMAGE_COUNT,
   SERVER_MENU_IMAGE_MAX_BYTES,
@@ -75,6 +76,21 @@ const safeMessage = (error: unknown, signalAborted = false): string | null =>
     timedOut: false,
   })?.message ?? null;
 const clone = <T>(value: T): T => structuredClone(value);
+const syntheticSourceFingerprint = `source_${"b".repeat(64)}`;
+const syntheticVersions = createMenuAnalysisVersionMetadata(
+  "synthetic-menu-model-v1",
+);
+const adaptFixture = (
+  input: Omit<
+    Parameters<typeof adaptMenuImageModelOutput>[0],
+    "sourceFingerprint" | "versions"
+  >,
+) =>
+  adaptMenuImageModelOutput({
+    ...input,
+    sourceFingerprint: syntheticSourceFingerprint,
+    versions: syntheticVersions,
+  });
 
 const modelFixture: MenuImageModelOutput = {
   analysisQuality: "good",
@@ -133,6 +149,14 @@ const modelFixture: MenuImageModelOutput = {
             similarDishes: [],
             orderingConsiderations: [],
           },
+          consistency: {
+            basicTastes: [{ value: "savory", intensity: 2 }],
+            flavorNotes: [],
+            heatLevel: "unknown",
+            richnessLevel: "unknown",
+            textures: ["soft"],
+            ingredients: [{ name: "noodles", basis: "typical" }],
+          },
           sourceImageIndexes: [0],
           uncertaintyNotes: [],
         },
@@ -143,6 +167,7 @@ const modelFixture: MenuImageModelOutput = {
 };
 
 class FakeProvider implements MenuVisionProvider {
+  readonly modelVersion = "synthetic-menu-model-v1";
   readonly calls: MenuVisionProviderInput[] = [];
   readonly output: MenuImageModelOutput;
   readonly thrownError: unknown;
@@ -203,7 +228,7 @@ const analyze = (
   });
 
 // Explicit restaurant provenance.
-const explicitConflict = adaptMenuImageModelOutput({
+const explicitConflict = await adaptFixture({
   modelOutput: modelFixture,
   imageCount: 2,
   userEnteredRestaurantName: "Different Restaurant",
@@ -246,7 +271,7 @@ verify(
   validateAnalysisSemantics(explicitConflict).errors.length === 0,
   "confirmed explicit input without source IDs passes semantics",
 );
-const directWithoutSources = adaptMenuImageModelOutput({
+const directWithoutSources = await adaptFixture({
   modelOutput: modelFixture,
   imageCount: 2,
   userEnteredRestaurantName: null,
@@ -258,7 +283,7 @@ verify(
   ),
   "confirmed direct evidence without source IDs still fails semantics",
 );
-const explicitMatch = adaptMenuImageModelOutput({
+const explicitMatch = await adaptFixture({
   modelOutput: modelFixture,
   imageCount: 2,
   userEnteredRestaurantName: "  NORTH—STAR kitchen! ",
@@ -276,7 +301,7 @@ verify(
 );
 const punctuationOnlyNames = clone(modelFixture);
 punctuationOnlyNames.restaurantSignals[0].value = "!!!";
-const punctuationOnlyConflict = adaptMenuImageModelOutput({
+const punctuationOnlyConflict = await adaptFixture({
   modelOutput: punctuationOnlyNames,
   imageCount: 2,
   userEnteredRestaurantName: "???",
@@ -419,7 +444,7 @@ withEmptyCategory.categories.unshift({
   sourceImageIndexes: [0],
   dishes: [],
 });
-const withoutEmptyCategory = adaptMenuImageModelOutput({
+const withoutEmptyCategory = await adaptFixture({
   modelOutput: withEmptyCategory,
   imageCount: 2,
   userEnteredRestaurantName: null,
@@ -443,7 +468,7 @@ orderedCategories.categories.push({
     },
   ],
 });
-const orderedPayload = adaptMenuImageModelOutput({
+const orderedPayload = await adaptFixture({
   modelOutput: orderedCategories,
   imageCount: 2,
   userEnteredRestaurantName: null,
@@ -462,7 +487,7 @@ verify(
 const allEmpty = clone(modelFixture);
 allEmpty.categories[0].dishes = [];
 const allEmptyError = await captureError(async () =>
-  adaptMenuImageModelOutput({
+  adaptFixture({
     modelOutput: allEmpty,
     imageCount: 2,
     userEnteredRestaurantName: null,

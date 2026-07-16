@@ -1,6 +1,6 @@
 # Foodseyo Unified Analysis Data Contract
 
-**Status:** Implemented for T3, executed by T4, and aligned with T5.5
+**Status:** Canonical `1.0.0` compatibility plus C1.2 `1.1.0` live results
 
 **Date:** 2026-07-16
 
@@ -10,7 +10,7 @@ The canonical contract is implemented in `src/domain/foodseyo-analysis.ts`. Zod 
 
 `FoodseyoAnalysis` is the app-managed envelope:
 
-- `schemaVersion`: the literal `1.0.0`;
+- `schemaVersion`: supported literal `1.0.0` or `1.1.0`;
 - `analysisId`: an app-generated string;
 - `generatedAt`: an ISO 8601 string;
 - `status`: `complete`, `partial`, or `failed`;
@@ -188,11 +188,11 @@ Information gaps and operational failure are distinct. For example, restaurant i
 
 `src/data/demoFoodseyoAnalysis.ts` is the canonical demo fixture and is created with `FoodseyoAnalysisSchema.parse`. It is clearly labeled as `demo`, uses `demo_data` evidence, stores explicit fixture prices, records image provenance and rights, and does not claim to be live restaurant evidence.
 
-## C1.1 consistency contract
+## C1 consistency contract and vNext
 
-C1.1 deliberately leaves the canonical `FoodseyoAnalysis` schema, the provider structured-output schema, and their free-string taste, texture, spice, and ingredient fields unchanged. The independent foundation in `src/lib/analysis-consistency/` defines `foodseyo-consistency-v1` for later C1.2 integration. Its metadata binds model, prompt, canonical schema, and consistency-profile versions without adding those fields to the live envelope yet.
+C1.1 established the independent `foodseyo-consistency-v1` foundation. C1.2 adds canonical `1.1.0` for new live `menu_images` results while preserving the strict legacy `1.0.0` schema and display behavior. Each vNext dish contains normalized `consistency`, deterministic `consistencyWording`, and separate dish/result identity. The envelope contains the source fingerprint plus `modelVersion`, `promptVersion`, `providerSchemaVersion`, `canonicalSchemaVersion`, and `consistencyProfileVersion`.
 
-The new contract separates basic tastes, flavor notes, heat, richness, textures, and free-form ingredient evidence. Ingredient evidence is `stated`, `typical`, or `uncertain`; typical or uncertain information never becomes a stated restaurant fact. The source fingerprint uses pre-provider source identity, including ordered SHA-256 content hashes and count for menu images. The dish fingerprint accepts source-stated dish evidence only. Normalized consistency, deterministic wording, inferred ingredients, tastes, textures, and all five version fields belong to a separate analysis-result fingerprint. These identities do not enable cache reuse, storage, or API bypass in C1.1.
+The contract separates basic tastes, flavor notes, heat, richness, textures, and free-form ingredient evidence. Ingredient evidence is `stated`, `typical`, or `uncertain`; typical or uncertain information never becomes a stated restaurant fact. The source fingerprint uses pre-provider source identity, including ordered SHA-256 content hashes and count for menu images. Raw image hashes are not stored in the canonical result. The dish fingerprint accepts source-stated dish evidence only. Normalized consistency, deterministic wording, and all five version fields belong to a separate result fingerprint. These identities do not enable cache reuse, database storage, or provider bypass in C1.2.
 
 `src/data/demoRestaurant.ts` is a UI adapter. It derives the existing `Restaurant` and `Dish` view models from the canonical fixture so the clearly labeled Demo Overview, Dish Detail, Meal Planner, Assistant mock, and routes share one source of truth.
 
@@ -220,6 +220,6 @@ Runtime details are defined in [analysis-orchestration.md](./analysis-orchestrat
 
 ## T5.4 browser read contract
 
-The canonical schema is unchanged. T5.4 does not add a result-specific contract or copy canonical data into URL, Route props, local storage, IndexedDB, or a database. The browser session reader distinguishes valid data, a missing/empty key, invalid JSON, invalid schema or semantics, unsupported schema version, `failed` status, a zero-dish result, and unavailable session storage. Only a valid, non-failed result with at least one dish may render Live Overview or Dish Detail.
+The browser session reader supports legacy `1.0.0` and vNext `1.1.0`, and distinguishes valid data, a missing/empty key, invalid JSON, invalid schema or semantics, unsupported future versions, `failed` status, a zero-dish result, and unavailable session storage. Only a valid, non-failed result with at least one dish may render Live Overview or Dish Detail. No canonical data is copied into a URL, local storage, IndexedDB, or a database.
 
 `foodseyo.currentAnalysis` is the only active Foodseyo storage key. T5.5 removes the former user-profile key and all active local-storage reads and writes. Removing the current result must not clear unrelated browser storage.

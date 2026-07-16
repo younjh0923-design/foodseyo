@@ -501,3 +501,11 @@ This log records accepted product and architecture decisions frozen in T2. Chang
 - **Impact:** Raw image bytes are transiently hashed and are never accepted by the fingerprint identity object, persisted, Base64-encoded, or logged. Version metadata now distinguishes model, prompt, provider schema, canonical schema, and consistency profile. Image-only inputs may have only a source fingerprint before analysis when no independent source-stated dish evidence exists; they must not derive a supposedly pre-call dish fingerprint from later model output. Live provider, prompt, schemas, canonical analysis, storage, and UI remain unchanged.
 - **Status:** Accepted
 - **Date:** 2026-07-16
+
+## D-063 — Integrate consistency through a backward-compatible canonical vNext
+
+- **Decision:** New live `menu_images` analysis emits canonical `1.1.0`. The existing one-call Responses API provider returns a structured C1 consistency object; Foodseyo then reuses the C1 normalizer and validator, generates deterministic wording, and stores source, dish, result, and five-part version metadata. The session reader and result views continue to accept legacy `1.0.0` without inferring new consistency fields from old free text.
+- **Reason:** Stable live taste, texture, heat, richness, and ingredient semantics require a structured result boundary, while existing session fixtures must not be silently reinterpreted or broken.
+- **Impact:** Ordered image content is hashed and reduced to one source fingerprint before provider execution. Dish identity is created only after source-stated dish extraction, and result identity is separate. New Overview and Dish Detail views use deterministic wording and distinguish stated from typical ingredients; uncertain ingredients are summarized. The provider model, Responses API settings, one-request policy, image handling, safety notice, routes, storage key, observability fields, and safe error boundaries remain intact. No cache, database, provider bypass, T7 link analysis, or additional OpenAI call is added.
+- **Status:** Accepted
+- **Date:** 2026-07-16

@@ -1,6 +1,6 @@
 # Foodseyo MVP Input Architecture
 
-**Status:** C1.1 consistency foundation; active input scope unchanged
+**Status:** C1.2 consistency integration; active input scope unchanged
 
 **Date:** 2026-07-16
 
@@ -42,9 +42,9 @@ Schema version `1.0.0` still parses the legacy `restaurant_photo` and `restauran
 
 ## C1 consistency foundation
 
-C1 is a separate checkpoint before T7. C1.1 adds a versioned, network-free consistency profile, normalization, wording, validation, and fingerprint foundation without connecting it to the live menu-image provider, prompt, response schema, canonical `FoodseyoAnalysis`, or result UI. C1.2 is the next checkpoint and will evaluate that integration explicitly.
+C1 is a separate checkpoint before C2 and T7. C1.1 added the versioned, network-free profile, normalization, wording, validation, and fingerprint foundation. C1.2 connects it only to the existing live `menu_images` path; input scope, the Home link-only validation behavior, and the one-request image intake remain unchanged.
 
-Source and dish fingerprints are identity contracts only. C1.1 does not add a cache, database, shared registry, persistent history, or automatic provider bypass.
+Source, dish, and result fingerprints remain identity metadata only. C1.2 does not add a cache, database, shared registry, persistent history, or automatic provider bypass.
 
 ## Result and storage boundary
 
@@ -56,9 +56,10 @@ Validated analysis is stored under `foodseyo.currentAnalysis` in `sessionStorage
 - T5.5 — MVP scope alignment cleanup
 - T6 — cancelled from the MVP
 - R1 — internal codebase and development workflow optimization
-- C1.1 — analysis consistency contract foundation (current)
-- C1.2 — live menu-image consistency integration (next)
-- T7 — restaurant/menu link analysis after C1
+- C1.1 / C1.1.1 — consistency foundations (completed)
+- C1.2 — live menu-image consistency integration (current)
+- C2.1–C2.4 — relational model and cache safety (next)
+- T7.1–T7.4 — restaurant/menu link analysis after C2
 - T8 — restaurant identification, reconsider after T7
 - Later — map-app share-to-Foodseyo integration
 

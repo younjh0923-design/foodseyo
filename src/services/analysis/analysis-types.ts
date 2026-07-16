@@ -1,8 +1,10 @@
 import type {
+  AnalysisMetadata,
   AnalysisIssue,
   FoodseyoAnalysisPayload,
   InputContext,
   InputType,
+  FoodseyoAnalysisSchemaVersion,
 } from "../../domain/foodseyo-analysis.ts";
 
 export interface TransientImageInput {
@@ -88,6 +90,8 @@ export interface AnalyzerExecutionContext {
 }
 
 export interface AnalysisDraft {
+  readonly schemaVersion?: FoodseyoAnalysisSchemaVersion;
+  readonly analysisMetadata?: AnalysisMetadata;
   readonly inputContext: InputContext;
   readonly payloadCandidate: unknown;
   readonly operationalIssues: readonly AnalysisIssue[];

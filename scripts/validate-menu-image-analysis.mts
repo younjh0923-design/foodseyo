@@ -23,6 +23,7 @@ import {
 } from "../src/services/menu-analysis/menu-upload-validation.ts";
 import { mapMenuAnalysisError } from "../src/services/menu-analysis/menu-analysis-api-errors.ts";
 import { adaptMenuImageModelOutput } from "../src/services/menu-analysis/menu-image-adapter.ts";
+import { createMenuAnalysisVersionMetadata } from "../src/services/menu-analysis/menu-analysis-versions.ts";
 import { MenuAnalysisError } from "../src/services/menu-analysis/menu-analysis-errors.ts";
 import { MenuImageModelOutputSchema } from "../src/services/menu-analysis/menu-image-model-schema.ts";
 import type { MenuImageModelOutput } from "../src/services/menu-analysis/menu-image-model-schema.ts";
@@ -54,6 +55,21 @@ const { verify, report } = createValidationSuite(
   "Foodseyo menu image analysis validation",
   "Menu image analysis validation failed",
 );
+const syntheticSourceFingerprint = `source_${"a".repeat(64)}`;
+const syntheticVersions = createMenuAnalysisVersionMetadata(
+  "synthetic-menu-model-v1",
+);
+const adaptFixture = (
+  input: Omit<
+    Parameters<typeof adaptMenuImageModelOutput>[0],
+    "sourceFingerprint" | "versions"
+  >,
+) =>
+  adaptMenuImageModelOutput({
+    ...input,
+    sourceFingerprint: syntheticSourceFingerprint,
+    versions: syntheticVersions,
+  });
 const networkGuard = installNetworkGuard(
   "Network calls are forbidden in automatic menu-analysis tests.",
 );
@@ -129,6 +145,20 @@ const validModelFixture: MenuImageModelOutput = {
             similarDishes: ["curry laksa"],
             orderingConsiderations: ["Ask about spice level"],
           },
+          consistency: {
+            basicTastes: [
+              { value: "savory", intensity: 3 },
+              { value: "sweet", intensity: 1 },
+            ],
+            flavorNotes: [],
+            heatLevel: "medium",
+            richnessLevel: "rich",
+            textures: ["crispy", "soft"],
+            ingredients: [
+              { name: "noodles", basis: "stated" },
+              { name: "coconut milk", basis: "typical" },
+            ],
+          },
           sourceImageIndexes: [0],
           uncertaintyNotes: [],
         },
@@ -155,6 +185,14 @@ const validModelFixture: MenuImageModelOutput = {
             similarDishes: [],
             orderingConsiderations: [],
           },
+          consistency: {
+            basicTastes: [],
+            flavorNotes: [],
+            heatLevel: "unknown",
+            richnessLevel: "unknown",
+            textures: [],
+            ingredients: [],
+          },
           sourceImageIndexes: [1],
           uncertaintyNotes: ["Price was not readable"],
         },
@@ -165,6 +203,7 @@ const validModelFixture: MenuImageModelOutput = {
 };
 
 class FakeMenuVisionProvider implements MenuVisionProvider {
+  readonly modelVersion = "synthetic-menu-model-v1";
   readonly calls: MenuVisionProviderInput[] = [];
   output: MenuImageModelOutput;
 
@@ -276,15 +315,15 @@ verify(!MenuImageModelOutputSchema.safeParse(missingNullable).success, "8 missin
 verify(!MenuImageModelOutputSchema.safeParse({ ...validModelFixture, appStatus: "complete" }).success, "9 unexpected property is rejected");
 const invalidIndex = clone(validModelFixture);
 invalidIndex.categories[0].dishes[0].sourceImageIndexes = [2];
-const invalidIndexError = await captureError(async () => adaptMenuImageModelOutput({ modelOutput: invalidIndex, imageCount: 2, userEnteredRestaurantName: null }));
+const invalidIndexError = await captureError(async () => adaptFixture({ modelOutput: invalidIndex, imageCount: 2, userEnteredRestaurantName: null }));
 verify(invalidIndexError instanceof MenuAnalysisError && invalidIndexError.code === "INVALID_SOURCE_IMAGE_INDEX", "10 invalid source index is rejected");
 const unreadable = clone(validModelFixture);
 unreadable.analysisQuality = "unreadable";
-const unreadableError = await captureError(async () => adaptMenuImageModelOutput({ modelOutput: unreadable, imageCount: 2, userEnteredRestaurantName: null }));
+const unreadableError = await captureError(async () => adaptFixture({ modelOutput: unreadable, imageCount: 2, userEnteredRestaurantName: null }));
 verify(unreadableError instanceof MenuAnalysisError && unreadableError.code === "MENU_NOT_READABLE", "11 unreadable output is typed");
 const noDishes = clone(validModelFixture);
 noDishes.categories = [];
-const noDishesError = await captureError(async () => adaptMenuImageModelOutput({ modelOutput: noDishes, imageCount: 2, userEnteredRestaurantName: null }));
+const noDishesError = await captureError(async () => adaptFixture({ modelOutput: noDishes, imageCount: 2, userEnteredRestaurantName: null }));
 verify(noDishesError instanceof MenuAnalysisError && noDishesError.code === "MENU_DISHES_MISSING", "12 zero dishes is typed");
 
 // C. Canonical conversion (13-23)
@@ -302,16 +341,16 @@ verify(!("bytes" in result) && !JSON.stringify(result).includes("Uint8Array"), "
 verify(typeof JSON.stringify(result) === "string", "23 final result is JSON serializable");
 
 // D. Restaurant resolution (24-29)
-const userNamed = adaptMenuImageModelOutput({ modelOutput: validModelFixture, imageCount: 2, userEnteredRestaurantName: "User Pick" });
+const userNamed = await adaptFixture({ modelOutput: validModelFixture, imageCount: 2, userEnteredRestaurantName: "User Pick" });
 verify(userNamed.restaurantResolution.status === "confirmed" && userNamed.restaurantResolution.confirmedBy === "explicit_input", "24 user name confirms explicit input");
 verify(result.payload.restaurantResolution.status === "confirmed" && result.payload.restaurantResolution.confirmedBy === "direct_evidence", "25 name plus direct signal confirms restaurant");
 const nameOnlyModel = clone(validModelFixture);
 nameOnlyModel.restaurantSignals = [{ kind: "name", value: "Name Only", sourceImageIndex: 0 }];
-const nameOnly = adaptMenuImageModelOutput({ modelOutput: nameOnlyModel, imageCount: 2, userEnteredRestaurantName: null });
+const nameOnly = await adaptFixture({ modelOutput: nameOnlyModel, imageCount: 2, userEnteredRestaurantName: null });
 verify(nameOnly.restaurantResolution.status === "likely", "26 visible name alone is likely");
 const noSignalModel = clone(validModelFixture);
 noSignalModel.restaurantSignals = [];
-const noSignal = adaptMenuImageModelOutput({ modelOutput: noSignalModel, imageCount: 2, userEnteredRestaurantName: null });
+const noSignal = await adaptFixture({ modelOutput: noSignalModel, imageCount: 2, userEnteredRestaurantName: null });
 verify(noSignal.restaurantResolution.status === "unconfirmed", "27 no identity signal is unconfirmed");
 verify(!JSON.stringify(result.payload.restaurantResolution).includes("confidence"), "28 no numeric confidence is emitted");
 verify(result.payload.restaurant?.publicLocation === null && result.inputContext.type === "menu_images" && !result.inputContext.locationUsed, "29 location does not confirm identity");

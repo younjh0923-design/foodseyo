@@ -1,6 +1,7 @@
 import type {
   DietaryAssessment,
   Dish,
+  ConsistentDish,
   FoodseyoAnalysis,
   MenuCategory,
 } from "../domain/foodseyo-analysis.ts";
@@ -24,6 +25,9 @@ const uniqueText = (values: readonly (string | null | undefined)[]): string[] =>
 
 const firstText = (...values: readonly (string | null | undefined)[]) =>
   uniqueText(values)[0] ?? null;
+
+const isConsistentDish = (dish: Dish): dish is ConsistentDish =>
+  "consistency" in dish && "consistencyWording" in dish;
 
 export const liveDishPath = (dishId: string): string =>
   `/analysis/dishes/${encodeURIComponent(dishId)}`;
@@ -90,10 +94,15 @@ const toDishCard = (dish: Dish): LiveDishCardView => ({
     dish.restaurantSpecific.menuDescription,
     dish.generalKnowledge.definition,
   ),
-  labels: uniqueText([
-    dish.visibleSpiceLabel,
-    ...dish.visibleDietaryLabels,
-  ]),
+  labels: isConsistentDish(dish)
+    ? uniqueText([
+        dish.consistencyWording.basicTastes,
+        dish.consistencyWording.flavorNotes,
+        dish.consistencyWording.heat,
+        dish.consistencyWording.richness,
+        dish.consistencyWording.textures,
+      ])
+    : uniqueText([dish.visibleSpiceLabel, ...dish.visibleDietaryLabels]),
 });
 
 const uniqueDishes = (dishes: readonly Dish[]): Dish[] => {
@@ -248,8 +257,11 @@ export interface LiveDishDetailView {
   readonly categoryLabel: string | null;
   readonly description: string | null;
   readonly expectations: readonly string[];
-  readonly ingredientsTitle: string;
+  readonly ingredientsTitle: string | null;
   readonly ingredients: readonly string[];
+  readonly statedIngredients: readonly string[];
+  readonly typicalIngredients: readonly string[];
+  readonly uncertainIngredientsSummary: string | null;
   readonly dietaryNotes: readonly LiveDietaryNoteView[];
   readonly orderingNotes: readonly string[];
   readonly uncertaintyNotes: readonly string[];
@@ -287,16 +299,37 @@ export function createLiveDishDetail(
   const confirmedIngredients = uniqueText(
     dish.restaurantSpecific.confirmedIngredients.values,
   );
-  const ingredients = confirmedIngredients.length
-    ? confirmedIngredients
-    : uniqueText(dish.generalKnowledge.commonIngredients);
-  const expectations = uniqueText([
-    ...dish.generalKnowledge.typicalTaste,
-    ...dish.generalKnowledge.typicalTexture,
-    dish.visibleSpiceLabel,
-    dish.generalKnowledge.typicalSpice,
-    dish.generalKnowledge.typicalPreparation,
-  ]);
+  const consistent = isConsistentDish(dish);
+  const ingredients = consistent
+    ? []
+    : confirmedIngredients.length
+      ? confirmedIngredients
+      : uniqueText(dish.generalKnowledge.commonIngredients);
+  const statedIngredients = consistent
+    ? dish.consistency.ingredients
+        .filter((ingredient) => ingredient.basis === "stated")
+        .map((ingredient) => ingredient.name)
+    : [];
+  const typicalIngredients = consistent
+    ? dish.consistency.ingredients
+        .filter((ingredient) => ingredient.basis === "typical")
+        .map((ingredient) => ingredient.name)
+    : [];
+  const expectations = consistent
+    ? uniqueText([
+        dish.consistencyWording.basicTastes,
+        dish.consistencyWording.flavorNotes,
+        dish.consistencyWording.heat,
+        dish.consistencyWording.richness,
+        dish.consistencyWording.textures,
+      ])
+    : uniqueText([
+        ...dish.generalKnowledge.typicalTaste,
+        ...dish.generalKnowledge.typicalTexture,
+        dish.visibleSpiceLabel,
+        dish.generalKnowledge.typicalSpice,
+        dish.generalKnowledge.typicalPreparation,
+      ]);
   const dietaryNotes = dish.dietary.items.map((item) => ({
     label: item.label,
     status: dietaryStatusLabel[item.status],
@@ -326,10 +359,18 @@ export function createLiveDishDetail(
       dish.generalKnowledge.definition,
     ),
     expectations,
-    ingredientsTitle: confirmedIngredients.length
-      ? "Ingredients shown"
-      : "Common ingredients",
+    ingredientsTitle: consistent
+      ? null
+      : confirmedIngredients.length
+        ? "Ingredients shown"
+        : "Common ingredients",
     ingredients,
+    statedIngredients,
+    typicalIngredients,
+    uncertainIngredientsSummary:
+      consistent && dish.consistencyWording.uncertainIngredients
+        ? "Some ingredients could not be confirmed."
+        : null,
     dietaryNotes,
     orderingNotes,
     uncertaintyNotes,

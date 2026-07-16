@@ -39,6 +39,7 @@ export function createOpenAIMenuVisionProvider(
   };
 
   return {
+    modelVersion: config.model,
     async analyzeMenuImages(input) {
       if (input.signal?.aborted) throw new AnalysisAbortedError();
       try {

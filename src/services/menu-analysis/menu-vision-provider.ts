@@ -13,5 +13,6 @@ export interface MenuVisionProviderInput {
 }
 
 export interface MenuVisionProvider {
+  readonly modelVersion: string;
   analyzeMenuImages(input: MenuVisionProviderInput): Promise<MenuImageModelOutput>;
 }

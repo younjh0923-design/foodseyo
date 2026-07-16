@@ -1,3 +1,8 @@
+import { FOODSEYO_ANALYSIS_SCHEMA_VERSION } from "../../domain/foodseyo-analysis.ts";
+import {
+  createImageContentHash,
+  createSourceFingerprint,
+} from "../../lib/analysis-consistency/index.ts";
 import { AnalysisAbortedError } from "../analysis/analysis-errors.ts";
 import type {
   AnalysisAnalyzer,
@@ -14,9 +19,12 @@ import {
 } from "./menu-image-limits.ts";
 import { MenuImageModelOutputSchema } from "./menu-image-model-schema.ts";
 import type { MenuVisionProvider } from "./menu-vision-provider.ts";
+import { createMenuAnalysisVersionMetadata } from "./menu-analysis-versions.ts";
 
 export interface MenuImagesAnalyzerDependencies {
   readonly provider: MenuVisionProvider;
+  readonly createImageHash?: (bytes: Uint8Array) => Promise<string>;
+  readonly createSourceIdentity?: typeof createSourceFingerprint;
 }
 
 export function createMenuImagesAnalyzer(
@@ -89,6 +97,35 @@ export function createMenuImagesAnalyzer(
         });
       }
 
+      let sourceFingerprint: string;
+      try {
+        const imageHashes = await Promise.all(
+          images.map((image) =>
+            (dependencies.createImageHash ?? createImageContentHash)(image.bytes),
+          ),
+        );
+        sourceFingerprint = await (
+          dependencies.createSourceIdentity ?? createSourceFingerprint
+        )({
+          sourceType: "menu_images",
+          sourceIdentifier: null,
+          imageCount: images.length,
+          orderedImageContentHashes: imageHashes,
+          restaurantIdentifier: request.userEnteredRestaurantName,
+          branchIdentifier: null,
+          sourceRevision: null,
+        });
+      } catch {
+        throw new MenuAnalysisError(
+          "CANONICAL_ADAPTER_FAILED",
+          "The menu source identity could not be created safely.",
+          true,
+        );
+      }
+      const versions = createMenuAnalysisVersionMetadata(
+        dependencies.provider.modelVersion,
+      );
+
       const providerOutput = await dependencies.provider.analyzeMenuImages({
         images,
         userEnteredRestaurantName: request.userEnteredRestaurantName,
@@ -106,10 +143,12 @@ export function createMenuImagesAnalyzer(
 
       let payload;
       try {
-        payload = adaptMenuImageModelOutput({
+        payload = await adaptMenuImageModelOutput({
           modelOutput: parsedOutput.data,
           imageCount: request.images.length,
           userEnteredRestaurantName: request.userEnteredRestaurantName,
+          sourceFingerprint,
+          versions,
         });
       } catch (error) {
         if (error instanceof MenuAnalysisError) throw error;
@@ -122,6 +161,8 @@ export function createMenuImagesAnalyzer(
       const degraded = parsedOutput.data.analysisQuality === "partial";
 
       return {
+        schemaVersion: FOODSEYO_ANALYSIS_SCHEMA_VERSION,
+        analysisMetadata: { sourceFingerprint, versions },
         inputContext: {
           type: "menu_images",
           imageCount: request.images.length,

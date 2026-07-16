@@ -1,5 +1,5 @@
 import {
-  FOODSEYO_ANALYSIS_SCHEMA_VERSION,
+  FOODSEYO_ANALYSIS_SUPPORTED_SCHEMA_VERSIONS,
   FoodseyoAnalysisSchema,
   type FoodseyoAnalysis,
 } from "../domain/foodseyo-analysis.ts";
@@ -54,7 +54,9 @@ export function parseCurrentAnalysisStorageValue(
   if (
     isRecord(candidate) &&
     typeof candidate.schemaVersion === "string" &&
-    candidate.schemaVersion !== FOODSEYO_ANALYSIS_SCHEMA_VERSION
+    !(FOODSEYO_ANALYSIS_SUPPORTED_SCHEMA_VERSIONS as readonly string[]).includes(
+      candidate.schemaVersion,
+    )
   ) {
     return { status: "unsupported-version" };
   }

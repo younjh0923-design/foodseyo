@@ -1,6 +1,6 @@
 # Foodseyo Analysis Consistency Contract
 
-**Status:** C1.1 foundation; not connected to live analysis
+**Status:** C1.2 live `menu_images` integration
 
 **Profile:** `foodseyo-consistency-v1`
 
@@ -8,7 +8,7 @@
 
 ## Boundary
 
-C1 is a product-quality checkpoint before T7. C1.1 adds reusable deterministic contracts in `src/lib/analysis-consistency/`; C1.2 is the next checkpoint and will evaluate live menu-image integration. C1.1 does not change the OpenAI model, developer prompt, provider response schema, canonical `FoodseyoAnalysis`, session storage, Overview, or Dish Detail.
+C1 is a product-quality checkpoint before C2 and T7. C1.1 added reusable deterministic contracts in `src/lib/analysis-consistency/`; C1.1.1 corrected the identity boundaries; C1.2 connects this contract to live `menu_images` analysis. The OpenAI model and one-request Responses API settings remain unchanged, while the prompt, provider structured output, canonical vNext result, session reader, Overview, and Dish Detail now consume the shared contract.
 
 The profile is the single source of truth for vocabulary, ordering, aliases, limits, unknown handling, contradictions, texture definitions, and wording policy. Normalizer, validator, renderer, fingerprints, and tests import that profile instead of copying vocabulary.
 
@@ -35,9 +35,9 @@ Ingredient duplicates merge after limited, explicit name normalization. Evidence
 
 ## Deterministic wording
 
-The English renderer uses profile order, fixed intensity terms, and Oxford-comma lists. It renders each axis separately and never mixes stated with typical ingredient evidence. Examples include `Mild sweetness and prominent savory taste.`, `Smoky and garlicky.`, `Mild heat.`, `Tender and juicy.`, `Listed ingredients: Lamb, onion, and parsley.`, and `Typically may include: Cumin and coriander.` Unknown heat and richness are omitted; uncertain ingredients use a fixed summary rather than a speculative list.
+The English renderer uses profile order, fixed intensity terms, and Oxford-comma lists. It renders each axis separately and never mixes stated with typical ingredient evidence. Examples include `Mostly savory, with mild sweetness.`, `Smoky and garlicky.`, `Mild heat.`, `Tender and juicy.`, `Listed ingredients: Lamb, onion, and parsley.`, and `Typically may include: Cumin and coriander.` Unknown heat and richness are omitted; uncertain ingredients use the fixed summary `Some ingredients could not be confirmed.` rather than a speculative list.
 
-The renderer is not connected to current user-facing results in C1.1.
+New canonical `1.1.0` live results store both the normalized profile and its deterministic wording. Legacy `1.0.0` results keep their existing free-form rendering and are never backfilled by guessing.
 
 ## Canonical serialization and fingerprints
 
@@ -59,10 +59,12 @@ Result-derived identity is separate. The `result_` analysis-result fingerprint c
 
 All three fingerprint families use SHA-256. Different restaurant, branch, source revision, source-stated description, price/currency, ordered image content, or result-version metadata changes only the relevant identity layer. Object-key order and normalized semantic input order do not. The same dish name alone is never enough to reuse a result.
 
-Fingerprints are collision-resistant identity aids, not proof that two menus are current or that two recipes are identical. C1.1 does not log fingerprints or their raw inputs and does not add a server cache, database, shared registry, invalidation policy, persistent history, or automatic API bypass.
+Fingerprints are collision-resistant identity aids, not proof that two menus are current or that two recipes are identical. C1.2 computes the ordered-image source fingerprint before the provider call, then creates dish and result identity only after source-stated dish extraction and normalization. It does not log fingerprints or their raw inputs and does not add a server cache, database, shared registry, invalidation policy, persistent history, or automatic API bypass.
+
+Repeated live submissions still execute the existing OpenAI request. C1.2 reduces avoidable semantic and wording drift after structured output, but it does not guarantee that two model calls produce an exactly identical normalized result. Relational persistence, exact snapshot caching, dish-level reuse, and cache safety are separate C2.1–C2.4 checkpoints.
 
 ## Validation and evaluation
 
 The semantic validator emits safe issue codes and field paths for unsupported values, invalid intensity, duplicates, tag limits, ordering, missing or multiple levels, `spiced` misuse, defined texture contradictions, ingredient name/basis/merge errors, missing version metadata, malformed fingerprint inputs, and noncanonical serialization. Messages never echo menu, dish, ingredient, restaurant, or source text.
 
-`pnpm verify:consistency` runs synthetic repeatability fixtures only. It verifies equivalent aliases and reordered arrays, conservative ambiguous-term handling, deterministic selection and wording, ingredient evidence precedence, canonical serialization, five-part version binding, ordered image-content identity, source-stated-only dish identity, separated analysis-result identity, semantic issue coverage, privacy-safe source isolation, zero OpenAI calls, and zero network calls.
+`pnpm verify:consistency` runs the C1.1 synthetic repeatability fixtures. `pnpm verify:consistency-integration` uses synthetic image bytes and a fake provider to verify the live pre-provider source identity boundary, one provider call, structured normalization and safe degradation, canonical `1.1.0`, five-part metadata, separated dish/result identity, deterministic UI rendering, `1.0.0` compatibility, zero OpenAI calls, and zero external network calls.

@@ -1,5 +1,8 @@
 import { z } from "zod";
-import { DietaryKeySchema } from "../../domain/foodseyo-analysis.ts";
+import {
+  DietaryKeySchema,
+  DishConsistencySchema,
+} from "../../domain/foodseyo-analysis.ts";
 import { MAX_MENU_IMAGE_COUNT } from "./menu-image-limits.ts";
 
 const NullableShortTextSchema = z.string().max(500).nullable();
@@ -67,6 +70,7 @@ export const MenuImageDishSchema = z.strictObject({
   visibleDietaryLabels: ShortTextArraySchema,
   explicitDietaryClaims: z.array(MenuImageDietaryClaimSchema).max(30),
   generalKnowledge: MenuImageGeneralKnowledgeSchema,
+  consistency: DishConsistencySchema,
   sourceImageIndexes: SourceImageIndexesSchema,
   uncertaintyNotes: ShortTextArraySchema,
 });

@@ -130,7 +130,10 @@ verify(dishDetail.includes("Confirm with the restaurant"), "Dish Detail retains 
 verify(inputDocs.includes("menu_images ───────┐"), "active input diagram starts with menu_images");
 verify(inputDocs.includes("restaurant_link ───┘"), "active input diagram includes restaurant_link");
 verify(productDocs.includes("T6:** cancelled from the MVP"), "T6 cancellation is documented");
-verify(productDocs.includes("T7:** restaurant/menu link analysis"), "T7 is documented as link analysis");
+verify(
+  productDocs.includes("T7.1–T7.4:** restaurant/menu link analysis after C2"),
+  "T7 link analysis is documented after C2",
+);
 verify(productDocs.includes("T8:** restaurant identification"), "T8 reevaluation is documented");
 verify(productDocs.includes("Later:** map-app share-to-Foodseyo integration"), "map-app sharing is Later only");
 verify(productDocs.includes("No share extension or inbound map-app share flow exists today"), "map-app sharing is not claimed as implemented");

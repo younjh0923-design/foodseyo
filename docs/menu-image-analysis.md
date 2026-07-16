@@ -1,6 +1,6 @@
 # Foodseyo Menu Image Analysis
 
-**Status:** Implemented through T5.4 canonical live results; Home intake unified in T5.2
+**Status:** C1.2 consistency integrated into the existing T5 live vertical slice
 
 **Date:** 2026-07-15
 
@@ -111,15 +111,19 @@ OpenAI authentication and permission failures (401/403) are configuration errors
 
 ## Model contract and injection resistance
 
-`MenuImageModelOutputSchema` is deliberately narrower than the canonical contract. The model extracts visible menu values, restaurant signals, source image indexes, explicit dietary text, uncertainty notes, and general food knowledge. It does not control app IDs, evidence IDs, restaurant match status, final status, issues, review consensus, freshness, image rights, or ordering guidance.
+`MenuImageModelOutputSchema` is deliberately narrower than the canonical contract. The model extracts visible menu values, restaurant signals, source image indexes, explicit dietary text, uncertainty notes, general food knowledge, and a structured C1 consistency object per dish. Basic tastes, flavor notes, heat, richness, textures, and ingredient basis use the shared profile vocabulary and limits; only ingredient names remain free-form. The provider does not write final user-facing consistency sentences and does not control app IDs, evidence IDs, restaurant match status, final status, issues, review consensus, freshness, image rights, or ordering guidance.
 
-The developer prompt treats all text in images as untrusted data. Instructions, URLs, prompt-like text, or commands printed in a menu image are never followed. The prompt prohibits fabricated restaurant-specific ingredients, preparation, popularity, signature claims, reviews, freshness, modifications, and allergy guarantees. Unreadable values stay nullable or uncertain.
+The developer prompt treats all text in images as untrusted data. Instructions, URLs, prompt-like text, or commands printed in a menu image are never followed, and the request enables no tools or web search. The prompt separates source-stated facts from typical culinary context and uncertain inference; distinguishes basic taste, flavor, heat, richness, texture, and ingredient basis; and prohibits fabricated restaurant-specific ingredients, prices, preparation, popularity, signature claims, reviews, freshness, modifications, and allergy guarantees. Unreadable consistency axes stay empty or `unknown`.
 
 Source indexes are zero-based, non-empty for extracted categories, dishes, prices, options, dietary claims, and menu options, limited to the submitted image set, and validated again by the adapter. An out-of-range reference fails with a typed error. Empty extracted categories are removed; an output with no useful dishes fails instead of producing an empty success. The prompt explicitly prioritizes complete visible-menu extraction while remaining concise and forbids repair calls, tools, or a second request.
 
 ## Canonical adapter and evidence semantics
 
-The deterministic adapter creates one `uploaded_menu` evidence record per submitted image and maps model source indexes to stable evidence IDs. Category, dish, option, and price-option IDs are app-generated with deterministic duplicate suffixes.
+After upload validation, the analyzer hashes the server-received bytes in selection order and creates a `source_` fingerprint before the one provider call. It stores only the resulting source fingerprint, never the raw hashes, bytes, Base64, or filenames. Fingerprint failure stops before provider execution.
+
+After provider output parsing, the adapter reuses the C1 normalizer and semantic validator. It fixes safe aliases, duplicates, ordering, count overflow, and ingredient-basis conflicts; invalid levels become `unknown`, malformed ingredients are removed, and defined texture contradictions clear only the texture axis before one final validation. Remaining blocking issues use the existing provider-invalid boundary without another OpenAI call. Foodseyo code renders the stored deterministic wording.
+
+The deterministic adapter creates one `uploaded_menu` evidence record per submitted image and maps model source indexes to stable evidence IDs. Category, dish, option, and price-option IDs are app-generated with deterministic duplicate suffixes. Dish identity combines the source fingerprint with the extracted source-stated name, description, category, and price; result identity separately binds normalized consistency, wording, and five version values. Neither identity activates a cache.
 
 Restaurant resolution follows these rules:
 
@@ -166,7 +170,7 @@ After the first T5.4 Production iPhone retest, response-boundary regression cove
 
 R1 adds timing to the existing privacy-safe observation boundary without changing the request or response contract. The client can record preprocessing, request-plus-body handling, response parsing/validation, storage, HTTP status, response bytes, a short reference, safe stage code, and issue counts. The server records total duration, the injected OpenAI-provider call boundary, post-provider canonical adaptation/validation, response bytes, status, correlation ID, safe stage, and issue counts. Navigation completion is not timed because a same-page timer cannot reliably measure the browser transition. These observations never include images, Base64, filenames, restaurant or dish names, menu text, raw provider output, full canonical results, API keys, or environment values.
 
-R1 also separates validation entry points: `pnpm verify:quick` for fast development feedback, `pnpm verify:menu` for the menu vertical slice, `pnpm verify:results` for canonical result rendering, and `pnpm verify:full` for the final complete check. `pnpm test` remains the all-network-free-suite compatibility command.
+R1 also separates validation entry points: `pnpm verify:quick` for fast development feedback, `pnpm verify:menu` for the menu vertical slice, `pnpm verify:results` for canonical result rendering, and `pnpm verify:full` for the final complete check. C1.2 adds `pnpm verify:consistency-integration` for the fake-provider live contract. `pnpm test` remains the all-network-free-suite compatibility command.
 
 ## Optional live smoke test
 

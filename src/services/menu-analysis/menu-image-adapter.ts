@@ -1,16 +1,24 @@
 import {
   ALLERGY_SAFETY_NOTICE,
+  type AnalysisConsistencyVersionMetadata,
   type ClaimEvidence,
+  type ConsistentDish,
+  type ConsistentFoodseyoAnalysisPayload,
   type DietaryAssessment,
   type Dish,
   type EvidenceItem,
-  type FoodseyoAnalysisPayload,
+  type LegacyDish,
   type MenuCategory,
   type Money,
   type Restaurant,
   type RestaurantResolution,
 } from "../../domain/foodseyo-analysis.ts";
+import {
+  createAnalysisResultFingerprint,
+  createDishFingerprint,
+} from "../../lib/analysis-consistency/index.ts";
 import { MenuAnalysisError } from "./menu-analysis-errors.ts";
+import { finalizeLiveDishConsistency } from "./menu-image-consistency.ts";
 import type {
   MenuImageDish,
   MenuImageModelOutput,
@@ -196,12 +204,16 @@ const toDietaryAssessments = (
   });
 };
 
-const toDish = (
+const toDish = async (
   dish: MenuImageDish,
   categoryId: string,
+  categoryLabel: string,
   imageCount: number,
   dishId: string,
-): Dish => {
+  sourceDishIdentifier: string,
+  sourceFingerprint: string,
+  versions: AnalysisConsistencyVersionMetadata,
+): Promise<ConsistentDish> => {
   const dishSourceIds = evidenceIdsForIndexes(dish.sourceImageIndexes, imageCount);
   const price = toMoney(dish.price);
   const allocatePriceOptionId = createIdAllocator();
@@ -213,7 +225,7 @@ const toDish = (
       : []),
   ];
 
-  return {
+  const legacyDish: LegacyDish = {
     id: dishId,
     name: dish.name,
     originalName: dish.originalName,
@@ -331,6 +343,31 @@ const toDish = (
       "Menu values were extracted from user-uploaded images and were not verified online.",
       ...uncertaintyLimitations,
     ]),
+  };
+  const finalized = finalizeLiveDishConsistency(dish.consistency, versions);
+  const dishFingerprint = await createDishFingerprint({
+    sourceFingerprint,
+    sourceDishIdentifier,
+    sourceStatedName: dish.name,
+    sourceStatedDescription: dish.menuDescription,
+    sourceStatedCategoryLabel: categoryLabel,
+    sourceStatedPrice: {
+      amount: price?.amount ?? null,
+      currency: price?.currency ?? null,
+      displayText: price?.displayText ?? dish.rawPriceText,
+    },
+  });
+  const resultFingerprint = await createAnalysisResultFingerprint({
+    dishFingerprint,
+    consistency: finalized.consistency,
+    versions,
+  });
+
+  return {
+    ...legacyDish,
+    consistency: finalized.consistency,
+    consistencyWording: finalized.wording,
+    analysisIdentity: { dishFingerprint, resultFingerprint },
   };
 };
 
@@ -462,12 +499,20 @@ export interface AdaptMenuImageModelOutputInput {
   readonly modelOutput: MenuImageModelOutput;
   readonly imageCount: number;
   readonly userEnteredRestaurantName: string | null;
+  readonly sourceFingerprint: string;
+  readonly versions: AnalysisConsistencyVersionMetadata;
 }
 
-export function adaptMenuImageModelOutput(
+export async function adaptMenuImageModelOutput(
   input: AdaptMenuImageModelOutputInput,
-): FoodseyoAnalysisPayload {
-  const { modelOutput, imageCount, userEnteredRestaurantName } = input;
+): Promise<ConsistentFoodseyoAnalysisPayload> {
+  const {
+    modelOutput,
+    imageCount,
+    userEnteredRestaurantName,
+    sourceFingerprint,
+    versions,
+  } = input;
   if (modelOutput.analysisQuality === "unreadable") {
     throw new MenuAnalysisError(
       "MENU_NOT_READABLE",
@@ -493,20 +538,35 @@ export function adaptMenuImageModelOutput(
   const allocateCategoryId = createIdAllocator();
   const allocateDishId = createIdAllocator();
   const categories: MenuCategory[] = [];
-  const dishes: Dish[] = [];
+  const dishes: ConsistentDish[] = [];
   let dishSequence = 0;
 
-  modelOutput.categories
-    .filter((category) => category.dishes.length > 0)
-    .forEach((category, categoryIndex) => {
+  const populatedCategories = modelOutput.categories.filter(
+    (category) => category.dishes.length > 0,
+  );
+  for (const [categoryIndex, category] of populatedCategories.entries()) {
     const categoryId = allocateCategoryId("category", category.label, categoryIndex + 1);
     categories.push({ id: categoryId, label: category.label });
-    category.dishes.forEach((dish) => {
+    for (const dish of category.dishes) {
       dishSequence += 1;
       const dishId = allocateDishId("dish", dish.name, dishSequence);
-      dishes.push(toDish(dish, categoryId, imageCount, dishId));
-    });
-    });
+      const sourceDishIdentifier = `menu-images:${dish.sourceImageIndexes.join(
+        ",",
+      )}:dish-${dishSequence}`;
+      dishes.push(
+        await toDish(
+          dish,
+          categoryId,
+          category.label,
+          imageCount,
+          dishId,
+          sourceDishIdentifier,
+          sourceFingerprint,
+          versions,
+        ),
+      );
+    }
+  }
 
   const restaurant = resolveRestaurant(modelOutput, imageCount, userEnteredRestaurantName);
   const menuLimitations = unique([

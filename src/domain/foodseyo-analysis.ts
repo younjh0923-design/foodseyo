@@ -1,6 +1,28 @@
 import { z } from "zod";
+import {
+  ANALYSIS_RESULT_FINGERPRINT_PATTERN,
+  DISH_FINGERPRINT_PATTERN,
+  SOURCE_FINGERPRINT_PATTERN,
+} from "../lib/analysis-consistency/fingerprint.ts";
+import { VERSION_TOKEN_PATTERN } from "../lib/analysis-consistency/metadata.ts";
+import {
+  ANALYSIS_CONSISTENCY_PROFILE_VERSION,
+  BASIC_TASTES,
+  FLAVOR_NOTES,
+  HEAT_LEVELS,
+  INGREDIENT_EVIDENCE_BASES,
+  RICHNESS_LEVELS,
+  TEXTURES,
+} from "../lib/analysis-consistency/profile.ts";
 
-export const FOODSEYO_ANALYSIS_SCHEMA_VERSION = "1.0.0" as const;
+export const FOODSEYO_ANALYSIS_LEGACY_SCHEMA_VERSION = "1.0.0" as const;
+export const FOODSEYO_ANALYSIS_SCHEMA_VERSION = "1.1.0" as const;
+export const FOODSEYO_ANALYSIS_SUPPORTED_SCHEMA_VERSIONS = [
+  FOODSEYO_ANALYSIS_LEGACY_SCHEMA_VERSION,
+  FOODSEYO_ANALYSIS_SCHEMA_VERSION,
+] as const;
+export type FoodseyoAnalysisSchemaVersion =
+  (typeof FOODSEYO_ANALYSIS_SUPPORTED_SCHEMA_VERSIONS)[number];
 
 export const ALLERGY_SAFETY_NOTICE =
   "Recipes and preparation practices may change. Foodseyo cannot guarantee allergy safety. Confirm ingredients and cross-contact directly with restaurant staff." as const;
@@ -300,6 +322,56 @@ export const GeneralDishKnowledgeSchema = z.strictObject({
   orderingConsiderations: z.array(z.string()),
 });
 
+export const DishConsistencySchema = z.strictObject({
+  basicTastes: z
+    .array(
+      z.strictObject({
+        value: z.enum(BASIC_TASTES),
+        intensity: z.union([z.literal(1), z.literal(2), z.literal(3)]),
+      }),
+    )
+    .max(3),
+  flavorNotes: z.array(z.enum(FLAVOR_NOTES)).max(3),
+  heatLevel: z.enum(HEAT_LEVELS),
+  richnessLevel: z.enum(RICHNESS_LEVELS),
+  textures: z.array(z.enum(TEXTURES)).max(2),
+  ingredients: z.array(
+    z.strictObject({
+      name: z.string().min(1),
+      basis: z.enum(INGREDIENT_EVIDENCE_BASES),
+    }),
+  ),
+});
+
+export const DishConsistencyWordingSchema = z.strictObject({
+  basicTastes: z.string().min(1).nullable(),
+  flavorNotes: z.string().min(1).nullable(),
+  heat: z.string().min(1).nullable(),
+  richness: z.string().min(1).nullable(),
+  textures: z.string().min(1).nullable(),
+  statedIngredients: z.string().min(1).nullable(),
+  typicalIngredients: z.string().min(1).nullable(),
+  uncertainIngredients: z.string().min(1).nullable(),
+});
+
+export const AnalysisConsistencyVersionMetadataSchema = z.strictObject({
+  modelVersion: z.string().regex(VERSION_TOKEN_PATTERN),
+  promptVersion: z.string().regex(VERSION_TOKEN_PATTERN),
+  providerSchemaVersion: z.string().regex(VERSION_TOKEN_PATTERN),
+  canonicalSchemaVersion: z.literal(FOODSEYO_ANALYSIS_SCHEMA_VERSION),
+  consistencyProfileVersion: z.literal(ANALYSIS_CONSISTENCY_PROFILE_VERSION),
+});
+
+export const DishAnalysisIdentitySchema = z.strictObject({
+  dishFingerprint: z.string().regex(DISH_FINGERPRINT_PATTERN),
+  resultFingerprint: z.string().regex(ANALYSIS_RESULT_FINGERPRINT_PATTERN),
+});
+
+export const AnalysisMetadataSchema = z.strictObject({
+  sourceFingerprint: z.string().regex(SOURCE_FINGERPRINT_PATTERN),
+  versions: AnalysisConsistencyVersionMetadataSchema,
+});
+
 export const EvidenceBackedStringListSchema = z.strictObject({
   values: z.array(z.string()),
   availability: AvailabilitySchema,
@@ -401,6 +473,12 @@ export const DishSchema = z.strictObject({
   limitations: z.array(z.string()),
 });
 
+export const ConsistentDishSchema = DishSchema.extend({
+  consistency: DishConsistencySchema,
+  consistencyWording: DishConsistencyWordingSchema,
+  analysisIdentity: DishAnalysisIdentitySchema,
+});
+
 export const MenuCategorySchema = z.strictObject({
   id: z.string().min(1),
   label: z.string().min(1),
@@ -415,6 +493,10 @@ export const MenuSchema = z.strictObject({
   freshness: MenuFreshnessSchema,
   sourceIds: z.array(z.string().min(1)),
   limitations: z.array(z.string()),
+});
+
+export const ConsistentMenuSchema = MenuSchema.extend({
+  dishes: z.array(ConsistentDishSchema),
 });
 
 export const OrderRecommendationSchema = z.strictObject({
@@ -456,8 +538,13 @@ export const FoodseyoAnalysisPayloadSchema = z.strictObject({
   allergySafetyNotice: z.literal(ALLERGY_SAFETY_NOTICE),
 });
 
-export const FoodseyoAnalysisSchema = z.strictObject({
-  schemaVersion: z.literal(FOODSEYO_ANALYSIS_SCHEMA_VERSION),
+export const ConsistentFoodseyoAnalysisPayloadSchema =
+  FoodseyoAnalysisPayloadSchema.extend({
+    menu: ConsistentMenuSchema.nullable(),
+  });
+
+export const LegacyFoodseyoAnalysisSchema = z.strictObject({
+  schemaVersion: z.literal(FOODSEYO_ANALYSIS_LEGACY_SCHEMA_VERSION),
   analysisId: z.string().min(1),
   generatedAt: z.string().datetime({ offset: true }),
   status: AnalysisStatusSchema,
@@ -465,6 +552,22 @@ export const FoodseyoAnalysisSchema = z.strictObject({
   payload: FoodseyoAnalysisPayloadSchema,
   issues: z.array(AnalysisIssueSchema),
 });
+
+export const ConsistentFoodseyoAnalysisSchema = z.strictObject({
+  schemaVersion: z.literal(FOODSEYO_ANALYSIS_SCHEMA_VERSION),
+  analysisId: z.string().min(1),
+  generatedAt: z.string().datetime({ offset: true }),
+  status: AnalysisStatusSchema,
+  inputContext: InputContextSchema,
+  payload: ConsistentFoodseyoAnalysisPayloadSchema,
+  issues: z.array(AnalysisIssueSchema),
+  analysisMetadata: AnalysisMetadataSchema,
+});
+
+export const FoodseyoAnalysisSchema = z.discriminatedUnion("schemaVersion", [
+  LegacyFoodseyoAnalysisSchema,
+  ConsistentFoodseyoAnalysisSchema,
+]);
 
 export type InputType = z.infer<typeof InputTypeSchema>;
 export type AnalysisStatus = z.infer<typeof AnalysisStatusSchema>;
@@ -492,6 +595,15 @@ export type Money = z.infer<typeof MoneySchema>;
 export type PriceOption = z.infer<typeof PriceOptionSchema>;
 export type MenuOption = z.infer<typeof MenuOptionSchema>;
 export type GeneralDishKnowledge = z.infer<typeof GeneralDishKnowledgeSchema>;
+export type DishConsistency = z.infer<typeof DishConsistencySchema>;
+export type DishConsistencyWording = z.infer<
+  typeof DishConsistencyWordingSchema
+>;
+export type AnalysisConsistencyVersionMetadata = z.infer<
+  typeof AnalysisConsistencyVersionMetadataSchema
+>;
+export type DishAnalysisIdentity = z.infer<typeof DishAnalysisIdentitySchema>;
+export type AnalysisMetadata = z.infer<typeof AnalysisMetadataSchema>;
 export type RestaurantSpecificDishInfo = z.infer<
   typeof RestaurantSpecificDishInfoSchema
 >;
@@ -502,13 +614,27 @@ export type DietaryAssessmentCollection = z.infer<
   typeof DietaryAssessmentCollectionSchema
 >;
 export type DishImage = z.infer<typeof DishImageSchema>;
-export type Dish = z.infer<typeof DishSchema>;
+export type LegacyDish = z.infer<typeof DishSchema>;
+export type ConsistentDish = z.infer<typeof ConsistentDishSchema>;
+export type Dish = LegacyDish | ConsistentDish;
 export type MenuCategory = z.infer<typeof MenuCategorySchema>;
 export type Menu = z.infer<typeof MenuSchema>;
 export type OrderRecommendation = z.infer<typeof OrderRecommendationSchema>;
 export type OrderingGuidance = z.infer<typeof OrderingGuidanceSchema>;
 export type AnalysisIssue = z.infer<typeof AnalysisIssueSchema>;
-export type FoodseyoAnalysisPayload = z.infer<
+export type LegacyFoodseyoAnalysisPayload = z.infer<
   typeof FoodseyoAnalysisPayloadSchema
+>;
+export type ConsistentFoodseyoAnalysisPayload = z.infer<
+  typeof ConsistentFoodseyoAnalysisPayloadSchema
+>;
+export type FoodseyoAnalysisPayload =
+  | LegacyFoodseyoAnalysisPayload
+  | ConsistentFoodseyoAnalysisPayload;
+export type LegacyFoodseyoAnalysis = z.infer<
+  typeof LegacyFoodseyoAnalysisSchema
+>;
+export type ConsistentFoodseyoAnalysis = z.infer<
+  typeof ConsistentFoodseyoAnalysisSchema
 >;
 export type FoodseyoAnalysis = z.infer<typeof FoodseyoAnalysisSchema>;

@@ -1,6 +1,6 @@
 import {
   ALLERGY_SAFETY_NOTICE,
-  FOODSEYO_ANALYSIS_SCHEMA_VERSION,
+  FOODSEYO_ANALYSIS_LEGACY_SCHEMA_VERSION,
   FoodseyoAnalysisSchema,
   type ClaimEvidence,
   type DietaryAssessment,
@@ -363,7 +363,7 @@ const dishes: Dish[] = [
 ];
 
 export const demoFoodseyoAnalysis = FoodseyoAnalysisSchema.parse({
-  schemaVersion: FOODSEYO_ANALYSIS_SCHEMA_VERSION,
+  schemaVersion: FOODSEYO_ANALYSIS_LEGACY_SCHEMA_VERSION,
   analysisId: "demo-pai-northern-thai-kitchen-v1",
   generatedAt: "2026-07-15T00:00:00.000Z",
   status: "complete",

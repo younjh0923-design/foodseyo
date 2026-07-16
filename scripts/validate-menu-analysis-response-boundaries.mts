@@ -285,6 +285,14 @@ const modelOutput: MenuImageModelOutput = {
             similarDishes: [],
             orderingConsiderations: [],
           },
+          consistency: {
+            basicTastes: [],
+            flavorNotes: [],
+            heatLevel: "unknown",
+            richnessLevel: "unknown",
+            textures: [],
+            ingredients: [],
+          },
           sourceImageIndexes: [0],
           uncertaintyNotes: [],
         },
@@ -294,6 +302,7 @@ const modelOutput: MenuImageModelOutput = {
   warnings: [],
 };
 const provider: MenuVisionProvider = {
+  modelVersion: "synthetic-menu-model-v1",
   async analyzeMenuImages() {
     return modelOutput;
   },

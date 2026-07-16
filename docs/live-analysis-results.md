@@ -1,6 +1,6 @@
 # Foodseyo Canonical Live Results
 
-**Status:** T5.5 MVP scope alignment
+**Status:** C1.2 canonical vNext rendering with legacy compatibility
 
 **Date:** 2026-07-16
 
@@ -18,7 +18,7 @@ Refresh works in the same tab. New tabs, browser restarts, other devices, perman
 
 ## Overview
 
-The Overview retains:
+For canonical `1.1.0`, Overview cards use stored deterministic taste, flavor, heat, richness, and texture wording. Canonical `1.0.0` keeps its existing display fields. The Overview retains:
 
 - restaurant name and match status;
 - dishes found and extraction status;
@@ -32,7 +32,7 @@ There is no personalization card or empty personalization state. Removing it doe
 
 ## Dish Detail
 
-Dish Detail shows nonempty canonical name, description, expectations, menu-derived ingredients, dietary/allergy caution notes, ordering notes, uncertainty, and the canonical safety notice. It performs no comparison against stored user allergies, diets, or spice settings.
+Dish Detail shows nonempty canonical name, description, expectations, menu-derived ingredients, dietary/allergy caution notes, ordering notes, uncertainty, and the canonical safety notice. In `1.1.0`, stated ingredients and typical-but-unconfirmed ingredients have separate headings; uncertain ingredients are not rendered as confirmed tags and use the fixed summary `Some ingredients could not be confirmed.` It performs no comparison against stored user allergies, diets, or spice settings.
 
 Menu-derived ingredient evidence and conservative uncertainty remain intact. Unknown information is never converted into a safety claim, and users are told to confirm ingredients and cross-contact with restaurant staff.
 

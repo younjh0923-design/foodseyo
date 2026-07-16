@@ -1,6 +1,6 @@
 # Foodseyo Product Rules
 
-**Status:** Normative MVP definition through C1.1
+**Status:** Normative MVP definition through C1.2
 
 **Date:** 2026-07-16
 
@@ -84,7 +84,7 @@ Dish imagery must have source and reuse-rights metadata. Unverified or unclear-r
 
 ## Canonical compatibility
 
-The `FoodseyoAnalysis` schema version remains `1.0.0`. Legacy `restaurant_photo` and `restaurant_screen` enum branches and `user_provided_screen` evidence remain parseable only to avoid an unnecessary contract migration. No Home control, public API route, provider override, or successful live analyzer exposes them; the default registry returns a typed capability-unavailable error.
+The canonical reader supports legacy `FoodseyoAnalysis` `1.0.0` and live consistency `1.1.0`. Legacy `restaurant_photo` and `restaurant_screen` enum branches and `user_provided_screen` evidence remain parseable only to avoid an unrelated migration. No Home control, public API route, provider override, or successful live analyzer exposes them; the default registry returns a typed capability-unavailable error.
 
 ## Out of MVP
 
@@ -102,9 +102,13 @@ The `FoodseyoAnalysis` schema version remains `1.0.0`. Legacy `restaurant_photo`
 - **T5.5:** MVP Scope Alignment Cleanup.
 - **T6:** cancelled from the MVP.
 - **R1:** internal codebase and development workflow optimization; no product behavior change.
-- **C1.1:** current analysis-consistency contract foundation; no live result change.
-- **C1.2:** next, connect the consistency contract to live menu-image analysis.
-- **T7:** restaurant/menu link analysis after C1 is complete.
+- **C1.1 / C1.1.1:** consistency and fingerprint foundations completed.
+- **C1.2:** current live menu-image consistency integration.
+- **C2.1:** relational data model foundation (next).
+- **C2.2:** exact menu snapshot cache.
+- **C2.3:** dish-level reuse.
+- **C2.4:** cache safety.
+- **T7.1–T7.4:** restaurant/menu link analysis after C2.
 - **T8:** restaurant identification, reconsider after T7.
 - **Later:** map-app share-to-Foodseyo integration.
 

@@ -284,8 +284,8 @@ const wordingA = renderDishConsistencyWording(normalizedA.value);
 const wordingB = renderDishConsistencyWording(normalizedB.value);
 verify(canonicalSerialize(wordingA) === canonicalSerialize(wordingB), "equivalent wording is deterministic");
 verify(
-  wordingA.basicTastes === "Mild sweetness and prominent savory taste.",
-  "taste wording follows fixed intensity language",
+  wordingA.basicTastes === "Mostly savory, with mild sweetness.",
+  "taste wording follows the natural deterministic intensity template",
 );
 verify(wordingA.flavorNotes === "Smoky and garlicky.", "flavor wording is deterministic");
 verify(wordingA.heat === "Mild heat.", "heat wording is deterministic");
@@ -305,7 +305,7 @@ verify(
 );
 verify(
   ingredientWording.uncertainIngredients ===
-    "Other possible ingredients could not be confirmed.",
+    "Some ingredients could not be confirmed.",
   "uncertain ingredients use a summary instead of speculative listing",
 );
 
@@ -721,7 +721,7 @@ const [technicalDoc, productRules, inputArchitecture, decisionLog, packageJson, 
     readFile("scripts/validate-all.mts", "utf8"),
   ]);
 verify(technicalDoc.includes("foodseyo-consistency-v1"), "technical doc records the profile version");
-verify(technicalDoc.includes("C1.2 is the next checkpoint"), "technical doc keeps live integration in C1.2");
+verify(technicalDoc.includes("C1.2 connects this contract to live `menu_images` analysis"), "technical doc records live C1.2 integration");
 verify(technicalDoc.includes("does not add a server cache, database"), "technical doc excludes cache and database work");
 verify(
   technicalDoc.includes("image count plus one SHA-256 content hash per image in selection order"),
@@ -731,8 +731,8 @@ verify(
   technicalDoc.includes("does not accept normalized consistency"),
   "technical doc excludes result-derived dish identity",
 );
-verify(productRules.includes("**C1.1:**") && productRules.includes("**C1.2:**"), "product roadmap includes both C1 checkpoints");
-verify(inputArchitecture.includes("C1 is a separate checkpoint before T7"), "input roadmap keeps C1 before T7");
+verify(productRules.includes("**C1.1 / C1.1.1:**") && productRules.includes("**C1.2:**"), "product roadmap includes completed foundations and current C1.2");
+verify(inputArchitecture.includes("C1 is a separate checkpoint before C2 and T7"), "input roadmap keeps C1 before C2 and T7");
 verify(decisionLog.includes("D-061 — Establish the analysis consistency contract before T7"), "decision log preserves the new scope decision");
 verify(
   decisionLog.includes("D-062 — Separate pre-provider identity from analysis-result identity"),
@@ -758,8 +758,10 @@ const liveSource = (
   )
 ).join("\n");
 verify(
-  !liveSource.includes("analysis-consistency"),
-  "C1.1 foundation is not imported by the live provider, schema, storage, or result path",
+  liveSource.includes("analysis-consistency") &&
+    liveSource.includes("consistencyWording") &&
+    liveSource.includes("FOODSEYO_ANALYSIS_SUPPORTED_SCHEMA_VERSIONS"),
+  "C1.2 live schema, adapter, result, and storage paths consume the consistency contract",
 );
 verify(network.callCount === 0, "consistency evaluation made zero network calls");
 network.restore();
