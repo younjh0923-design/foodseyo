@@ -1,6 +1,6 @@
 # Foodseyo Shared Analysis Flow
 
-**Status:** Updated through T5.3 menu-analysis completion handling
+**Status:** Updated through T5.4 canonical live results
 
 **Date:** 2026-07-15
 
@@ -129,22 +129,25 @@ T5.1 hardens this path with 1-10 ordered JPEG, PNG, or WEBP inputs. The browser 
 
 Web research, reviews, and official freshness comparison remain later enrichment capabilities and are not silently performed by the T5 menu-image analyzer.
 
-### Menu Scan completion state
+### Menu Scan completion and result navigation
 
-T5.3 keeps the result on Menu Scan until T6 exists:
+T5.4 completes the menu-image vertical slice before T6:
 
 ```text
 idle
 → preparing browser images
 → requesting one menu analysis
-→ strict HTTP/body/schema validation
-→ success summary OR safe persistent error
-→ request resource cleanup without resetting feedback
+→ strict HTTP/body/canonical/semantic validation
+→ confirmed foodseyo.currentAnalysis session write
+→ navigating
+→ router.replace("/analysis")
 ```
 
-Success remains visible through ordinary re-renders and is cleared only by a new attempt or an image-set mutation. The canonical result is then written to `foodseyo.currentAnalysis`; a storage failure adds a warning inside success instead of changing the analysis to failure. A synchronous attempt gate blocks duplicate submissions, monotonic attempt IDs ignore late responses, and a 105-second client watchdog ends an unresolved browser request after the existing 80-second provider and 90-second Route limits.
+Normal success requires storage readback validation and does not show a completion card, Analyze again, View results, or another action. Loading remains active through `navigating` and uses one honest label. A storage failure keeps an abnormal completion fallback without navigation. A stalled client transition may attempt one same-origin hard replacement and then exposes **Open menu results** if navigation still fails. No fallback loops or reanalysis.
 
-The Production symptom that triggered T5.3 was a mobile visibility defect: completion or error UI was rendered below the image list without being brought into the current viewport. The compact feedback panel now uses live-region semantics, mobile scroll margin, and reduced-motion-aware nearest scrolling. This behavior is general rather than Safari-only, although the symptom was first confirmed on iPhone Safari. Full live result navigation remains deferred to T6.
+`/analysis` and `/analysis/dishes/[dishId]` read the validated canonical result after hydration and make zero result-page network calls. Refresh works in the same tab. Missing, invalid, unsupported, failed, zero-dish, or unavailable session data uses a safe recovery state and never Demo fallback. Dish navigation uses canonical IDs; category and dish order are preserved. Food Passport comparison is local, conservative, and never guarantees allergy safety.
+
+A synchronous attempt gate still blocks duplicate submissions, monotonic attempt IDs ignore late responses, and a 105-second client watchdog ends an unresolved browser request after the existing 80-second provider and 90-second Route limits. T5.3 feedback scrolling remains for abnormal completion and errors. Full details are in [menu-analysis-completion-ui.md](./menu-analysis-completion-ui.md) and [live-analysis-results.md](./live-analysis-results.md).
 
 Even without a confirmed restaurant, Foodseyo should provide:
 

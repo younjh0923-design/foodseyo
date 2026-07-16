@@ -211,3 +211,9 @@ T4 consumes the canonical schemas through `analyzeFoodseyoInput`. Input-specific
 Transient binary and exact-location access exists only in the analyze request. It is never copied into this canonical contract. T5.1 supplies a route-injected `menu_images` analyzer while the default registry remains provider-free. Explicit restaurant input counts as user evidence without source IDs; unmatched image identity and contact details are not borrowed into that user-owned resolution. Direct-evidence confirmation still requires evidence source IDs. Demo remains implemented; restaurant photo, screen, link, and nearby inputs still return typed capability-unavailable errors.
 
 Runtime details are defined in [analysis-orchestration.md](./analysis-orchestration.md).
+
+## T5.4 browser read contract
+
+The canonical schema is unchanged. T5.4 does not add a result-specific contract or copy canonical data into URL, Route props, local storage, IndexedDB, or a database. The browser session reader distinguishes valid data, a missing/empty key, invalid JSON, invalid schema or semantics, unsupported schema version, `failed` status, a zero-dish result, and unavailable session storage. Only a valid, non-failed result with at least one dish may render Live Overview or Dish Detail.
+
+`foodseyo.currentAnalysis` remains the only analysis result key. Food Passport continues to use its existing independent local-storage key. Removing the current result must not clear Passport or unrelated browser storage.

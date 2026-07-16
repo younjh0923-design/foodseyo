@@ -1,6 +1,6 @@
 # Foodseyo Parallel Input Architecture
 
-**Status:** Updated for T5.2 unified Home image intake
+**Status:** Updated through T5.4 canonical live-result convergence
 
 **Date:** 2026-07-15
 
@@ -119,6 +119,12 @@ Purpose:
 - demonstrate Restaurant Overview, Dish Detail, evidence, meal planning, and Assistant behavior.
 
 Demo data must always be visibly labeled as demo data. It must not be presented as live restaurant evidence.
+
+## Canonical result destination
+
+Every live analyzer ultimately supplies validated `FoodseyoAnalysis` to `/analysis` and `/analysis/dishes/[dishId]`. T5.4 connects `menu_images` first. The result layer is input-source independent and performs no provider, OpenAI, web, restaurant, review, or enrichment call. It reads the current canonical result from session storage after hydration and never falls back to Demo.
+
+Restaurant photo/screen remains T6, link analysis remains T7, and restaurant identification/candidate confirmation remains T8. Their numbering and responsibilities are unchanged. Nearby discovery, permanent history, and sharing remain later work.
 
 ## Shared convergence
 

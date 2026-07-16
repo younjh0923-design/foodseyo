@@ -1,6 +1,6 @@
 # Foodseyo Product Rules
 
-**Status:** Frozen product rules with T5.2 Home entry clarification
+**Status:** Frozen product rules with T5.4 canonical live-result clarification
 
 **Date:** 2026-07-15
 
@@ -292,6 +292,16 @@ The internal implementation order is:
 12. Prepare demo assets.
 13. Complete QA.
 14. Prepare submission materials.
+
+### Current checkpoint roadmap
+
+- **T5.4 — Canonical Live Results and Automatic Navigation:** complete the live `menu_images` vertical slice through `/analysis` and `/analysis/dishes/[dishId]` without another model call.
+- **T6 — Restaurant photo and restaurant-screen analysis:** unchanged and not started by T5.4.
+- **T7 — Restaurant/menu link analysis:** unchanged and not started by T5.4.
+- **T8 — Restaurant identification and candidate confirmation:** unchanged and not started by T5.4.
+- **Later:** Nearby discovery, database/account/history, and shareable result links.
+
+Every future analyzer converges on the same validated canonical result destination. The result Routes do not fetch, enrich, infer popularity, or call AI again. They display only the current canonical result plus conservative, deterministic Food Passport comparisons.
 
 ## Post-submission scope
 

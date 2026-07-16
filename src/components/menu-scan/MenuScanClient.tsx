@@ -17,7 +17,10 @@ import { preprocessMenuImages } from "@/lib/menu-image-preprocessing";
 import { prepareMenuScanAppend } from "@/lib/image-intake";
 import {
   INITIAL_MENU_ANALYSIS_UI_STATE,
-  MENU_ANALYSIS_STORAGE_WARNING,
+  MENU_ANALYSIS_LOADING_HELPER,
+  MENU_ANALYSIS_LOADING_LABEL,
+  MENU_ANALYSIS_NAVIGATION_FALLBACK_MS,
+  MENU_ANALYSIS_RESULTS_PATH,
   MENU_ANALYSIS_TIMEOUT_MESSAGE,
   createMenuAnalysisAttemptGate,
   createMenuAnalysisSuccessSummary,
@@ -25,7 +28,10 @@ import {
   menuAnalysisUiReducer,
   startMenuAnalysisWatchdog,
 } from "@/lib/menu-analysis-ui-state";
-import { tryWriteCurrentAnalysis } from "@/lib/storage";
+import {
+  readCurrentAnalysisResult,
+  tryWriteCurrentAnalysis,
+} from "@/lib/storage";
 import { MAX_MENU_IMAGE_COUNT } from "@/services/menu-analysis/menu-upload-validation";
 
 interface MenuPage {
@@ -48,6 +54,7 @@ export function MenuScanClient() {
   const pagesRef = useRef<MenuPage[]>([]);
   const abortRef = useRef<AbortController | null>(null);
   const watchdogCancelRef = useRef<(() => void) | null>(null);
+  const navigationFallbackRef = useRef<number | null>(null);
   const feedbackRef = useRef<HTMLElement>(null);
   const attemptGateRef = useRef(createMenuAnalysisAttemptGate());
   const [pages, setPages] = useState<MenuPage[]>([]);
@@ -63,6 +70,10 @@ export function MenuScanClient() {
     () => () => {
       watchdogCancelRef.current?.();
       watchdogCancelRef.current = null;
+      if (navigationFallbackRef.current !== null) {
+        window.clearTimeout(navigationFallbackRef.current);
+        navigationFallbackRef.current = null;
+      }
       abortRef.current?.abort();
       const activeAttemptId = attemptGateRef.current.current();
       if (activeAttemptId !== null) {
@@ -150,6 +161,7 @@ export function MenuScanClient() {
     abortRef.current = controller;
     dispatchAnalysisUi({ type: "ATTEMPT_STARTED", attemptId });
     let timedOut = false;
+    let navigationStarted = false;
     let cancelWatchdog = () => {};
 
     try {
@@ -192,14 +204,48 @@ export function MenuScanClient() {
       if (!attemptGateRef.current.isCurrent(attemptId)) return;
 
       const summary = createMenuAnalysisSuccessSummary(analysis);
-      dispatchAnalysisUi({ type: "SUCCEEDED", attemptId, summary });
       const storedForNextScreen = tryWriteCurrentAnalysis(analysis);
       if (!storedForNextScreen) {
         dispatchAnalysisUi({
-          type: "STORAGE_WARNING",
+          type: "STORAGE_FAILED",
           attemptId,
-          message: MENU_ANALYSIS_STORAGE_WARNING,
+          summary,
         });
+        return;
+      }
+
+      dispatchAnalysisUi({ type: "PERSISTED", attemptId, summary });
+      navigationStarted = true;
+      let hardNavigationAttempted = false;
+      const showNavigationFallback = () => {
+        if (!attemptGateRef.current.isCurrent(attemptId)) return;
+        attemptGateRef.current.release(attemptId);
+        dispatchAnalysisUi({ type: "NAVIGATION_FAILED", attemptId });
+      };
+      const tryHardNavigationOnce = () => {
+        if (hardNavigationAttempted) return;
+        hardNavigationAttempted = true;
+        if (readCurrentAnalysisResult().status !== "success") {
+          showNavigationFallback();
+          return;
+        }
+        try {
+          window.location.replace(MENU_ANALYSIS_RESULTS_PATH);
+        } catch {
+          showNavigationFallback();
+        }
+      };
+
+      try {
+        router.replace(MENU_ANALYSIS_RESULTS_PATH);
+        navigationFallbackRef.current = window.setTimeout(() => {
+          navigationFallbackRef.current = null;
+          if (!attemptGateRef.current.isCurrent(attemptId)) return;
+          if (window.location.pathname !== "/menu-scan") return;
+          tryHardNavigationOnce();
+        }, MENU_ANALYSIS_NAVIGATION_FALLBACK_MS);
+      } catch {
+        tryHardNavigationOnce();
       }
     } catch (error) {
       if (!attemptGateRef.current.isCurrent(attemptId)) return;
@@ -220,7 +266,9 @@ export function MenuScanClient() {
       if (abortRef.current === controller) {
         abortRef.current = null;
       }
-      attemptGateRef.current.release(attemptId);
+      if (!navigationStarted) {
+        attemptGateRef.current.release(attemptId);
+      }
       dispatchAnalysisUi({ type: "FINALIZED", attemptId });
     }
   };
@@ -249,6 +297,10 @@ export function MenuScanClient() {
     ? pages.findIndex((page) => page.id === preview.id) + 1
     : 0;
   const pageStatus = pages.length === 1 ? "1 image ready" : `${pages.length} images ready`;
+  const openStoredResults = () => {
+    if (readCurrentAnalysisResult().status !== "success") return;
+    router.replace(MENU_ANALYSIS_RESULTS_PATH);
+  };
 
   return (
     <MobileShell>
@@ -290,11 +342,7 @@ export function MenuScanClient() {
             {pages.length ? pageStatus : "No images yet."}
           </div>
           <div aria-live="polite" aria-atomic="true" className="sr-only">
-            {analysisUi.phase === "preparing"
-              ? "Preparing your menu images."
-              : analysisUi.phase === "requesting"
-                ? "Uploading and analyzing your menu."
-                : ""}
+            {analyzing ? MENU_ANALYSIS_LOADING_LABEL : ""}
           </div>
 
           {!pages.length ? (
@@ -412,43 +460,44 @@ export function MenuScanClient() {
             >
               <h2 className="font-bold">Menu analysis complete</h2>
               <p className="mt-1 text-sm leading-5 text-[var(--text-secondary)]">
-                {analysisUi.summary.restaurantLabel} · {analysisUi.summary.dishCount}{" "}
-                {analysisUi.summary.dishCount === 1 ? "dish" : "dishes"} ·{" "}
-                {analysisUi.summary.status}
+                {analysisUi.message}
               </p>
-              {analysisUi.storageWarning ? (
-                <p
-                  role="status"
-                  className="mt-3 rounded-[16px] border border-amber-200 bg-amber-50 px-3 py-2 text-sm leading-5 text-[var(--text-secondary)]"
+              {analysisUi.fallback === "navigation" ? (
+                <PrimaryButton
+                  className="mt-4 w-full"
+                  onClick={openStoredResults}
                 >
-                  {analysisUi.storageWarning}
-                </p>
+                  Open menu results
+                </PrimaryButton>
               ) : null}
             </section>
           ) : null}
         </main>
 
-        <footer className="sticky-safe-bottom sticky bottom-0 z-20 border-t border-[var(--border)] bg-[var(--surface)] px-4 pt-3 sm:px-6">
-          <PrimaryButton
-            className="min-h-12 w-full"
-            disabled={!pages.length || analyzing}
-            onClick={analyze}
-          >
-            {analyzing ? (
-              <LoaderCircle aria-hidden="true" className="soft-spin size-5" />
-            ) : null}
-            {analysisUi.phase === "preparing"
-              ? "Preparing your menu images…"
-              : analysisUi.phase === "requesting"
-                ? "Uploading and analyzing your menu…"
+        {analysisUi.phase === "success" &&
+        analysisUi.fallback === "navigation" ? null : (
+          <footer className="sticky-safe-bottom sticky bottom-0 z-20 border-t border-[var(--border)] bg-[var(--surface)] px-4 pt-3 sm:px-6">
+            <PrimaryButton
+              className="min-h-12 w-full"
+              disabled={!pages.length || analyzing}
+              onClick={analyze}
+            >
+              {analyzing ? (
+                <LoaderCircle aria-hidden="true" className="soft-spin size-5" />
+              ) : null}
+              {analyzing
+                ? MENU_ANALYSIS_LOADING_LABEL
                 : analysisUi.phase === "success"
                   ? "Analyze again"
                   : "Analyze menu"}
-          </PrimaryButton>
-          <p className="mt-2 text-center text-[11px] leading-4 text-[var(--text-muted)]">
-            Images are used for this analysis only and are not stored permanently.
-          </p>
-        </footer>
+            </PrimaryButton>
+            <p className="mt-2 text-center text-[11px] leading-4 text-[var(--text-muted)]">
+              {analyzing
+                ? MENU_ANALYSIS_LOADING_HELPER
+                : "Images are used for this analysis only and are not stored permanently."}
+            </p>
+          </footer>
+        )}
       </div>
 
       <BottomSheet

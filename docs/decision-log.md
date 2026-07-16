@@ -409,3 +409,51 @@ This log records accepted product and architecture decisions frozen in T2. Chang
 - **Impact:** The button is disabled during active work, double taps produce one request, and retries become available only after completion.
 - **Status:** Accepted
 - **Date:** 2026-07-15
+
+## D-052 — Complete the menu-image vertical slice before adding new analyzers
+
+- **Decision:** T5.4 completes menu-image analysis through automatic result navigation, Live Overview, and Live Dish Detail. T6, T7, and T8 retain their existing numbers and purposes.
+- **Reason:** A live analyzer is not a complete user-facing capability until users can understand and navigate its canonical result.
+- **Impact:** T5 gains a final sub-checkpoint without shifting restaurant-photo/screen analysis, link analysis, or restaurant identification/candidate confirmation.
+- **Status:** Accepted
+- **Date:** 2026-07-15
+
+## D-053 — Use one canonical result destination for every analyzer
+
+- **Decision:** `/analysis` and `/analysis/dishes/[dishId]` render validated `FoodseyoAnalysis` independently of whether it was produced by menu images, restaurant photos, screens, links, or future inputs.
+- **Reason:** Future analyzers should supply the same result experience rather than create input-specific result pages.
+- **Impact:** T5.4 builds the common destination first; T6–T8 later connect new analyzers to the same canonical output.
+- **Status:** Accepted
+- **Date:** 2026-07-15
+
+## D-054 — Navigate automatically after successful analysis persistence
+
+- **Decision:** After a valid menu analysis is written to and confirmed in session storage, Menu Scan enters `navigating` and replaces itself with `/analysis` without another user action.
+- **Reason:** An intermediate completion card and extra click add friction after a paid, successful analysis.
+- **Impact:** Completion UI remains only as a storage- or navigation-failure fallback.
+- **Status:** Accepted
+- **Date:** 2026-07-15
+
+## D-055 — Render live results without another model call
+
+- **Decision:** Live Overview and Dish Detail use only the validated canonical analysis already stored for the current browser session.
+- **Reason:** A second model call would add cost, latency, and inconsistent results.
+- **Impact:** Result Routes perform no OpenAI, web, review, restaurant, or other network fetch.
+- **Status:** Accepted
+- **Date:** 2026-07-15
+
+## D-056 — Keep live results session-scoped for the MVP
+
+- **Decision:** The current result remains in `sessionStorage` and supports refresh in the same tab. New-device access, permanent history, and shareable result links remain deferred.
+- **Reason:** The MVP has no database, authentication, or permanent result-storage requirement.
+- **Impact:** Missing or invalid session data shows a safe recovery state rather than Demo content.
+- **Status:** Accepted
+- **Date:** 2026-07-15
+
+## D-057 — Do not infer popularity, prices, or allergy safety
+
+- **Decision:** Live result views display only source-grounded canonical menu information and conservative Food Passport comparisons.
+- **Reason:** The current analysis does not contain verified sales, review, pricing, cross-contact, or restaurant-preparation data suitable for those claims.
+- **Impact:** The Live UI does not claim best sellers, ratings, prices, popularity, or allergy safety.
+- **Status:** Accepted
+- **Date:** 2026-07-15

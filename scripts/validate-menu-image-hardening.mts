@@ -748,6 +748,9 @@ verify(
       storedKey = key;
       storedValue = value;
     },
+    getItem() {
+      return storedValue;
+    },
   }),
   "current analysis storage helper reports write success",
 );
@@ -760,6 +763,9 @@ verify(
   !tryWriteCurrentAnalysis(storageResult, {
     setItem() {
       throw new Error("QuotaExceededError raw browser message");
+    },
+    getItem() {
+      return null;
     },
   }),
   "simulated storage exception reports write failure without throwing",

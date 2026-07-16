@@ -1,5 +1,6 @@
 import type { FoodseyoAnalysis } from "../domain/foodseyo-analysis.ts";
 import { MenuAnalysisApiResponseSchema } from "../services/menu-analysis/menu-analysis-api.ts";
+import { validateAnalysisSemantics } from "../services/analysis/validate-analysis-semantics.ts";
 import { MenuImagePreprocessingError } from "./menu-image-preprocessing.ts";
 import {
   MENU_ANALYSIS_TIMEOUT_MESSAGE,
@@ -47,6 +48,15 @@ export async function parseMenuAnalysisResponse(
     throw new SafeMenuAnalysisClientError(parsed.data.error.message, "api");
   }
   if (parsed.data.analysis.status === "failed") {
+    throw new SafeMenuAnalysisClientError(
+      SAFE_MENU_ANALYSIS_ERROR_MESSAGE,
+      "response",
+    );
+  }
+  if (
+    !parsed.data.analysis.payload.menu?.dishes.length ||
+    validateAnalysisSemantics(parsed.data.analysis.payload).errors.length > 0
+  ) {
     throw new SafeMenuAnalysisClientError(
       SAFE_MENU_ANALYSIS_ERROR_MESSAGE,
       "response",

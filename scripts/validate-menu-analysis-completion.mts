@@ -11,6 +11,10 @@ import { MenuImagePreprocessingError } from "../src/lib/menu-image-preprocessing
 import {
   CLIENT_MENU_ANALYSIS_WATCHDOG_MS,
   INITIAL_MENU_ANALYSIS_UI_STATE,
+  MENU_ANALYSIS_LOADING_HELPER,
+  MENU_ANALYSIS_LOADING_LABEL,
+  MENU_ANALYSIS_NAVIGATION_WARNING,
+  MENU_ANALYSIS_RESULTS_PATH,
   MENU_ANALYSIS_STORAGE_WARNING,
   MENU_ANALYSIS_TIMEOUT_MESSAGE,
   createMenuAnalysisAttemptGate,
@@ -75,27 +79,38 @@ verify(
   "requesting records its start time",
 );
 verify(isMenuAnalysisActive(activeRequest), "requesting derives loading true");
-const succeeded = menuAnalysisUiReducer(activeRequest, {
-  type: "SUCCEEDED",
+const navigating = menuAnalysisUiReducer(activeRequest, {
+  type: "PERSISTED",
   attemptId: 1,
   summary,
 });
-verify(succeeded.phase === "success", "requesting transitions to success");
-verify(!isMenuAnalysisActive(succeeded), "success derives loading false");
+verify(navigating.phase === "navigating", "persisted result transitions to navigating");
+verify(isMenuAnalysisActive(navigating), "navigating derives loading true");
 verify(
-  menuAnalysisUiReducer(succeeded, { type: "FINALIZED", attemptId: 1 }) ===
-    succeeded,
-  "generic finalization does not reset success",
+  menuAnalysisUiReducer(navigating, { type: "FINALIZED", attemptId: 1 }) ===
+    navigating,
+  "generic finalization does not reset navigating",
 );
-const successWithWarning = menuAnalysisUiReducer(succeeded, {
-  type: "STORAGE_WARNING",
-  attemptId: 1,
-  message: MENU_ANALYSIS_STORAGE_WARNING,
+const successWithWarning = menuAnalysisUiReducer(requesting(2), {
+  type: "STORAGE_FAILED",
+  summary,
+  attemptId: 2,
 });
 verify(
   successWithWarning.phase === "success" &&
-    successWithWarning.storageWarning === MENU_ANALYSIS_STORAGE_WARNING,
-  "storage failure remains success with a warning",
+    successWithWarning.fallback === "storage" &&
+    successWithWarning.message === MENU_ANALYSIS_STORAGE_WARNING,
+  "storage failure remains completion with the exact fallback message",
+);
+const navigationWarning = menuAnalysisUiReducer(navigating, {
+  type: "NAVIGATION_FAILED",
+  attemptId: 1,
+});
+verify(
+  navigationWarning.phase === "success" &&
+    navigationWarning.fallback === "navigation" &&
+    navigationWarning.message === MENU_ANALYSIS_NAVIGATION_WARNING,
+  "navigation failure retains the manual result fallback",
 );
 verify(
   menuAnalysisUiReducer(successWithWarning, { type: "IMAGES_CHANGED" }).phase ===
@@ -143,14 +158,14 @@ verify(
   "a new attempt clears the previous error",
 );
 verify(
-  menuAnalysisUiReducer(succeeded, { type: "ATTEMPT_STARTED", attemptId: 6 })
+  menuAnalysisUiReducer(successWithWarning, { type: "ATTEMPT_STARTED", attemptId: 6 })
     .phase === "preparing",
   "a new attempt clears the previous success",
 );
 const latestRequest = requesting(7);
 verify(
   menuAnalysisUiReducer(latestRequest, {
-    type: "SUCCEEDED",
+    type: "PERSISTED",
     attemptId: 6,
     summary,
   }) === latestRequest,
@@ -418,19 +433,27 @@ verify(clearedTimers === 1, "fired watchdog is not cleared twice");
 
 // F. Storage separation and source-level mobile safety.
 let storedKey = "";
+let storedValue: string | null = null;
 verify(
   tryWriteCurrentAnalysis(demoFoodseyoAnalysis, {
-    setItem(key) {
+    setItem(key, value) {
       storedKey = key;
+      storedValue = value;
+    },
+    getItem() {
+      return storedValue;
     },
   }),
-  "successful storage write reports success",
+  "successful confirmed storage write reports success",
 );
 verify(storedKey === CURRENT_ANALYSIS_STORAGE_KEY, "session storage key is unchanged");
 verify(
   !tryWriteCurrentAnalysis(demoFoodseyoAnalysis, {
     setItem() {
       throw new Error("private browser storage detail");
+    },
+    getItem() {
+      return null;
     },
   }),
   "storage exception is contained without changing analysis success",
@@ -449,7 +472,7 @@ verify(
 );
 verify(
   componentSource.includes('analysisUi.phase === "success"'),
-  "success rendering is connected to the explicit success phase",
+  "fallback completion rendering is connected to the explicit success phase",
 );
 verify(
   componentSource.includes("scrollIntoView") &&
@@ -471,7 +494,15 @@ verify(
   (componentSource.match(/fetch\("\/api\/analyze\/menu-images"/g) ?? []).length === 1,
   "Menu Scan retains one API call site",
 );
-verify(componentSource.includes('"Analyze again"'), "post-success button is Analyze again");
+verify(
+  componentSource.includes("router.replace(MENU_ANALYSIS_RESULTS_PATH)"),
+  "normal success replaces Menu Scan with the result route",
+);
+verify(
+  componentSource.includes("Open menu results") &&
+    componentSource.includes('analysisUi.fallback === "navigation"'),
+  "Open menu results exists only for navigation fallback",
+);
 verify(!componentSource.includes("View results"), "T6 View results action is absent");
 verify(!componentSource.includes("console."), "Menu Scan logs no menu content");
 verify(MAX_MENU_IMAGE_COUNT === 10, "ten-image maximum remains unchanged");
@@ -485,8 +516,16 @@ verify(
   "Home transient image handoff remains wired",
 );
 verify(
-  !existsSync("src/app/results") && !existsSync("src/app/analysis-result"),
-  "no T6 result route is created",
+  existsSync("src/app/analysis/page.tsx") &&
+    existsSync("src/app/analysis/dishes/[dishId]/page.tsx"),
+  "T5.4 canonical Overview and Dish Detail routes exist",
+);
+verify(
+  MENU_ANALYSIS_LOADING_LABEL === "Reading your menu…" &&
+    MENU_ANALYSIS_LOADING_HELPER ===
+      "This can take up to a minute for detailed menus." &&
+    MENU_ANALYSIS_RESULTS_PATH === "/analysis",
+  "loading copy and canonical result path are frozen",
 );
 
 const originalFetch = globalThis.fetch;

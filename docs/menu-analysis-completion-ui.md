@@ -1,74 +1,68 @@
 # Foodseyo Menu Analysis Completion UI
 
-**Status:** T5.3 implementation
+**Status:** T5.4 canonical live-result navigation
 
 **Date:** 2026-07-15
 
-## Confirmed symptom and root cause
+## Purpose
 
-On Production iPhone Safari, a user selected one image, started analysis, saw the loading label end, and saw the button return without visible success, error, or storage feedback. The matching Vercel requests returned HTTP 200. T5 already rendered a compact success panel for a schema-valid response, but that panel and the error panel were inserted after the image grid and immediately before a sticky footer. The client did not move new feedback into the current viewport. A user who remained near the sticky action could therefore see loading end without seeing the newly inserted panel farther up or down the page.
-
-The API handler was not found to return failure payloads as HTTP 200. It returns 200 only for `{ ok: true, analysis }`, maps failures to typed non-200 responses, preserves `Cache-Control: no-store`, and passes the request abort signal through the existing analyzer/provider path. The client also reads JSON once and validates the strict success/error schema. The defect was a general mobile feedback-visibility problem first reproduced on Safari, not evidence of a Safari-only state reset.
-
-The previous independent `analyzing`, `analysisError`, `analysisSummary`, and `storageWarning` values also left avoidable race and invalid-combination risk. There was no synchronous guard before React applied the loading render and no client watchdog for a fetch that remained pending at the browser boundary.
+T5.3 established explicit completion, timeout, duplicate-request, stale-response, and mobile-feedback safeguards. T5.4 completes the menu-image vertical slice: after one successful analysis, Foodseyo validates and confirms session persistence, enters `navigating`, and replaces Menu Scan with the canonical `/analysis` destination. No second model or network call is made.
 
 ## Explicit UI phases
 
-Menu Scan now has one discriminated UI state:
+Menu Scan uses one discriminated state:
 
 - `idle`
 - `preparing`
 - `requesting`
-- `success`
+- `navigating`
+- `success` — abnormal storage or navigation fallback only
 - `error`
 
-Loading is derived only from `preparing` and `requesting`. Generic finalization clears timers, the active controller, and the attempt gate but does not reset success or error. A new attempt clears previous feedback. Adding or removing an image clears stale feedback. Preview, scrolling, provider handoff cleanup, and ordinary re-renders do not.
+Loading is derived from `preparing`, `requesting`, and `navigating`. All three use exactly **Reading your menu…** with **This can take up to a minute for detailed menus.** No percentage or fabricated model stage is shown. Generic finalization clears request resources but does not reset `navigating`. The attempt gate remains held through normal navigation and is released by unmount or a navigation fallback.
 
-Success stores a compact summary and an optional storage warning. Error stores one safe user message and one of `input`, `network`, `timeout`, `api`, or `response`. Manual abort is silent and is not represented as timeout.
+## Normal success order
 
-## Success and storage behavior
-
-A completion requires all of the following:
-
-1. response received;
-2. JSON parsed once;
-3. strict Foodseyo API response schema passed;
-4. HTTP success and body `ok: true` agreed;
-5. canonical analysis existed and was not `failed`;
-6. compact summary derived;
-7. success phase set;
-8. `foodseyo.currentAnalysis` sessionStorage write attempted.
-
-The summary is:
+Normal success is frozen as:
 
 ```text
-{confirmed or likely restaurant label} · {dish count} dish/dishes · {complete or partial}
+response JSON parsed once
+→ strict API response validation
+→ ok: true and HTTP success agree
+→ canonical schema and semantic validation
+→ non-failed result with at least one dish
+→ write foodseyo.currentAnalysis to sessionStorage
+→ read the value back and validate it again
+→ navigating
+→ router.replace("/analysis")
 ```
 
-If identity is not confirmed or likely, the label is `Restaurant not confirmed`. Dish count comes from the canonical menu. Storage failure preserves success and adds:
+API success alone is not completion. A confirmed, schema-valid session write is required before navigation. Normal success shows no completion card, **Analyze again**, **View results**, or extra action. Menu Scan contains one `/api/analyze/menu-images` call site, and result navigation never reanalyzes.
 
-> Menu analysis succeeded, but this browser could not keep the result for the next screen.
+## Abnormal completion fallbacks
 
-No raw storage exception is shown. No raw image is stored. No persistent storage was added.
+Storage failure remains on Menu Scan with:
 
-## Mobile visibility and accessibility
+- heading: **Menu analysis complete**
+- message: **This browser could not keep the result for the next screen.**
+- no automatic navigation
 
-Success uses `role="status"`, `aria-live="polite"`, and `aria-atomic="true"`. Errors use `role="alert"`. When either feedback phase first appears, Menu Scan calls `scrollIntoView({ block: "nearest" })` on the compact panel. Smooth movement is disabled when `prefers-reduced-motion: reduce` matches. Scroll margin keeps the panel clear of the sticky safe-area footer and iPhone browser controls without forcing focus.
+Navigation failure remains on Menu Scan with:
 
-After success, the action label is **Analyze again**. The panel remains visible. There is no `View results` action and no T6 Route.
+- heading: **Menu analysis complete**
+- message: **We couldn't open the results automatically.**
+- action: **Open menu results**
 
-## Timeout, abort, and duplicate prevention
+After `router.replace`, one short fallback checks whether the browser is still at `/menu-scan` and whether the stored canonical result remains valid. It may call `window.location.replace("/analysis")` once. It does not loop, duplicate a model request, or place analysis data in the URL. Raw storage, navigation, JSON, and framework errors are never shown.
 
-The provider timeout remains 80 seconds and the Route maximum remains 90 seconds. Menu Scan adds a 105-second browser watchdog at the request boundary. It uses `AbortController` and `setTimeout`, not `AbortSignal.timeout()`, for Safari compatibility. Settlement and unmount clear the timer. Timeout shows exactly:
+## Existing safeguards
 
-> The menu analysis took too long. Try again with fewer or clearer images.
+The provider timeout remains 80 seconds, the Route maximum remains 90 seconds, and the browser watchdog remains 105 seconds. A synchronous attempt gate prevents fast duplicate submissions. Monotonic attempt IDs prevent late responses from navigating or overwriting a newer attempt. Settlement and unmount clear the watchdog, request controller, navigation timer, and preview object URLs. Manual abort remains silent.
 
-The action becomes available for retry. Manual navigation or unmount aborts silently.
+## Accessibility and mobile behavior
 
-A synchronous, in-memory attempt gate permits one active request. Fast double taps are rejected before a second request can start. Monotonic attempt IDs prevent late success or failure from an older attempt from replacing the latest UI state. IDs are not persisted or logged.
+Loading is announced through a polite live region. Fallback completion uses `role="status"`; failures use `role="alert"`. The T5.3 reduced-motion-aware feedback scrolling remains for abnormal completion and errors. Controls retain 44 px minimum targets, focus-visible styling, safe-area padding, and a 320 px minimum layout.
 
 ## Verification status
 
-The automated completion suite is network-free and covers the phase reducer, strict response handling, storage separation, duplicate gate, watchdog scheduling and cancellation, stale-response protection, and source-level mobile/accessibility guards. Local responsive QA records the viewports that were actually checked. A real paid OpenAI smoke is not run without both an already configured local key and an explicitly rights-cleared input image.
-
-The original Production symptom on iPhone Safari is confirmed. Post-fix verification on the user’s physical iPhone Safari is pending after deployment; it must not be reported as completed by desktop automation.
+The network-free automated suites cover reducer transitions, strict response handling, readback-confirmed persistence, all stored-result read states, duplicate/stale guards, watchdog behavior, automatic navigation source order, one-shot hard fallback, and exact recovery copy. A paid OpenAI smoke is not run for this checkpoint. The already confirmed physical iPhone success established that the analyzer and persistence path work; post-T5.4 automatic navigation and live-result verification on the user's iPhone remains a user QA step.

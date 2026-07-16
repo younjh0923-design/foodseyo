@@ -1,12 +1,12 @@
 # Foodseyo Menu Image Analysis
 
-**Status:** Implemented and production-hardened through T5.3; Home intake unified in T5.2
+**Status:** Implemented through T5.4 canonical live results; Home intake unified in T5.2
 
 **Date:** 2026-07-15
 
 ## Purpose
 
-T5 replaces the Menu Scan demo redirect with real GPT-5.6 menu-image analysis. It keeps the existing capture, gallery selection, ordered previews, removal, and discard flow. The result is validated as the shared `FoodseyoAnalysis` contract and stored only in the current browser session for the later T6 result UI.
+T5 replaces the Menu Scan demo redirect with real GPT-5.6 menu-image analysis. It keeps the existing capture, gallery selection, ordered previews, removal, and discard flow. The result is validated as the shared `FoodseyoAnalysis` contract, stored only in the current browser session, and opened automatically in the T5.4 canonical Live result UI.
 
 T5 does not add restaurant web research, public reviews, menu-freshness verification, Vercel Blob, permanent image storage, multi-request batch merging, a database, or another live analyzer.
 
@@ -146,21 +146,21 @@ Explicit `contains` claims become `confirmed_present` direct observations. Free-
 
 Missing optional reviews, freshness, images, or restaurant confirmation does not by itself make a good useful menu partial. Menu Scan exposes loading status through an `aria-live` region, displays only preprocessing messages or schema-validated API messages, and replaces malformed JSON, HTML, network, and technical failures with a fixed generic message. User cancellation is silent.
 
-After a compact success summary is shown, Foodseyo attempts to store the validated envelope under `foodseyo.currentAnalysis` in `sessionStorage`. A browser storage failure does not erase the successful result; it adds the warning, “Menu analysis succeeded, but this browser could not keep the result for the next screen.” T6 may read the key to build the full live Restaurant Overview and Dish Detail result UI; T5.1 does not route live data into the existing demo pages.
+After strict API, canonical-schema, semantic, status, and dish-presence validation, Foodseyo writes the envelope under `foodseyo.currentAnalysis` in `sessionStorage` and confirms it by reading and validating the value again. Only then does it enter `navigating` and call `router.replace("/analysis")`. A browser storage failure does not navigate and shows “This browser could not keep the result for the next screen.”
 
-T5.3 makes completion an explicit mutually exclusive UI phase: `idle`, `preparing`, `requesting`, `success`, or `error`. Loading is derived only from `preparing` and `requesting`; request cleanup releases timers and controllers without resetting a completed success or error. Starting another analysis or changing the selected images clears stale feedback, while ordinary re-renders and the one-shot Home provider cleanup do not.
+T5.4 extends the mutually exclusive UI phases to `idle`, `preparing`, `requesting`, `navigating`, abnormal fallback `success`, or `error`. Loading is derived from `preparing`, `requesting`, and `navigating`, with the single label “Reading your menu…” and the helper “This can take up to a minute for detailed menus.” Request cleanup releases timers and controllers without resetting navigation. Starting another analysis or changing the selected images clears stale fallback/error feedback, while ordinary re-renders and the one-shot Home provider cleanup do not.
 
-A valid HTTP 200 body must still pass the strict API response schema, contain `ok: true`, contain a canonical analysis, and have a non-failed analysis status. Malformed JSON, HTML, an HTTP/body status mismatch, `ok: false` under HTTP 200, or an invalid canonical payload becomes a safe response error rather than returning silently to idle. The success summary uses a confirmed or likely restaurant label when available, otherwise `Restaurant not confirmed`, followed by the canonical dish count and `complete` or `partial` status.
+A valid HTTP 200 body must still pass the strict API response schema, contain `ok: true`, contain a structurally and semantically valid canonical analysis, have a non-failed status, and contain at least one dish. Malformed JSON, HTML, an HTTP/body status mismatch, `ok: false` under HTTP 200, or an invalid canonical payload becomes a safe response error rather than returning silently to idle. The internal completion summary remains available to abnormal fallbacks but is not an extra normal-success screen.
 
-The confirmed Production symptom was not an API-contract failure: iPhone Safari requests ended with HTTP 200 and loading stopped, but success and error feedback was inserted after the image grid without moving the newly rendered panel into the current mobile viewport. The same visibility issue was possible in any browser with a short viewport; it was not proven Safari-specific. T5.3 keeps the compact panel on Menu Scan, gives it live-region semantics and mobile scroll margin, and calls `scrollIntoView({ block: "nearest" })` without taking focus. Reduced-motion preferences are respected. The post-success button reads **Analyze again**; no T6 navigation or `View results` action is added.
+The confirmed Production symptom was not an API-contract failure: iPhone Safari requests ended with HTTP 200 and loading stopped, but success and error feedback was inserted outside the current mobile viewport. T5.3 added live-region semantics and reduced-motion-aware feedback scrolling. T5.4 makes normal success frictionless: it shows no completion card, Analyze again, View results, or extra button and automatically replaces Menu Scan with `/analysis`. The compact completion UI remains only for storage or navigation failure.
 
 One synchronous in-memory attempt gate permits only one active analysis, blocks fast duplicate taps before React can re-render, and assigns monotonic attempt IDs so late responses cannot replace a newer state. A 105-second client watchdog starts at the request boundary, after preprocessing. It is longer than the 80-second provider timeout and 90-second Route maximum, uses `AbortController` plus `setTimeout` for Safari compatibility, and shows: “The menu analysis took too long. Try again with fewer or clearer images.” Manual abort remains silent. Timers are cleared on settlement and unmount, and retry is available after success or error.
 
-Post-fix automated and local responsive verification is documented in [menu-analysis-completion-ui.md](./menu-analysis-completion-ui.md). The original iPhone Safari symptom is confirmed; post-deployment verification on the user’s physical iPhone remains a user QA step.
+Completion safeguards are documented in [menu-analysis-completion-ui.md](./menu-analysis-completion-ui.md), and the session-scoped Overview/Dish architecture is documented in [live-analysis-results.md](./live-analysis-results.md). The original iPhone Safari analysis success is confirmed; post-deployment automatic-navigation and Live result verification on the user’s physical iPhone remains a user QA step.
 
 ## Automatic tests
 
-`pnpm test` runs 11 contract checks, 73 orchestration checks, 91 menu-image checks, 86 T5.1 hardening checks, 72 T5.2 Home-entry checks, and 75 T5.3 completion checks: **408 assertions total**. The suites use injected fake providers and make zero network calls. In addition to the existing analysis coverage, T5.2 checks exact Home copy, honest link handling, accepted schemes, source safety, camera/gallery selection rules, order preservation, one-shot transient consumption, Strict Mode handoff structure, direct Menu Scan compatibility, object URL ownership, accessibility labels, and the absence of persistence or demo fallback. T5.3 checks explicit phase transitions, success and error persistence, safe response parsing, storage-warning separation, duplicate blocking, stale attempt protection, watchdog behavior, mobile feedback visibility source guards, and the absence of T6 navigation.
+`pnpm test` retains the previous 408 network-free assertions and adds T5.4 coverage for persistence confirmation, automatic navigation, failure fallbacks, all session read states, Overview mapping, encoded Dish navigation, Dish Detail, conservative Food Passport comparison, scoped cleanup, and forbidden-source guards. The suite prints the actual assertion count at runtime and makes zero network calls. It does not run a paid OpenAI smoke.
 
 ## Optional live smoke test
 

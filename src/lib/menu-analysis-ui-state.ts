@@ -4,7 +4,14 @@ export const CLIENT_MENU_ANALYSIS_WATCHDOG_MS = 105_000;
 export const MENU_ANALYSIS_TIMEOUT_MESSAGE =
   "The menu analysis took too long. Try again with fewer or clearer images.";
 export const MENU_ANALYSIS_STORAGE_WARNING =
-  "Menu analysis succeeded, but this browser could not keep the result for the next screen.";
+  "This browser could not keep the result for the next screen.";
+export const MENU_ANALYSIS_NAVIGATION_WARNING =
+  "We couldn't open the results automatically.";
+export const MENU_ANALYSIS_LOADING_LABEL = "Reading your menu…";
+export const MENU_ANALYSIS_LOADING_HELPER =
+  "This can take up to a minute for detailed menus.";
+export const MENU_ANALYSIS_RESULTS_PATH = "/analysis";
+export const MENU_ANALYSIS_NAVIGATION_FALLBACK_MS = 1_500;
 
 export interface AnalysisSuccessSummary {
   readonly status: "complete" | "partial";
@@ -28,10 +35,16 @@ export type MenuAnalysisUiState =
       readonly startedAt: number;
     }
   | {
+      readonly phase: "navigating";
+      readonly attemptId: number;
+      readonly summary: AnalysisSuccessSummary;
+    }
+  | {
       readonly phase: "success";
       readonly attemptId: number;
       readonly summary: AnalysisSuccessSummary;
-      readonly storageWarning: string | null;
+      readonly fallback: "storage" | "navigation";
+      readonly message: string;
     }
   | {
       readonly phase: "error";
@@ -48,14 +61,18 @@ export type MenuAnalysisUiEvent =
       readonly startedAt: number;
     }
   | {
-      readonly type: "SUCCEEDED";
+      readonly type: "PERSISTED";
       readonly attemptId: number;
       readonly summary: AnalysisSuccessSummary;
     }
   | {
-      readonly type: "STORAGE_WARNING";
+      readonly type: "STORAGE_FAILED";
       readonly attemptId: number;
-      readonly message: string;
+      readonly summary: AnalysisSuccessSummary;
+    }
+  | {
+      readonly type: "NAVIGATION_FAILED";
+      readonly attemptId: number;
     }
   | {
       readonly type: "FAILED";
@@ -94,18 +111,33 @@ export function menuAnalysisUiReducer(
             startedAt: event.startedAt,
           }
         : state;
-    case "SUCCEEDED":
+    case "PERSISTED":
+      return state.phase === "requesting" && state.attemptId === event.attemptId
+        ? {
+            phase: "navigating",
+            attemptId: event.attemptId,
+            summary: event.summary,
+          }
+        : state;
+    case "STORAGE_FAILED":
       return state.phase === "requesting" && state.attemptId === event.attemptId
         ? {
             phase: "success",
             attemptId: event.attemptId,
             summary: event.summary,
-            storageWarning: null,
+            fallback: "storage",
+            message: MENU_ANALYSIS_STORAGE_WARNING,
           }
         : state;
-    case "STORAGE_WARNING":
-      return state.phase === "success" && state.attemptId === event.attemptId
-        ? { ...state, storageWarning: event.message }
+    case "NAVIGATION_FAILED":
+      return state.phase === "navigating" && state.attemptId === event.attemptId
+        ? {
+            phase: "success",
+            attemptId: event.attemptId,
+            summary: state.summary,
+            fallback: "navigation",
+            message: MENU_ANALYSIS_NAVIGATION_WARNING,
+          }
         : state;
     case "FAILED":
       return isActiveAttempt(state, event.attemptId)
@@ -135,7 +167,9 @@ export function menuAnalysisUiReducer(
 }
 
 export const isMenuAnalysisActive = (state: MenuAnalysisUiState): boolean =>
-  state.phase === "preparing" || state.phase === "requesting";
+  state.phase === "preparing" ||
+  state.phase === "requesting" ||
+  state.phase === "navigating";
 
 export function createMenuAnalysisSuccessSummary(
   analysis: FoodseyoAnalysis,

@@ -214,6 +214,12 @@ T5 implements the menu-image analyzer behind the existing interface. `/api/analy
 
 Future restaurant-photo, screen, link, nearby, and research providers connect through the same boundary. They must not bypass structural or semantic validation.
 
+## T5.4 presentation boundary
+
+The canonical envelope is validated again before session persistence and on every Live result read. `src/lib/live-analysis-results.ts` is a pure view-model adapter above the orchestrator: it preserves canonical category and dish ordering, resolves safe Dish links, maps nonempty presentation sections, and performs deterministic Food Passport comparison. It does not mutate the envelope or call an analyzer, provider, OpenAI, web research, review source, restaurant endpoint, or any other network service.
+
+`/analysis` is the common destination for every future analyzer, but only `menu_images` is live in T5.4. T6 restaurant photo/screen, T7 link analysis, and T8 identification/candidate confirmation keep their existing responsibilities and remain unimplemented.
+
 ## T5 transport boundary
 
 The concrete T5 transport is a Node.js multipart route at `/api/analyze/menu-images`. It validates MIME and magic bytes, enforces a 4,000,000-byte total limit, returns stable safe errors with `Cache-Control: no-store`, and keeps the OpenAI key server-only. Full details are in [menu-image-analysis.md](./menu-image-analysis.md).
