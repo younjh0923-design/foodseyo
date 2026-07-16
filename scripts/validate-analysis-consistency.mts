@@ -10,17 +10,22 @@ import {
   RICHNESS_LEVELS,
   TEXTURES,
   canonicalSerialize,
+  createAnalysisResultFingerprint,
   createAnalysisConsistencyVersionMetadata,
   createDishFingerprint,
+  createImageContentHash,
   createSourceFingerprint,
+  isAnalysisResultFingerprint,
   isDishFingerprint,
   isSourceFingerprint,
   normalizeDishConsistency,
   renderDishConsistencyWording,
   validateAnalysisConsistency,
+  validateAnalysisResultFingerprintInput,
   validateCanonicalSerialization,
   validateDishFingerprintInput,
   validateSourceFingerprintInput,
+  type AnalysisResultFingerprintInput,
   type DishFingerprintInput,
   type SourceFingerprintInput,
 } from "../src/lib/analysis-consistency/index.ts";
@@ -32,6 +37,7 @@ import {
   repeatabilityFixtureNames,
 } from "./fixtures/analysis-consistency-fixtures.mts";
 import {
+  captureError,
   createValidationSuite,
   installNetworkGuard,
 } from "./test-support/validation.mts";
@@ -324,11 +330,19 @@ verify(
 const versions = createAnalysisConsistencyVersionMetadata({
   modelVersion: "gpt-5.6",
   promptVersion: "menu-image-v1",
-  schemaVersion: "1.0.0",
+  providerSchemaVersion: "menu-image-provider-schema-v1",
+  canonicalSchemaVersion: "1.0.0",
 });
 verify(versions.modelVersion === "gpt-5.6", "model version is explicit");
 verify(versions.promptVersion === "menu-image-v1", "prompt version is explicit");
-verify(versions.schemaVersion === "1.0.0", "schema version is explicit");
+verify(
+  versions.providerSchemaVersion === "menu-image-provider-schema-v1",
+  "provider schema version is explicit",
+);
+verify(
+  versions.canonicalSchemaVersion === "1.0.0",
+  "canonical schema version is explicit",
+);
 verify(
   versions.consistencyProfileVersion === "foodseyo-consistency-v1",
   "profile version is bound into metadata",
@@ -385,30 +399,90 @@ verify(
   "validator issues never echo raw ingredient content",
 );
 
+const orderedImageContentHashes = await Promise.all([
+  createImageContentHash(new TextEncoder().encode("synthetic-image-content-a")),
+  createImageContentHash(new TextEncoder().encode("synthetic-image-content-b")),
+]);
+verify(
+  orderedImageContentHashes.every((hash) => /^[a-f0-9]{64}$/u.test(hash)),
+  "synthetic image bytes are reduced to SHA-256 identity only",
+);
+
 const sourceInput: SourceFingerprintInput = {
   sourceType: "menu_images",
-  sourceIdentifier: "synthetic-menu-set-001",
+  sourceIdentifier: null,
+  imageCount: orderedImageContentHashes.length,
+  orderedImageContentHashes,
   restaurantIdentifier: "synthetic-restaurant-a",
   branchIdentifier: "downtown",
   sourceRevision: "revision-1",
-  versions,
 };
 verify(validateSourceFingerprintInput(sourceInput).length === 0, "source fingerprint input validates");
 verify(
-  validateSourceFingerprintInput({ ...sourceInput, sourceIdentifier: "" }).some(
+  validateSourceFingerprintInput({ ...sourceInput, imageCount: 1 }).some(
     (entry) => entry.code === "fingerprint_input_malformed",
   ),
-  "malformed source fingerprint input is detected",
+  "image count and ordered hash count mismatch is detected",
+);
+verify(
+  validateSourceFingerprintInput({
+    ...sourceInput,
+    orderedImageContentHashes: ["not-a-sha256", orderedImageContentHashes[1]],
+  }).some((entry) => entry.code === "fingerprint_input_malformed"),
+  "malformed image content hash is detected",
+);
+verify(
+  validateSourceFingerprintInput({ ...sourceInput, versions } as unknown).some(
+    (entry) => entry.path.includes("versions"),
+  ),
+  "analysis versions are rejected from source identity",
 );
 
 const sourceFingerprint = await createSourceFingerprint(sourceInput);
 const equivalentSourceFingerprint = await createSourceFingerprint({
   ...sourceInput,
   sourceType: " MENU_IMAGES ",
-  sourceIdentifier: "Synthetic-Menu-Set-001",
+  orderedImageContentHashes: orderedImageContentHashes.map((hash) => hash.toUpperCase()),
 });
 verify(isSourceFingerprint(sourceFingerprint), "source fingerprint has the safe prefixed shape");
 verify(sourceFingerprint === equivalentSourceFingerprint, "source identity normalization is deterministic");
+verify(
+  sourceFingerprint !==
+    (await createSourceFingerprint({
+      ...sourceInput,
+      orderedImageContentHashes: [...orderedImageContentHashes].reverse(),
+    })),
+  "ordered image hash reversal changes the source fingerprint",
+);
+verify(
+  sourceFingerprint !==
+    (await createSourceFingerprint({
+      ...sourceInput,
+      imageCount: 3,
+      orderedImageContentHashes: [
+        ...orderedImageContentHashes,
+        orderedImageContentHashes[1],
+      ],
+    })),
+  "image count and repeated ordered content change the source fingerprint",
+);
+const changedImageHash = await createImageContentHash(
+  new TextEncoder().encode("synthetic-image-content-c"),
+);
+verify(
+  sourceFingerprint !==
+    (await createSourceFingerprint({
+      ...sourceInput,
+      orderedImageContentHashes: [orderedImageContentHashes[0], changedImageHash],
+    })),
+  "changed image content hash changes the source fingerprint",
+);
+verify(
+  (await captureError(() =>
+    createSourceFingerprint({ ...sourceInput, imageCount: 1 }),
+  )) instanceof TypeError,
+  "source fingerprint creation rejects mismatched image count",
+);
 verify(
   sourceFingerprint !==
     (await createSourceFingerprint({
@@ -430,12 +504,11 @@ verify(
 
 const dishInput: DishFingerprintInput = {
   sourceFingerprint,
-  dishName: repeatabilityFixtureNames[1],
-  originalDescription: "Synthetic fixture description",
-  categoryLabel: "Synthetic mains",
-  price: { amount: 12, currency: "USD", displayText: "$12" },
-  consistency: normalizedA.value,
-  versions,
+  sourceDishIdentifier: "page-1-item-4",
+  sourceStatedName: repeatabilityFixtureNames[1],
+  sourceStatedDescription: "Synthetic fixture description",
+  sourceStatedCategoryLabel: "Synthetic mains",
+  sourceStatedPrice: { amount: 12, currency: "USD", displayText: "$12" },
 };
 verify(validateDishFingerprintInput(dishInput).length === 0, "dish fingerprint input validates");
 verify(
@@ -448,16 +521,37 @@ verify(
 const dishFingerprint = await createDishFingerprint(dishInput);
 const equivalentDishFingerprint = await createDishFingerprint({
   ...dishInput,
-  dishName: "  LAMB   KOFTA ",
-  consistency: normalizedB.value,
+  sourceStatedName: "  LAMB   KOFTA ",
 });
 verify(isDishFingerprint(dishFingerprint), "dish fingerprint has the safe prefixed shape");
-verify(dishFingerprint === equivalentDishFingerprint, "equivalent normalized dish input hashes identically");
+verify(dishFingerprint === equivalentDishFingerprint, "source-stated dish identity normalizes deterministically");
+const resultContaminatedDishInput = {
+  ...dishInput,
+  consistency: normalizedB.value,
+  wording: renderDishConsistencyWording(normalizedB.value),
+  ingredients: ["inferred synthetic ingredient"],
+  basicTastes: ["savory"],
+  textures: ["tender"],
+  versions,
+};
+verify(
+  validateDishFingerprintInput(resultContaminatedDishInput).filter(
+    (entry) => entry.code === "fingerprint_input_malformed",
+  ).length === 6,
+  "dish fingerprint validator rejects every result-derived field",
+);
+verify(
+  dishFingerprint ===
+    (await createDishFingerprint(
+      resultContaminatedDishInput as unknown as DishFingerprintInput,
+    )),
+  "result-derived fields cannot affect dish fingerprint calculation",
+);
 verify(
   dishFingerprint !==
     (await createDishFingerprint({
       ...dishInput,
-      originalDescription: "Changed synthetic description",
+      sourceStatedDescription: "Changed synthetic description",
     })),
   "description changes the dish fingerprint",
 );
@@ -465,7 +559,11 @@ verify(
   dishFingerprint !==
     (await createDishFingerprint({
       ...dishInput,
-      price: { ...dishInput.price, amount: 13, displayText: "$13" },
+      sourceStatedPrice: {
+        ...dishInput.sourceStatedPrice,
+        amount: 13,
+        displayText: "$13",
+      },
     })),
   "price changes the dish fingerprint",
 );
@@ -473,7 +571,7 @@ verify(
   dishFingerprint !==
     (await createDishFingerprint({
       ...dishInput,
-      price: { ...dishInput.price, currency: "CAD" },
+      sourceStatedPrice: { ...dishInput.sourceStatedPrice, currency: "CAD" },
     })),
   "currency changes the dish fingerprint",
 );
@@ -493,12 +591,53 @@ verify(ANALYSIS_FINGERPRINT_HASH_ALGORITHM === "SHA-256", "fingerprints use SHA-
 const alternateVersions = createAnalysisConsistencyVersionMetadata({
   modelVersion: "gpt-5.6",
   promptVersion: "menu-image-v2",
-  schemaVersion: "1.0.0",
+  providerSchemaVersion: "menu-image-provider-schema-v1",
+  canonicalSchemaVersion: "1.0.0",
 });
+const analysisResultInput: AnalysisResultFingerprintInput = {
+  dishFingerprint,
+  consistency: normalizedA.value,
+  versions,
+};
 verify(
-  sourceFingerprint !==
-    (await createSourceFingerprint({ ...sourceInput, versions: alternateVersions })),
-  "version metadata changes future source identity",
+  validateAnalysisResultFingerprintInput(analysisResultInput).length === 0,
+  "analysis result fingerprint input validates separately",
+);
+const analysisResultFingerprint = await createAnalysisResultFingerprint(
+  analysisResultInput,
+);
+verify(
+  isAnalysisResultFingerprint(analysisResultFingerprint),
+  "analysis result fingerprint has its own safe prefix",
+);
+verify(
+  analysisResultFingerprint ===
+    (await createAnalysisResultFingerprint({
+      ...analysisResultInput,
+      consistency: normalizedB.value,
+    })),
+  "equivalent normalized results hash identically",
+);
+verify(
+  analysisResultFingerprint !==
+    (await createAnalysisResultFingerprint({
+      ...analysisResultInput,
+      consistency: excess.value,
+    })),
+  "changed inferred tastes or textures change only the result fingerprint",
+);
+verify(
+  analysisResultFingerprint !==
+    (await createAnalysisResultFingerprint({
+      ...analysisResultInput,
+      versions: alternateVersions,
+    })),
+  "analysis version metadata changes only result identity",
+);
+verify(
+  sourceFingerprint === (await createSourceFingerprint(sourceInput)) &&
+    dishFingerprint === (await createDishFingerprint(dishInput)),
+  "analysis version changes do not alter source or dish identity",
 );
 
 verify(repeatabilityFixtureNames.length === 6, "six synthetic repeatability fixture labels exist");
@@ -518,10 +657,59 @@ const modulePaths = [
 const moduleSource = (
   await Promise.all(modulePaths.map((path) => readFile(path, "utf8")))
 ).join("\n");
+const fingerprintSource = await readFile(
+  "src/lib/analysis-consistency/fingerprint.ts",
+  "utf8",
+);
+const sourceContractSource = fingerprintSource.slice(
+  fingerprintSource.indexOf("export interface SourceFingerprintInput"),
+  fingerprintSource.indexOf("export interface SourceStatedDishPriceInput"),
+);
+const dishContractSource = fingerprintSource.slice(
+  fingerprintSource.indexOf("export interface DishFingerprintInput"),
+  fingerprintSource.indexOf("export interface AnalysisResultFingerprintInput"),
+);
+const dishFunctionSource = fingerprintSource.slice(
+  fingerprintSource.indexOf("export async function createDishFingerprint"),
+  fingerprintSource.indexOf("export async function createAnalysisResultFingerprint"),
+);
+verify(
+  sourceContractSource.includes("orderedImageContentHashes") &&
+    sourceContractSource.includes("imageCount") &&
+    !/bytes|base64|File|Blob/u.test(sourceContractSource),
+  "source identity accepts ordered hashes and count, never raw image values",
+);
+verify(
+  /sourceStatedName|sourceStatedDescription|sourceStatedCategoryLabel|sourceStatedPrice/u.test(
+    dishContractSource,
+  ) &&
+    !/consistency|wording|ingredients|basicTastes|textures|versions/u.test(
+      dishContractSource,
+    ),
+  "dish contract exposes source-stated evidence only",
+);
+verify(
+  !/consistency|wording|ingredients|basicTastes|textures|versions/u.test(
+    dishFunctionSource,
+  ),
+  "dish fingerprint implementation has no result-derived dependency",
+);
 verify(!/\bfetch\s*\(/u.test(moduleSource), "consistency foundation contains no network fetch");
 verify(!/\bOpenAI\b|responses\.parse/u.test(moduleSource), "consistency foundation contains no provider call");
 verify(!/process\.env|OPENAI_API_KEY/u.test(moduleSource), "consistency foundation reads no environment secret");
 verify(!/console\.(?:log|error|warn)/u.test(moduleSource), "consistency foundation logs no raw input or fingerprint");
+verify(
+  !/localStorage|sessionStorage|indexedDB|Buffer\.from|base64/iu.test(
+    fingerprintSource,
+  ),
+  "fingerprint foundation does not persist or encode raw image content",
+);
+verify(
+  /modelVersion[\s\S]*promptVersion[\s\S]*providerSchemaVersion[\s\S]*canonicalSchemaVersion[\s\S]*consistencyProfileVersion/u.test(
+    await readFile("src/lib/analysis-consistency/metadata.ts", "utf8"),
+  ),
+  "metadata contract contains all five explicit version fields",
+);
 
 const [technicalDoc, productRules, inputArchitecture, decisionLog, packageJson, allValidation] =
   await Promise.all([
@@ -535,9 +723,21 @@ const [technicalDoc, productRules, inputArchitecture, decisionLog, packageJson, 
 verify(technicalDoc.includes("foodseyo-consistency-v1"), "technical doc records the profile version");
 verify(technicalDoc.includes("C1.2 is the next checkpoint"), "technical doc keeps live integration in C1.2");
 verify(technicalDoc.includes("does not add a server cache, database"), "technical doc excludes cache and database work");
+verify(
+  technicalDoc.includes("image count plus one SHA-256 content hash per image in selection order"),
+  "technical doc records ordered menu-image source identity",
+);
+verify(
+  technicalDoc.includes("does not accept normalized consistency"),
+  "technical doc excludes result-derived dish identity",
+);
 verify(productRules.includes("**C1.1:**") && productRules.includes("**C1.2:**"), "product roadmap includes both C1 checkpoints");
 verify(inputArchitecture.includes("C1 is a separate checkpoint before T7"), "input roadmap keeps C1 before T7");
 verify(decisionLog.includes("D-061 — Establish the analysis consistency contract before T7"), "decision log preserves the new scope decision");
+verify(
+  decisionLog.includes("D-062 — Separate pre-provider identity from analysis-result identity"),
+  "decision log records the follow-up correction",
+);
 verify(packageJson.includes('"verify:consistency"'), "targeted consistency command is registered");
 verify(
   allValidation.match(/validate-analysis-consistency\.mts/gu)?.length === 1,

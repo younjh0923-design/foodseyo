@@ -43,21 +43,21 @@ The renderer is not connected to current user-facing results in C1.1.
 
 Canonical serialization recursively sorts object keys, preserves already-normalized array order, normalizes negative zero, rejects non-finite or unsupported values, and emits compact JSON. Equivalent normalized inputs therefore produce byte-equivalent strings.
 
-Source fingerprint inputs are:
+For `menu_images`, source fingerprint input is the image count plus one SHA-256 content hash per image in selection order. The count must equal the hash-array length, and canonical serialization preserves the array order. Raw image bytes are used only transiently to calculate each digest; the source identity accepts only digest strings and neither stores nor logs bytes, Base64, images, or filenames. Reversing images, changing content, or adding a repeated image changes the `source_` fingerprint.
 
-- source type and a caller-supplied stable source identifier;
-- nullable restaurant identifier, branch identifier, and source revision;
-- model, prompt, canonical schema, and consistency-profile versions.
+Non-image sources use a caller-supplied stable source identifier instead of image hashes. Both forms may include nullable source-stated restaurant, branch, and revision context. Source fingerprints do not include model, prompt, schema, consistency, or wording versions because source identity exists before analysis.
 
-Dish fingerprint inputs are:
+Dish fingerprint input is limited to source-stated evidence available without an OpenAI analysis result:
 
-- the source fingerprint;
-- normalized dish name, nullable original description, and nullable category;
-- explicit amount, currency, and display text when present;
-- normalized consistency data;
-- the same version metadata.
+- the source fingerprint and a source dish identifier;
+- `sourceStatedName`, nullable `sourceStatedDescription`, and nullable `sourceStatedCategoryLabel`;
+- source-stated amount, currency, and display text when present.
 
-Fingerprints use SHA-256 and a `source_` or `dish_` prefix. Different restaurant, branch, source revision, original description, price/currency, or version metadata produces a different identity. Object-key order and pre-normalization tag order do not. The same dish name alone is never enough to reuse a result.
+The `dish_` fingerprint does not accept normalized consistency, deterministic wording, inferred ingredients, tastes, textures, or analysis versions. It is therefore calculable before a provider call whenever source-stated dish evidence is already available. For an image-only source with no pre-provider dish evidence, only the source fingerprint exists before analysis; Foodseyo must not manufacture a pre-call dish identity from later model output.
+
+Result-derived identity is separate. The `result_` analysis-result fingerprint combines a dish fingerprint, normalized consistency data, deterministic wording derived from that data, and explicit `modelVersion`, `promptVersion`, `providerSchemaVersion`, `canonicalSchemaVersion`, and `consistencyProfileVersion` metadata.
+
+All three fingerprint families use SHA-256. Different restaurant, branch, source revision, source-stated description, price/currency, ordered image content, or result-version metadata changes only the relevant identity layer. Object-key order and normalized semantic input order do not. The same dish name alone is never enough to reuse a result.
 
 Fingerprints are collision-resistant identity aids, not proof that two menus are current or that two recipes are identical. C1.1 does not log fingerprints or their raw inputs and does not add a server cache, database, shared registry, invalidation policy, persistent history, or automatic API bypass.
 
@@ -65,4 +65,4 @@ Fingerprints are collision-resistant identity aids, not proof that two menus are
 
 The semantic validator emits safe issue codes and field paths for unsupported values, invalid intensity, duplicates, tag limits, ordering, missing or multiple levels, `spiced` misuse, defined texture contradictions, ingredient name/basis/merge errors, missing version metadata, malformed fingerprint inputs, and noncanonical serialization. Messages never echo menu, dish, ingredient, restaurant, or source text.
 
-`pnpm verify:consistency` runs synthetic repeatability fixtures only. It verifies equivalent aliases and reordered arrays, conservative ambiguous-term handling, deterministic selection and wording, ingredient evidence precedence, canonical serialization, version binding, positive and negative fingerprint cases, semantic issue coverage, privacy-safe source isolation, zero OpenAI calls, and zero network calls.
+`pnpm verify:consistency` runs synthetic repeatability fixtures only. It verifies equivalent aliases and reordered arrays, conservative ambiguous-term handling, deterministic selection and wording, ingredient evidence precedence, canonical serialization, five-part version binding, ordered image-content identity, source-stated-only dish identity, separated analysis-result identity, semantic issue coverage, privacy-safe source isolation, zero OpenAI calls, and zero network calls.

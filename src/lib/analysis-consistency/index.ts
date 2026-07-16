@@ -39,20 +39,27 @@ export type {
 } from "./metadata.ts";
 export {
   ANALYSIS_FINGERPRINT_HASH_ALGORITHM,
+  ANALYSIS_RESULT_FINGERPRINT_PATTERN,
+  IMAGE_CONTENT_HASH_PATTERN,
   canonicalSerialize,
+  createAnalysisResultFingerprint,
   createDishFingerprint,
+  createImageContentHash,
   createSourceFingerprint,
 } from "./fingerprint.ts";
 export type {
+  AnalysisResultFingerprintInput,
   DishFingerprintInput,
   SourceFingerprintInput,
 } from "./fingerprint.ts";
 export { renderDishConsistencyWording } from "./wording.ts";
 export type { DishConsistencyWording } from "./wording.ts";
 export {
+  isAnalysisResultFingerprint,
   isDishFingerprint,
   isSourceFingerprint,
   validateAnalysisConsistency,
+  validateAnalysisResultFingerprintInput,
   validateCanonicalSerialization,
   validateConsistencyVersionMetadata,
   validateDishFingerprintInput,

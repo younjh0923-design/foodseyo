@@ -1,4 +1,5 @@
 import type { NormalizedDishConsistency } from "./normalize.ts";
+import { renderDishConsistencyWording } from "./wording.ts";
 import {
   createAnalysisConsistencyVersionMetadata,
   type AnalysisConsistencyVersionMetadata,
@@ -7,17 +8,20 @@ import {
 export const ANALYSIS_FINGERPRINT_HASH_ALGORITHM = "SHA-256" as const;
 export const SOURCE_FINGERPRINT_PATTERN = /^source_[a-f0-9]{64}$/u;
 export const DISH_FINGERPRINT_PATTERN = /^dish_[a-f0-9]{64}$/u;
+export const ANALYSIS_RESULT_FINGERPRINT_PATTERN = /^result_[a-f0-9]{64}$/u;
+export const IMAGE_CONTENT_HASH_PATTERN = /^[a-f0-9]{64}$/u;
 
 export interface SourceFingerprintInput {
   readonly sourceType: string;
-  readonly sourceIdentifier: string;
+  readonly sourceIdentifier: string | null;
+  readonly imageCount: number;
+  readonly orderedImageContentHashes: readonly string[];
   readonly restaurantIdentifier: string | null;
   readonly branchIdentifier: string | null;
   readonly sourceRevision: string | null;
-  readonly versions: AnalysisConsistencyVersionMetadata;
 }
 
-export interface DishFingerprintPriceInput {
+export interface SourceStatedDishPriceInput {
   readonly amount: number | null;
   readonly currency: string | null;
   readonly displayText: string | null;
@@ -25,10 +29,15 @@ export interface DishFingerprintPriceInput {
 
 export interface DishFingerprintInput {
   readonly sourceFingerprint: string;
-  readonly dishName: string;
-  readonly originalDescription: string | null;
-  readonly categoryLabel: string | null;
-  readonly price: DishFingerprintPriceInput;
+  readonly sourceDishIdentifier: string;
+  readonly sourceStatedName: string;
+  readonly sourceStatedDescription: string | null;
+  readonly sourceStatedCategoryLabel: string | null;
+  readonly sourceStatedPrice: SourceStatedDishPriceInput;
+}
+
+export interface AnalysisResultFingerprintInput {
+  readonly dishFingerprint: string;
   readonly consistency: NormalizedDishConsistency;
   readonly versions: AnalysisConsistencyVersionMetadata;
 }
@@ -87,33 +96,67 @@ const normalizeVersions = (
   return normalized;
 };
 
-const sha256Hex = async (serialized: string): Promise<string> => {
-  const bytes = new TextEncoder().encode(serialized);
+const sha256Bytes = async (bytes: Uint8Array): Promise<string> => {
+  const digestInput = new Uint8Array(bytes.byteLength);
+  digestInput.set(bytes);
   const digest = await globalThis.crypto.subtle.digest(
     ANALYSIS_FINGERPRINT_HASH_ALGORITHM,
-    bytes,
+    digestInput.buffer,
   );
   return [...new Uint8Array(digest)]
     .map((byte) => byte.toString(16).padStart(2, "0"))
     .join("");
 };
 
+const sha256Hex = async (serialized: string): Promise<string> => {
+  return sha256Bytes(new TextEncoder().encode(serialized));
+};
+
+export async function createImageContentHash(bytes: Uint8Array): Promise<string> {
+  return sha256Bytes(bytes);
+}
+
 export async function createSourceFingerprint(
   input: SourceFingerprintInput,
 ): Promise<string> {
   const sourceType = normalizeFingerprintText(input.sourceType);
-  const sourceIdentifier = normalizeFingerprintText(input.sourceIdentifier);
-  if (!sourceType || !sourceIdentifier) {
-    throw new TypeError("Source fingerprint identity is incomplete.");
+  if (!sourceType) throw new TypeError("Source fingerprint identity is incomplete.");
+
+  const orderedImageContentHashes = input.orderedImageContentHashes.map((hash) =>
+    hash.normalize("NFKC").trim().toLocaleLowerCase("en"),
+  );
+  const isMenuImages = sourceType === "menu_images";
+  if (isMenuImages) {
+    if (
+      input.sourceIdentifier !== null ||
+      !Number.isInteger(input.imageCount) ||
+      input.imageCount < 1 ||
+      input.imageCount !== orderedImageContentHashes.length ||
+      orderedImageContentHashes.some((hash) => !IMAGE_CONTENT_HASH_PATTERN.test(hash))
+    ) {
+      throw new TypeError("Menu-image source fingerprint identity is malformed.");
+    }
+  } else {
+    const sourceIdentifier = input.sourceIdentifier
+      ? normalizeFingerprintText(input.sourceIdentifier)
+      : "";
+    if (
+      !sourceIdentifier ||
+      input.imageCount !== 0 ||
+      orderedImageContentHashes.length !== 0
+    ) {
+      throw new TypeError("Named source fingerprint identity is malformed.");
+    }
   }
 
   const canonicalInput = {
     branchIdentifier: normalizeNullableFingerprintText(input.branchIdentifier),
+    imageCount: input.imageCount,
+    orderedImageContentHashes,
     restaurantIdentifier: normalizeNullableFingerprintText(input.restaurantIdentifier),
-    sourceIdentifier,
+    sourceIdentifier: normalizeNullableFingerprintText(input.sourceIdentifier),
     sourceRevision: normalizeNullableFingerprintText(input.sourceRevision),
     sourceType,
-    versions: normalizeVersions(input.versions),
   };
   return `source_${await sha256Hex(canonicalSerialize(canonicalInput))}`;
 }
@@ -124,24 +167,48 @@ export async function createDishFingerprint(
   if (!SOURCE_FINGERPRINT_PATTERN.test(input.sourceFingerprint)) {
     throw new TypeError("Dish fingerprint source identity is malformed.");
   }
-  const dishName = normalizeFingerprintText(input.dishName);
-  if (!dishName) throw new TypeError("Dish fingerprint identity is incomplete.");
-  if (input.price.amount !== null && !Number.isFinite(input.price.amount)) {
+  const sourceDishIdentifier = normalizeFingerprintText(input.sourceDishIdentifier);
+  const sourceStatedName = normalizeFingerprintText(input.sourceStatedName);
+  if (!sourceDishIdentifier || !sourceStatedName) {
+    throw new TypeError("Dish fingerprint source evidence is incomplete.");
+  }
+  if (
+    input.sourceStatedPrice.amount !== null &&
+    !Number.isFinite(input.sourceStatedPrice.amount)
+  ) {
     throw new TypeError("Dish fingerprint price must be finite when present.");
   }
 
   const canonicalInput = {
-    categoryLabel: normalizeNullableFingerprintText(input.categoryLabel),
-    consistency: input.consistency,
-    dishName,
-    originalDescription: normalizeNullableFingerprintText(input.originalDescription),
-    price: {
-      amount: input.price.amount,
-      currency: normalizeNullableFingerprintText(input.price.currency),
-      displayText: normalizeNullableFingerprintText(input.price.displayText),
-    },
+    sourceDishIdentifier,
     sourceFingerprint: input.sourceFingerprint,
-    versions: normalizeVersions(input.versions),
+    sourceStatedCategoryLabel: normalizeNullableFingerprintText(
+      input.sourceStatedCategoryLabel,
+    ),
+    sourceStatedDescription: normalizeNullableFingerprintText(
+      input.sourceStatedDescription,
+    ),
+    sourceStatedName,
+    sourceStatedPrice: {
+      amount: input.sourceStatedPrice.amount,
+      currency: normalizeNullableFingerprintText(input.sourceStatedPrice.currency),
+      displayText: normalizeNullableFingerprintText(input.sourceStatedPrice.displayText),
+    },
   };
   return `dish_${await sha256Hex(canonicalSerialize(canonicalInput))}`;
+}
+
+export async function createAnalysisResultFingerprint(
+  input: AnalysisResultFingerprintInput,
+): Promise<string> {
+  if (!DISH_FINGERPRINT_PATTERN.test(input.dishFingerprint)) {
+    throw new TypeError("Analysis result dish identity is malformed.");
+  }
+  const canonicalInput = {
+    consistency: input.consistency,
+    dishFingerprint: input.dishFingerprint,
+    versions: normalizeVersions(input.versions),
+    wording: renderDishConsistencyWording(input.consistency),
+  };
+  return `result_${await sha256Hex(canonicalSerialize(canonicalInput))}`;
 }

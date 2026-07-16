@@ -3,14 +3,16 @@ import { ANALYSIS_CONSISTENCY_PROFILE_VERSION } from "./profile.ts";
 export interface AnalysisConsistencyVersionMetadata {
   readonly modelVersion: string;
   readonly promptVersion: string;
-  readonly schemaVersion: string;
+  readonly providerSchemaVersion: string;
+  readonly canonicalSchemaVersion: string;
   readonly consistencyProfileVersion: typeof ANALYSIS_CONSISTENCY_PROFILE_VERSION;
 }
 
 export interface AnalysisConsistencyVersionInput {
   readonly modelVersion: string;
   readonly promptVersion: string;
-  readonly schemaVersion: string;
+  readonly providerSchemaVersion: string;
+  readonly canonicalSchemaVersion: string;
 }
 
 export const VERSION_TOKEN_PATTERN = /^[a-zA-Z0-9][a-zA-Z0-9._-]{0,99}$/u;
@@ -23,12 +25,14 @@ export function createAnalysisConsistencyVersionMetadata(
 ): AnalysisConsistencyVersionMetadata {
   const modelVersion = normalizeVersionToken(input.modelVersion);
   const promptVersion = normalizeVersionToken(input.promptVersion);
-  const schemaVersion = normalizeVersionToken(input.schemaVersion);
+  const providerSchemaVersion = normalizeVersionToken(input.providerSchemaVersion);
+  const canonicalSchemaVersion = normalizeVersionToken(input.canonicalSchemaVersion);
 
   if (
     !VERSION_TOKEN_PATTERN.test(modelVersion) ||
     !VERSION_TOKEN_PATTERN.test(promptVersion) ||
-    !VERSION_TOKEN_PATTERN.test(schemaVersion)
+    !VERSION_TOKEN_PATTERN.test(providerSchemaVersion) ||
+    !VERSION_TOKEN_PATTERN.test(canonicalSchemaVersion)
   ) {
     throw new TypeError("Consistency version metadata contains an invalid token.");
   }
@@ -36,7 +40,8 @@ export function createAnalysisConsistencyVersionMetadata(
   return {
     modelVersion,
     promptVersion,
-    schemaVersion,
+    providerSchemaVersion,
+    canonicalSchemaVersion,
     consistencyProfileVersion: ANALYSIS_CONSISTENCY_PROFILE_VERSION,
   };
 }

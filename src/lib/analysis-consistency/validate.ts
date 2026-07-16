@@ -1,5 +1,7 @@
 import {
+  ANALYSIS_RESULT_FINGERPRINT_PATTERN,
   DISH_FINGERPRINT_PATTERN,
+  IMAGE_CONTENT_HASH_PATTERN,
   SOURCE_FINGERPRINT_PATTERN,
   canonicalSerialize,
 } from "./fingerprint.ts";
@@ -328,7 +330,12 @@ export function validateConsistencyVersionMetadata(
   }
 
   const issues: ConsistencyIssue[] = [];
-  for (const field of ["modelVersion", "promptVersion", "schemaVersion"] as const) {
+  for (const field of [
+    "modelVersion",
+    "promptVersion",
+    "providerSchemaVersion",
+    "canonicalSchemaVersion",
+  ] as const) {
     if (typeof value[field] !== "string" || !VERSION_TOKEN_PATTERN.test(value[field])) {
       issues.push(
         issue(
@@ -420,14 +427,93 @@ export function validateSourceFingerprintInput(value: unknown): ConsistencyIssue
       ),
     ];
   }
-  const issues = validateConsistencyVersionMetadata(value.versions, ["versions"]);
-  for (const field of ["sourceType", "sourceIdentifier"] as const) {
-    if (typeof value[field] !== "string" || normalizeComparisonText(value[field]).length === 0) {
+  const issues: ConsistencyIssue[] = [];
+  const sourceType =
+    typeof value.sourceType === "string"
+      ? normalizeComparisonText(value.sourceType)
+      : "";
+  if (!sourceType) {
+    issues.push(
+      issue(
+        "fingerprint_input_malformed",
+        ["sourceType"],
+        "A required source fingerprint identity field is missing.",
+      ),
+    );
+  }
+
+  const hashes = value.orderedImageContentHashes;
+  const imageCount = value.imageCount;
+  if (!Array.isArray(hashes)) {
+    issues.push(
+      issue(
+        "fingerprint_input_malformed",
+        ["orderedImageContentHashes"],
+        "Ordered image content hashes must be an array.",
+      ),
+    );
+  }
+
+  if (sourceType === "menu_images") {
+    if (value.sourceIdentifier !== null) {
       issues.push(
         issue(
           "fingerprint_input_malformed",
-          [field],
-          "A required source fingerprint identity field is missing.",
+          ["sourceIdentifier"],
+          "Menu-image identity must use ordered content hashes.",
+        ),
+      );
+    }
+    if (
+      typeof imageCount !== "number" ||
+      !Number.isInteger(imageCount) ||
+      imageCount < 1 ||
+      !Array.isArray(hashes) ||
+      imageCount !== hashes.length
+    ) {
+      issues.push(
+        issue(
+          "fingerprint_input_malformed",
+          ["imageCount"],
+          "Menu-image count must match the ordered hash count.",
+        ),
+      );
+    }
+    if (
+      Array.isArray(hashes) &&
+      hashes.some(
+        (hash) =>
+          typeof hash !== "string" ||
+          !IMAGE_CONTENT_HASH_PATTERN.test(hash.normalize("NFKC").trim().toLowerCase()),
+      )
+    ) {
+      issues.push(
+        issue(
+          "fingerprint_input_malformed",
+          ["orderedImageContentHashes"],
+          "An image content hash is malformed.",
+        ),
+      );
+    }
+  } else if (sourceType) {
+    if (
+      typeof value.sourceIdentifier !== "string" ||
+      normalizeComparisonText(value.sourceIdentifier).length === 0
+    ) {
+      issues.push(
+        issue(
+          "fingerprint_input_malformed",
+          ["sourceIdentifier"],
+          "A named source identifier is required.",
+        ),
+      );
+    }
+    if (imageCount !== 0 || !Array.isArray(hashes) || hashes.length !== 0) {
+      issues.push(
+        issue(
+          "fingerprint_input_malformed",
+          ["orderedImageContentHashes"],
+          "A named source must not carry image hashes.",
         ),
       );
     }
@@ -443,6 +529,15 @@ export function validateSourceFingerprintInput(value: unknown): ConsistencyIssue
       );
     }
   }
+  if ("versions" in value) {
+    issues.push(
+      issue(
+        "fingerprint_input_malformed",
+        ["versions"],
+        "Source identity must not depend on analysis versions.",
+      ),
+    );
+  }
   return issues;
 }
 
@@ -456,7 +551,7 @@ export function validateDishFingerprintInput(value: unknown): ConsistencyIssue[]
       ),
     ];
   }
-  const issues = validateConsistencyVersionMetadata(value.versions, ["versions"]);
+  const issues: ConsistencyIssue[] = [];
   if (
     typeof value.sourceFingerprint !== "string" ||
     !SOURCE_FINGERPRINT_PATTERN.test(value.sourceFingerprint)
@@ -469,16 +564,24 @@ export function validateDishFingerprintInput(value: unknown): ConsistencyIssue[]
       ),
     );
   }
-  if (typeof value.dishName !== "string" || normalizeComparisonText(value.dishName).length === 0) {
-    issues.push(
-      issue(
-        "fingerprint_input_malformed",
-        ["dishName"],
-        "The dish identity is incomplete.",
-      ),
-    );
+  for (const field of ["sourceDishIdentifier", "sourceStatedName"] as const) {
+    if (
+      typeof value[field] !== "string" ||
+      normalizeComparisonText(value[field]).length === 0
+    ) {
+      issues.push(
+        issue(
+          "fingerprint_input_malformed",
+          [field],
+          "Required source-stated dish evidence is incomplete.",
+        ),
+      );
+    }
   }
-  for (const field of ["originalDescription", "categoryLabel"] as const) {
+  for (const field of [
+    "sourceStatedDescription",
+    "sourceStatedCategoryLabel",
+  ] as const) {
     if (value[field] !== null && typeof value[field] !== "string") {
       issues.push(
         issue(
@@ -489,32 +592,89 @@ export function validateDishFingerprintInput(value: unknown): ConsistencyIssue[]
       );
     }
   }
-  if (!isRecord(value.price)) {
+  if (!isRecord(value.sourceStatedPrice)) {
     issues.push(
       issue(
         "fingerprint_input_malformed",
-        ["price"],
+        ["sourceStatedPrice"],
         "The dish price identity is malformed.",
       ),
     );
   } else if (
-    value.price.amount !== null &&
-    (typeof value.price.amount !== "number" || !Number.isFinite(value.price.amount))
+    value.sourceStatedPrice.amount !== null &&
+    (typeof value.sourceStatedPrice.amount !== "number" ||
+      !Number.isFinite(value.sourceStatedPrice.amount))
   ) {
     issues.push(
       issue(
         "fingerprint_input_malformed",
-        ["price", "amount"],
+        ["sourceStatedPrice", "amount"],
         "The dish price amount is invalid.",
       ),
     );
   }
-  if (!isRecord(value.consistency)) {
+  if (isRecord(value.sourceStatedPrice)) {
+    for (const field of ["currency", "displayText"] as const) {
+      if (
+        value.sourceStatedPrice[field] !== null &&
+        typeof value.sourceStatedPrice[field] !== "string"
+      ) {
+        issues.push(
+          issue(
+            "fingerprint_input_malformed",
+            ["sourceStatedPrice", field],
+            "A source-stated price field has an invalid type.",
+          ),
+        );
+      }
+    }
+  }
+  for (const field of [
+    "consistency",
+    "wording",
+    "ingredients",
+    "basicTastes",
+    "textures",
+    "versions",
+  ] as const) {
+    if (field in value) {
+      issues.push(
+        issue(
+          "fingerprint_input_malformed",
+          [field],
+          "Dish identity must contain source-stated evidence only.",
+        ),
+      );
+    }
+  }
+  return issues;
+}
+
+export function validateAnalysisResultFingerprintInput(
+  value: unknown,
+): ConsistencyIssue[] {
+  if (!isRecord(value)) {
+    return [
+      issue(
+        "fingerprint_input_malformed",
+        ["analysisResultFingerprintInput"],
+        "The analysis result fingerprint input is malformed.",
+      ),
+    ];
+  }
+  const issues = validateAnalysisConsistency({
+    versions: value.versions,
+    consistency: value.consistency,
+  });
+  if (
+    typeof value.dishFingerprint !== "string" ||
+    !DISH_FINGERPRINT_PATTERN.test(value.dishFingerprint)
+  ) {
     issues.push(
       issue(
         "fingerprint_input_malformed",
-        ["consistency"],
-        "The normalized dish consistency input is missing.",
+        ["dishFingerprint"],
+        "The analysis result dish fingerprint is malformed.",
       ),
     );
   }
@@ -551,3 +711,6 @@ export const isSourceFingerprint = (value: string): boolean =>
 
 export const isDishFingerprint = (value: string): boolean =>
   DISH_FINGERPRINT_PATTERN.test(value);
+
+export const isAnalysisResultFingerprint = (value: string): boolean =>
+  ANALYSIS_RESULT_FINGERPRINT_PATTERN.test(value);
