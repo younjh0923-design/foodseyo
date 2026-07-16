@@ -24,7 +24,13 @@ export type MenuAnalysisUiErrorKind =
   | "network"
   | "timeout"
   | "api"
-  | "response";
+  | "response_body"
+  | "response_json"
+  | "response_schema"
+  | "response_mismatch"
+  | "failed_analysis"
+  | "empty_menu"
+  | "semantic_validation";
 
 export type MenuAnalysisUiState =
   | { readonly phase: "idle" }
@@ -51,6 +57,7 @@ export type MenuAnalysisUiState =
       readonly attemptId: number | null;
       readonly message: string;
       readonly errorKind: MenuAnalysisUiErrorKind;
+      readonly referenceCode: string | null;
     };
 
 export type MenuAnalysisUiEvent =
@@ -79,6 +86,7 @@ export type MenuAnalysisUiEvent =
       readonly attemptId: number;
       readonly message: string;
       readonly errorKind: MenuAnalysisUiErrorKind;
+      readonly referenceCode?: string | null;
     }
   | { readonly type: "ABORTED"; readonly attemptId: number }
   | { readonly type: "INPUT_REJECTED"; readonly message: string }
@@ -146,6 +154,7 @@ export function menuAnalysisUiReducer(
             attemptId: event.attemptId,
             message: event.message,
             errorKind: event.errorKind,
+            referenceCode: event.referenceCode ?? null,
           }
         : state;
     case "ABORTED":
@@ -158,6 +167,7 @@ export function menuAnalysisUiReducer(
         attemptId: null,
         message: event.message,
         errorKind: "input",
+        referenceCode: null,
       };
     case "IMAGES_CHANGED":
       return INITIAL_MENU_ANALYSIS_UI_STATE;

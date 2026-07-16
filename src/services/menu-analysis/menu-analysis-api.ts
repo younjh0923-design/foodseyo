@@ -1,6 +1,9 @@
 import { z } from "zod";
 import { FoodseyoAnalysisSchema } from "../../domain/foodseyo-analysis.ts";
 
+export const MENU_ANALYSIS_CORRELATION_HEADER =
+  "X-Foodseyo-Correlation-Id" as const;
+
 export const MENU_ANALYSIS_API_ERROR_CODES = [
   "INVALID_MULTIPART_REQUEST",
   "INVALID_MENU_IMAGE_INPUT",

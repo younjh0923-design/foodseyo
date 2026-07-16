@@ -3,7 +3,9 @@ import { readFile } from "node:fs/promises";
 import type { FoodseyoAnalysis } from "../src/domain/foodseyo-analysis.ts";
 import { demoFoodseyoAnalysis } from "../src/data/demoFoodseyoAnalysis.ts";
 import {
-  SAFE_MENU_ANALYSIS_ERROR_MESSAGE,
+  MENU_ANALYSIS_FAILED_STATUS_MESSAGE,
+  MENU_ANALYSIS_RESPONSE_JSON_MESSAGE,
+  MENU_ANALYSIS_RESPONSE_SCHEMA_MESSAGE,
   getSafeMenuAnalysisFailure,
   parseMenuAnalysisResponse,
 } from "../src/lib/menu-analysis-client.ts";
@@ -224,10 +226,13 @@ verify(
 
 // C. Safe response handling.
 const validAnalysis = await parseMenuAnalysisResponse({
+  ...new Response(
+    JSON.stringify({ ok: true, analysis: demoFoodseyoAnalysis }),
+    { status: 200 },
+  ),
   ok: true,
-  async json() {
-    return { ok: true, analysis: demoFoodseyoAnalysis };
-  },
+  text: () =>
+    Promise.resolve(JSON.stringify({ ok: true, analysis: demoFoodseyoAnalysis })),
 });
 verify(
   validAnalysis.analysisId === demoFoodseyoAnalysis.analysisId,
@@ -236,8 +241,8 @@ verify(
 const malformedJson = await captureError(() =>
   parseMenuAnalysisResponse({
     ok: true,
-    async json() {
-      throw new SyntaxError("technical parser detail");
+    async text() {
+      return '{"ok":true,"analysis":';
     },
   }),
 );
@@ -245,31 +250,36 @@ verify(
   getSafeMenuAnalysisFailure(malformedJson, {
     signalAborted: false,
     timedOut: false,
-  })?.errorKind === "response",
-  "malformed JSON becomes a safe response error",
+  })?.errorKind === "response_json",
+  "malformed JSON becomes a typed JSON response error",
 );
 const invalidSchema = await captureError(() =>
-  parseMenuAnalysisResponse({ ok: true, async json() { return { ok: true }; } }),
+  parseMenuAnalysisResponse({
+    ok: true,
+    async text() {
+      return JSON.stringify({ ok: true });
+    },
+  }),
 );
 verify(
   getSafeMenuAnalysisFailure(invalidSchema, {
     signalAborted: false,
     timedOut: false,
-  })?.message === SAFE_MENU_ANALYSIS_ERROR_MESSAGE,
-  "HTTP 200 invalid schema uses the generic safe message",
+  })?.message === MENU_ANALYSIS_RESPONSE_SCHEMA_MESSAGE,
+  "HTTP 200 invalid schema uses the safe schema message",
 );
 const validApiError = await captureError(() =>
   parseMenuAnalysisResponse({
     ok: false,
-    async json() {
-      return {
+    async text() {
+      return JSON.stringify({
         ok: false,
         error: {
           code: "OPENAI_RATE_LIMITED",
           message: "Menu analysis is busy. Try again shortly.",
           retryable: true,
         },
-      };
+      });
     },
   }),
 );
@@ -283,15 +293,15 @@ verify(
 const mismatchedOk = await captureError(() =>
   parseMenuAnalysisResponse({
     ok: true,
-    async json() {
-      return {
+    async text() {
+      return JSON.stringify({
         ok: false,
         error: {
           code: "OPENAI_TIMEOUT",
           message: "Safe but mismatched.",
           retryable: true,
         },
-      };
+      });
     },
   }),
 );
@@ -299,7 +309,7 @@ verify(
   getSafeMenuAnalysisFailure(mismatchedOk, {
     signalAborted: false,
     timedOut: false,
-  })?.errorKind === "response",
+  })?.errorKind === "response_mismatch",
   "HTTP 200 ok false cannot pass as success",
 );
 const htmlResponse = await captureError(() =>
@@ -309,16 +319,16 @@ verify(
   getSafeMenuAnalysisFailure(htmlResponse, {
     signalAborted: false,
     timedOut: false,
-  })?.message === SAFE_MENU_ANALYSIS_ERROR_MESSAGE,
-  "HTML response uses the generic safe message",
+  })?.message === MENU_ANALYSIS_RESPONSE_JSON_MESSAGE,
+  "HTML response uses the safe JSON message",
 );
 const failedCanonical = structuredClone(demoFoodseyoAnalysis) as FoodseyoAnalysis;
 failedCanonical.status = "failed";
 const failedSuccessBody = await captureError(() =>
   parseMenuAnalysisResponse({
     ok: true,
-    async json() {
-      return { ok: true, analysis: failedCanonical };
+    async text() {
+      return JSON.stringify({ ok: true, analysis: failedCanonical });
     },
   }),
 );
@@ -326,7 +336,11 @@ verify(
   getSafeMenuAnalysisFailure(failedSuccessBody, {
     signalAborted: false,
     timedOut: false,
-  })?.errorKind === "response",
+  })?.errorKind === "failed_analysis" &&
+    getSafeMenuAnalysisFailure(failedSuccessBody, {
+      signalAborted: false,
+      timedOut: false,
+    })?.message === MENU_ANALYSIS_FAILED_STATUS_MESSAGE,
   "failed canonical analysis is not shown as completion",
 );
 verify(

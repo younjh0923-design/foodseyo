@@ -162,6 +162,8 @@ Completion safeguards are documented in [menu-analysis-completion-ui.md](./menu-
 
 `pnpm test` retains the previous 408 network-free assertions and adds T5.4 coverage for persistence confirmation, automatic navigation, failure fallbacks, all session read states, Overview mapping, encoded Dish navigation, Dish Detail, conservative Food Passport comparison, scoped cleanup, and forbidden-source guards. The suite prints the actual assertion count at runtime and makes zero network calls. It does not run a paid OpenAI smoke.
 
+After the first T5.4 Production iPhone retest, response-boundary regression coverage was added without changing the model, provider, prompt, token limit, timeout, or one-request policy. HTTP 200 is no longer treated as one generic client outcome: body read, JSON parsing, API schema, HTTP/body consistency, failed status, empty menu, and semantic validation have separate safe categories. Server responses carry a random correlation header and log only status/timing/byte-length/stage/count metadata. Synthetic 1-dish and 31-dish canonical bodies are parsed network-free; the runtime suite reports their actual byte lengths.
+
 ## Optional live smoke test
 
 The smoke command is separate from automatic tests:

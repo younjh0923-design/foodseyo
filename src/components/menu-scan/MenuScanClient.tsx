@@ -445,6 +445,11 @@ export function MenuScanClient() {
               className="mt-4 scroll-mb-32 rounded-[18px] border border-red-200 bg-red-50 px-4 py-3 text-sm leading-5 text-[var(--destructive)]"
             >
               {analysisUi.message}
+              {analysisUi.referenceCode ? (
+                <span className="mt-1 block text-xs font-semibold">
+                  Reference: {analysisUi.referenceCode}
+                </span>
+              ) : null}
             </p>
           ) : null}
 

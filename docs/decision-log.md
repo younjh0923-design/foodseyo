@@ -457,3 +457,11 @@ This log records accepted product and architecture decisions frozen in T2. Chang
 - **Impact:** The Live UI does not claim best sellers, ratings, prices, popularity, or allergy safety.
 - **Status:** Accepted
 - **Date:** 2026-07-15
+
+## D-058 — Separate post-200 client failures with privacy-safe correlation
+
+- **Decision:** Read menu-analysis response text once and distinguish body-read, JSON, API-schema, HTTP/body mismatch, failed-status, empty-menu, and semantic failures. Add a random response correlation header and server observation limited to status, duration, response bytes, stage, and validation counts.
+- **Reason:** A Production iPhone received a generic connection message after Vercel recorded HTTP 200, while the previous client parser destroyed the specific failure stage.
+- **Impact:** Only genuine fetch/network failures use connection guidance. Support can correlate a short UI reference with privacy-safe Vercel metrics without logging images, menu content, secrets, raw provider output, or canonical results.
+- **Status:** Accepted
+- **Date:** 2026-07-15

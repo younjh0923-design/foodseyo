@@ -4,6 +4,8 @@ import {
   type FoodseyoAnalysis,
 } from "../src/domain/foodseyo-analysis.ts";
 import {
+  MENU_ANALYSIS_RESPONSE_JSON_MESSAGE,
+  MENU_ANALYSIS_RESPONSE_MISMATCH_MESSAGE,
   SAFE_MENU_ANALYSIS_ERROR_MESSAGE,
   getSafeMenuAnalysisErrorMessage,
   parseMenuAnalysisResponse,
@@ -539,11 +541,11 @@ const safeApiMessage = "Menu analysis is busy. Try again shortly.";
 const validApiError = await captureError(() =>
   parseMenuAnalysisResponse({
     ok: false,
-    async json() {
-      return {
+    async text() {
+      return JSON.stringify({
         ok: false,
         error: { code: "OPENAI_RATE_LIMITED", message: safeApiMessage, retryable: true },
-      };
+      });
     },
   }),
 );
@@ -554,22 +556,23 @@ verify(
 const invalidJsonError = await captureError(() =>
   parseMenuAnalysisResponse({
     ok: false,
-    async json() {
-      throw new SyntaxError("Unexpected token '<'");
+    async text() {
+      return "<html>truncated";
     },
   }),
 );
 verify(
   getSafeMenuAnalysisErrorMessage(invalidJsonError, false) ===
-    SAFE_MENU_ANALYSIS_ERROR_MESSAGE,
-  "invalid JSON uses the generic safe message",
+    MENU_ANALYSIS_RESPONSE_JSON_MESSAGE,
+  "invalid JSON uses the categorized safe message",
 );
 const htmlError = await captureError(() =>
   parseMenuAnalysisResponse(new Response("<html>Vercel failure</html>", { status: 502 })),
 );
 verify(
-  getSafeMenuAnalysisErrorMessage(htmlError, false) === SAFE_MENU_ANALYSIS_ERROR_MESSAGE,
-  "HTML response uses the generic safe message",
+  getSafeMenuAnalysisErrorMessage(htmlError, false) ===
+    MENU_ANALYSIS_RESPONSE_JSON_MESSAGE,
+  "HTML response uses the categorized safe message",
 );
 verify(
   getSafeMenuAnalysisErrorMessage(new TypeError("Failed to fetch"), false) ===
@@ -598,18 +601,18 @@ verify(
 const mismatchedStatusError = await captureError(() =>
   parseMenuAnalysisResponse({
     ok: true,
-    async json() {
-      return {
+    async text() {
+      return JSON.stringify({
         ok: false,
         error: { code: "OPENAI_TIMEOUT", message: "safe but mismatched", retryable: true },
-      };
+      });
     },
   }),
 );
 verify(
   getSafeMenuAnalysisErrorMessage(mismatchedStatusError, false) ===
-    SAFE_MENU_ANALYSIS_ERROR_MESSAGE,
-  "HTTP and schema status mismatch uses a generic error",
+    MENU_ANALYSIS_RESPONSE_MISMATCH_MESSAGE,
+  "HTTP and schema status mismatch uses a categorized error",
 );
 
 // Original source-file memory guards.
@@ -801,8 +804,10 @@ const formRequest = (
   });
 };
 const routeProvider = new FakeProvider();
+const ignoreObservation = () => {};
 const routeHandler = createMenuAnalysisPostHandler({
   createProvider: () => routeProvider,
+  logObservation: ignoreObservation,
 });
 const nonMultipart = await routeHandler(
   new Request("http://localhost/api/analyze/menu-images", {
@@ -853,6 +858,7 @@ const missingConfigResponse = await createMenuAnalysisPostHandler({
   createProvider() {
     throw new MenuAnalysisError("OPENAI_NOT_CONFIGURED", "raw configuration detail");
   },
+  logObservation: ignoreObservation,
 })(formRequest([{ bytes: jpegA, type: "image/jpeg" }]));
 verify(missingConfigResponse.status === 503, "Route maps missing server configuration to 503");
 const successResponse = await routeHandler(
@@ -885,6 +891,7 @@ verify(
 const rawFailureResponse = await createMenuAnalysisPostHandler({
   createProvider: () =>
     new FakeProvider(modelFixture, new Error("raw provider secret and request id")),
+  logObservation: ignoreObservation,
 })(formRequest([{ bytes: jpegA, type: "image/jpeg" }]));
 const rawFailureText = await rawFailureResponse.text();
 verify(

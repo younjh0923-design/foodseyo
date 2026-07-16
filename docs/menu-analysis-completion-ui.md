@@ -66,3 +66,13 @@ Loading is announced through a polite live region. Fallback completion uses `rol
 ## Verification status
 
 The network-free automated suites cover reducer transitions, strict response handling, readback-confirmed persistence, all stored-result read states, duplicate/stale guards, watchdog behavior, automatic navigation source order, one-shot hard fallback, and exact recovery copy. A paid OpenAI smoke is not run for this checkpoint. The already confirmed physical iPhone success established that the analyzer and persistence path work; post-T5.4 automatic navigation and live-result verification on the user's iPhone remains a user QA step.
+
+## Post-200 response boundary hardening
+
+The first Production iPhone retest after T5.4 showed the generic connection message even though Vercel recorded `POST /api/analyze/menu-images` as HTTP 200. The historical request cannot be assigned to a more specific client stage because the previous parser used `response.json().catch(() => null)` and collapsed body-read, JSON, API-schema, HTTP/body mismatch, failed-status, empty-menu, and semantic failures into one `response` error. A server 200 excludes the typed server non-200 path, but it does not by itself prove that the browser read and validated the body.
+
+The client now reads response text once, parses JSON separately, then applies API schema, HTTP/body consistency, failed-status, dish-presence, and semantic checks in order. Each stage has distinct safe copy. Only a fetch `TypeError` uses connection guidance. Storage and navigation retain their existing completion fallbacks.
+
+Every server response includes a random `X-Foodseyo-Correlation-Id`. The client may show only its first eight safe characters as a support reference. Production observation records exactly correlation ID, HTTP status, duration, response byte length, failure-stage code, structural error count, and semantic error count. It does not record images, filenames, restaurant or dish names, menu text, secrets, provider output, or canonical payloads.
+
+The network-free regression suite validates small and 31-dish synthetic success bodies, body-read failure, truncated JSON, HTML 200, invalid API schema, HTTP/body mismatch, failed status, empty menu, semantic failure, network `TypeError`, storage failure, navigation failure, response correlation, and privacy-safe observation fields. The synthetic 31-dish response is measured at runtime and parses successfully; no paid request is used.
