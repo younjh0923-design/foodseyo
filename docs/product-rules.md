@@ -1,6 +1,6 @@
 # Foodseyo Product Rules
 
-**Status:** Normative MVP definition through R1 (no product behavior change from T5.5)
+**Status:** Normative MVP definition through C1.1
 
 **Date:** 2026-07-16
 
@@ -22,7 +22,7 @@ restaurant_link ───┘
 
 ## Home and menu intake
 
-Home shows the exact heading `What will it taste like?` and description `Start with a restaurant link or menu image.` The link field precedes one full-width `Scan or upload a menu` CTA with `Take or choose menu photos.`
+Home shows the exact heading `Know what you’re ordering.` and description `See the taste, texture, ingredients, and details behind every dish.` The link field precedes one full-width `Scan or upload a menu` CTA with `Take or choose menu photos.`
 
 The CTA directly activates one native multi-file picker:
 
@@ -102,7 +102,9 @@ The `FoodseyoAnalysis` schema version remains `1.0.0`. Legacy `restaurant_photo`
 - **T5.5:** MVP Scope Alignment Cleanup.
 - **T6:** cancelled from the MVP.
 - **R1:** internal codebase and development workflow optimization; no product behavior change.
-- **T7:** restaurant/menu link analysis, next product feature.
+- **C1.1:** current analysis-consistency contract foundation; no live result change.
+- **C1.2:** next, connect the consistency contract to live menu-image analysis.
+- **T7:** restaurant/menu link analysis after C1 is complete.
 - **T8:** restaurant identification, reconsider after T7.
 - **Later:** map-app share-to-Foodseyo integration.
 

@@ -36,12 +36,13 @@ const helperSource = await readFile("src/lib/home-entry.ts", "utf8");
 const intakeSource = await readFile("src/lib/image-intake.ts", "utf8");
 const storageSource = await readFile("src/lib/storage.ts", "utf8");
 
-// Exact T5.5 Home copy.
+// Exact C1.1 Home copy; T5.5 intake behavior remains unchanged.
 verify(HOME_ENTRY_COPY.brand === "FOODSEYO", "Home brand is exact");
 verify(HOME_ENTRY_COPY.brandDescription === "AI Food Copilot", "brand description is exact");
-verify(HOME_ENTRY_COPY.heading === "What will it taste like?", "Home heading is exact");
+verify(HOME_ENTRY_COPY.heading === "Know what you’re ordering.", "Home heading is exact");
 verify(
-  HOME_ENTRY_COPY.description === "Start with a restaurant link or menu image.",
+  HOME_ENTRY_COPY.description ===
+    "See the taste, texture, ingredients, and details behind every dish.",
   "Home description is exact",
 );
 verify(

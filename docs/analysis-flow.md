@@ -146,6 +146,8 @@ Normal success requires storage readback validation and does not show a completi
 
 `/analysis` and `/analysis/dishes/[dishId]` read the validated canonical result after hydration and make zero result-page network calls. Refresh works in the same tab. Missing, invalid, unsupported, failed, zero-dish, or unavailable session data uses a safe recovery state and never Demo fallback. Dish navigation uses canonical IDs; category and dish order are preserved. Menu-derived ingredients, dietary clues, uncertainty, and allergy cautions remain visible without comparison to stored user settings.
 
+C1 is a consistency checkpoint before T7. C1.1 supplies a separate deterministic contract and synthetic evaluation foundation only; it does not alter this live pipeline. C1.2 is the next checkpoint for an explicit, regression-tested live integration decision.
+
 A synchronous attempt gate still blocks duplicate submissions, monotonic attempt IDs ignore late responses, and a 105-second client watchdog ends an unresolved browser request after the existing 80-second provider and 90-second Route limits. T5.3 feedback scrolling remains for abnormal completion and errors. Full details are in [menu-analysis-completion-ui.md](./menu-analysis-completion-ui.md) and [live-analysis-results.md](./live-analysis-results.md).
 
 Even without a confirmed restaurant, Foodseyo should provide:

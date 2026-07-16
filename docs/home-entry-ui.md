@@ -1,6 +1,6 @@
 # Foodseyo Home Entry UI
 
-**Status:** T5.5 MVP scope alignment
+**Status:** C1.1 copy alignment; T5.5 interaction unchanged
 
 **Date:** 2026-07-16
 
@@ -9,8 +9,8 @@
 Home shows, in order:
 
 1. `FOODSEYO` and `AI Food Copilot`;
-2. `What will it taste like?`;
-3. `Start with a restaurant link or menu image.`;
+2. `Know what you’re ordering.`;
+3. `See the taste, texture, ingredients, and details behind every dish.`;
 4. the `Paste a restaurant or menu link` field;
 5. one full-width `Scan or upload a menu` action with `Take or choose menu photos.`
 

@@ -91,7 +91,7 @@ verify(!/For you|showReason=/.test(restaurantOverview), "demo personalization se
 verify(!/passport/i.test(mealPlanner + recommendation), "meal planning has no profile dependency");
 
 // Home and native picker boundary.
-verify(home.includes("What will it taste like?" ) === false, "Home visible copy remains centralized");
+verify(home.includes("Know what you’re ordering.") === false, "Home visible copy remains centralized");
 verify(home.includes("HOME_ENTRY_COPY.heading"), "Home renders the centralized heading");
 verify(home.includes('aria-label="Scan or upload a menu"'), "Home CTA accessible name is exact");
 verify((home.match(/type="file"/g) ?? []).length === 1, "Home exposes one file input");

@@ -1,8 +1,9 @@
 export const HOME_ENTRY_COPY = {
   brand: "FOODSEYO",
   brandDescription: "AI Food Copilot",
-  heading: "What will it taste like?",
-  description: "Start with a restaurant link or menu image.",
+  heading: "Know what you’re ordering.",
+  description:
+    "See the taste, texture, ingredients, and details behind every dish.",
   linkPlaceholder: "Paste a restaurant or menu link",
   imageTitle: "Scan or upload a menu",
   imageDescription: "Take or choose menu photos.",

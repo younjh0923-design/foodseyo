@@ -484,3 +484,11 @@ This log records accepted product and architecture decisions frozen in T2. Chang
 - **Impact:** `verify:quick`, `verify:menu`, and `verify:results` support focused iteration; `verify:full` remains the pre-commit authority. Schema-v1 legacy input values remain deprecated compatibility types and inaccessible from active product flows. T7 remains the next product feature and is not implemented by R1.
 - **Status:** Accepted
 - **Date:** 2026-07-16
+
+## D-061 — Establish the analysis consistency contract before T7
+
+- **Decision:** C1 is a checkpoint before T7. C1.1 adds the independent `foodseyo-consistency-v1` profile, conservative normalization, deterministic English wording helpers, version metadata, semantic validation, and source/dish fingerprint contracts. C1.2 will separately decide how to connect this foundation to live menu-image analysis.
+- **Reason:** Repeated analysis needs stable semantic axes without prematurely breaking the live provider response, canonical schema, or result UI. Basic tastes, flavor notes, heat, richness, textures, and ingredient evidence therefore require separate bounded contracts and repeatable synthetic evaluation first.
+- **Impact:** Basic tastes are limited to sweet, salty, sour, bitter, and savory; textures and other axes have fixed vocabularies and tag limits; ingredient names remain free-form with `stated`, `typical`, or `uncertain` evidence. Fingerprints include source identity, restaurant/branch context, dish evidence, price, normalized consistency, and model/prompt/schema/profile versions, so a dish name alone can never authorize reuse. Fingerprints are not logged and do not activate a cache, database, persistent registry, or provider bypass. The live OpenAI model, prompt, structured output, canonical `FoodseyoAnalysis`, storage, and result UI remain unchanged in C1.1.
+- **Status:** Accepted
+- **Date:** 2026-07-16

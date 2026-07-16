@@ -12,7 +12,7 @@ Foodseyo is a mobile-first Next.js food copilot that starts from a restaurant/me
 
 The menu-image vertical slice uses the server-only OpenAI integration when explicitly triggered by a user. Automated validation and visual QA do not make paid analysis requests.
 
-The Home link field currently validates HTTP/HTTPS syntax only. It does not fetch, analyze, navigate to a demo result, or claim completion. Live link analysis is the next product feature.
+The Home link field currently validates HTTP/HTTPS syntax only. It does not fetch, analyze, navigate to a demo result, or claim completion. C1.2 live consistency integration is next; live link analysis follows C1 as T7.
 
 ## Menu-photo behavior
 
@@ -40,6 +40,7 @@ Development checks:
 pnpm verify:quick    # lint, typecheck, and fast contract/scope regressions
 pnpm verify:menu     # intake, preprocessing, API boundary, completion, storage
 pnpm verify:results  # Overview, Dish Detail, session loading, result navigation
+pnpm verify:consistency # C1 vocabulary, normalization, wording, fingerprints, validation
 pnpm verify:full     # final lint, typecheck, all tests, build, and security checks
 ```
 
@@ -51,7 +52,9 @@ pnpm verify:full     # final lint, typecheck, all tests, build, and security che
 - T5.5 — MVP scope alignment cleanup
 - T6 — cancelled from the MVP
 - R1 — non-functional codebase and development workflow optimization
-- T7 — restaurant/menu link analysis, next product feature
+- C1.1 — analysis consistency contract foundation (current)
+- C1.2 — live menu-image consistency integration (next)
+- T7 — restaurant/menu link analysis after C1
 - T8 — restaurant identification, to be reconsidered after T7
 - Later — map-app share-to-Foodseyo integration
 

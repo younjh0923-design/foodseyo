@@ -188,6 +188,12 @@ Information gaps and operational failure are distinct. For example, restaurant i
 
 `src/data/demoFoodseyoAnalysis.ts` is the canonical demo fixture and is created with `FoodseyoAnalysisSchema.parse`. It is clearly labeled as `demo`, uses `demo_data` evidence, stores explicit fixture prices, records image provenance and rights, and does not claim to be live restaurant evidence.
 
+## C1.1 consistency contract
+
+C1.1 deliberately leaves the canonical `FoodseyoAnalysis` schema, the provider structured-output schema, and their free-string taste, texture, spice, and ingredient fields unchanged. The independent foundation in `src/lib/analysis-consistency/` defines `foodseyo-consistency-v1` for later C1.2 integration. Its metadata binds model, prompt, canonical schema, and consistency-profile versions without adding those fields to the live envelope yet.
+
+The new contract separates basic tastes, flavor notes, heat, richness, textures, and free-form ingredient evidence. Ingredient evidence is `stated`, `typical`, or `uncertain`; typical or uncertain information never becomes a stated restaurant fact. Stable source and dish fingerprints prepare a future identity boundary but do not enable cache reuse, storage, or API bypass in C1.1.
+
 `src/data/demoRestaurant.ts` is a UI adapter. It derives the existing `Restaurant` and `Dish` view models from the canonical fixture so the clearly labeled Demo Overview, Dish Detail, Meal Planner, Assistant mock, and routes share one source of truth.
 
 ## Validation and T5 Structured Output

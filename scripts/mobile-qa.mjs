@@ -50,11 +50,11 @@ for (const viewport of [
 
   record(
     `${viewport.name} exact heading`,
-    await page.getByRole("heading", { name: "What will it taste like?" }).isVisible(),
+    await page.getByRole("heading", { name: "Know what you’re ordering." }).isVisible(),
   );
   record(
     `${viewport.name} exact description`,
-    await page.getByText("Start with a restaurant link or menu image.", { exact: true }).isVisible(),
+    await page.getByText("See the taste, texture, ingredients, and details behind every dish.", { exact: true }).isVisible(),
   );
   record(
     `${viewport.name} one menu CTA`,
