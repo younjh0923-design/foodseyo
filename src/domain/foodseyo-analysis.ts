@@ -5,6 +5,8 @@ export const FOODSEYO_ANALYSIS_SCHEMA_VERSION = "1.0.0" as const;
 export const ALLERGY_SAFETY_NOTICE =
   "Recipes and preparation practices may change. Foodseyo cannot guarantee allergy safety. Confirm ingredients and cross-contact directly with restaurant staff." as const;
 
+// Schema-v1 compatibility: restaurant_photo and restaurant_screen stay parseable,
+// but T5.5 exposes no MVP UI, route, provider override, or successful live analyzer.
 export const InputTypeSchema = z.enum([
   "menu_images",
   "restaurant_photo",
@@ -177,6 +179,7 @@ export const MenuImagesInputContextSchema = z.strictObject({
   storageScope: SessionStorageScopeSchema,
 });
 
+/** @deprecated Schema-v1 compatibility only; unavailable in the active MVP. */
 export const RestaurantPhotoInputContextSchema = z.strictObject({
   type: z.literal("restaurant_photo"),
   imageCount: z.number().int().positive(),
@@ -185,6 +188,7 @@ export const RestaurantPhotoInputContextSchema = z.strictObject({
   storageScope: SessionStorageScopeSchema,
 });
 
+/** @deprecated Schema-v1 compatibility only; unavailable in the active MVP. */
 export const RestaurantScreenInputContextSchema = z.strictObject({
   type: z.literal("restaurant_screen"),
   imageCount: z.number().int().positive(),

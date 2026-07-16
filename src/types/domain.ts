@@ -11,9 +11,6 @@ export type EvidenceBadgeKind =
   | "ai_inference"
   | "unavailable";
 
-export type SpicePreference = "mild" | "medium" | "hot";
-export type PreferredLanguage = "English" | "Korean";
-
 export interface EvidenceReference {
   sourceType: EvidenceSourceType | null;
   basis: ClaimBasis;
@@ -88,15 +85,6 @@ export interface Restaurant {
   imageSource: string;
   representativeDishIds: string[];
   dishes: Dish[];
-}
-
-export interface FoodPassport {
-  allergies: string[];
-  diets: string[];
-  avoidedIngredients: string[];
-  spicePreference: SpicePreference;
-  preferredLanguage: PreferredLanguage;
-  configured: boolean;
 }
 
 export interface MealPreferences {

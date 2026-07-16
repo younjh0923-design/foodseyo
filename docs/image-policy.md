@@ -1,10 +1,10 @@
 # Foodseyo Image Policy
 
-**Status:** Frozen for T2.1
+**Status:** Aligned with T5.5 MVP scope
 
-**Date:** 2026-07-15
+**Date:** 2026-07-16
 
-This policy governs dish presentation images shown in Foodseyo. It does not restrict GPT-5.6 analysis of user-provided menu, restaurant, or screen images. Image understanding remains part of the competition P0; generating replacement dish photography with AI does not.
+This policy governs dish presentation images shown in Foodseyo. The active analysis input is user-provided menu photos. Generating replacement dish photography with AI is not part of the MVP.
 
 ## MVP rule
 
@@ -26,7 +26,7 @@ The current persistent Restaurant and Dish UI displays only images with `rightsS
 
 Choose a dish image in this order:
 
-1. A dish image contained in a user-uploaded menu or restaurant screen.
+1. A dish image contained in a user-uploaded menu.
 2. An image clearly connected to the dish on the restaurant’s official menu.
 3. An image clearly connected to the dish on the restaurant’s official website.
 4. An image clearly connected to the dish on a confirmed official restaurant social account.
@@ -39,10 +39,9 @@ Foodseyo is not required to show an image for every menu item. If no trustworthy
 
 Dish images must preserve source honesty. Image source classification uses:
 
-### Restaurant-specific images
+### Source-specific images
 
 - `uploaded_menu`
-- `user_provided_screen`
 - `official_menu`
 - `official_website`
 - `official_social`
@@ -60,11 +59,9 @@ The MVP image source categories do not include `ai_generated`.
 
 An image may be treated as restaurant-specific only when the evidence clearly connects the image to both the confirmed restaurant and the dish. A visually similar dish is not sufficient.
 
-### Images inside user-provided third-party screens
+### MVP input boundary
 
-A food photo visible inside a user-uploaded Google Maps, Yelp, search-result, or other third-party screen may be used as evidence during the current analysis session. It must use `user_provided_screen` provenance.
-
-Until the original source and reuse rights are separately verified, Foodseyo must not extract, permanently store, or redistribute that image as a public Dish Card image. Its rights status is `session_only` or `not_reusable`. An official website or official social source also does not automatically make an image rights-cleared; provenance and permission are separate facts.
+The MVP accepts menu photos for analysis. It does not expose another image-evidence intake flow. An official website or official social source also does not automatically make an image rights-cleared; provenance and permission are separate facts.
 
 An image with `attribution_required` rights must retain non-empty attribution metadata, but the current UI does not yet render that attribution and therefore must not display the image. An image with `unknown` rights must remain hidden until its reuse rights are verified. Neither status may be automatically promoted to `cleared` because a source appears official.
 
@@ -88,8 +85,8 @@ T2.1 documents these requirements only. It does not implement TypeScript types o
 Approved examples are:
 
 - **From uploaded menu**
-- **From restaurant screen**
-- **Official restaurant image**
+- **User-provided menu evidence**
+- **Official source image**
 - **Official menu image**
 - **Official social image**
 - **General dish reference**
@@ -103,7 +100,7 @@ A **General dish reference** must also display:
 A general reference must never be labeled:
 
 - **At this restaurant**
-- **Official restaurant image**
+- **Official source image**
 - **Restaurant dish photo**
 - **Served here**
 

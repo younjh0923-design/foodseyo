@@ -1,30 +1,29 @@
 # Foodseyo
 
-**Understand the menu. Order with confidence.**
+Foodseyo is a mobile-first Next.js food copilot that starts from a restaurant/menu link or menu photos and presents structured guidance for deciding what to order.
 
-A mobile-first Next.js demo that turns one restaurant analysis into an immediately explorable product experience. Restaurant context, representative dishes, review themes, dietary evidence, and order planning are shown as structured UI instead of a chat-first flow.
+## MVP routes
 
-## Implemented routes
+- `/` — link syntax validation and the native menu-photo picker entry
+- `/menu-scan` — ordered review and analysis of up to ten menu photos
+- `/analysis` — canonical live menu overview
+- `/analysis/dishes/[dishId]` — canonical live dish detail
+- `/nearby` and `/restaurant/pai-northern-thai-kitchen` — clearly labeled deterministic demo flows
 
-- `/` — link/image input, Food Passport, recent demo restaurant
-- `/nearby` — location-permission states and demo restaurant list
-- `/restaurant/pai-northern-thai-kitchen` — restaurant overview, representative dishes, personalization, menu filters, and meal planning
-- `/restaurant/pai-northern-thai-kitchen/dish/khao-soi` — instant dish detail with Overview, Review, and Dietary tabs
+The menu-image vertical slice uses the server-only OpenAI integration when explicitly triggered by a user. Automated validation and visual QA do not make paid analysis requests.
 
-## Demo interactions
+The Home link field currently validates HTTP/HTTPS syntax only. It does not fetch, analyze, navigate to a demo result, or claim completion. Live link analysis is the next product feature.
 
-- Restaurant link analysis and image selection states
-- Food Passport saved to `localStorage`
-- Conditional “For you” section after Passport setup
-- Data-driven representative and all-menu lists
-- Working category and text filters
-- TypeScript order recommendation and price calculation
-- Review consistency themes with evidence-source labels
-- Cautious dietary statuses and a staff-question phrase card
-- Supporting AI Assistant bottom sheet with quick questions and mock responses
-- Browser geolocation request with denied/unavailable fallbacks
+## Menu-photo behavior
 
-All restaurant, dish, review, dietary, and recommendation content is demo data. Food images are labeled as demo reference images and must not be treated as verified restaurant photography.
+- JPEG, PNG, and WEBP only
+- one to ten files, preserving picker order
+- native browser/operating-system picker with no `capture` hint
+- memory-only handoff from Home to `/menu-scan`
+- adaptive preprocessing with the existing readability floor and total-byte limits
+- canonical result stored only in `sessionStorage` for the current tab
+
+Menu-derived ingredient, dietary, uncertainty, and allergy-caution information remains visible. Foodseyo never guarantees allergy safety and directs users to confirm ingredients and cross-contact with restaurant staff.
 
 ## Run locally
 
@@ -39,21 +38,18 @@ Quality checks:
 
 ```bash
 pnpm lint
+pnpm typecheck
+pnpm test
 pnpm build
 ```
 
-## Project structure
+## MVP roadmap
 
-- `src/types/domain.ts` — application domain types
-- `src/data/` — typed demo restaurant and nearby data
-- `src/lib/` — local storage and recommendation logic
-- `src/components/` — reusable mobile UI, sheets, cards, and screen clients
-- `src/app/` — App Router pages and global design tokens
-- `public/images/` — local demo reference imagery
+- T5–T5.4.1 — menu-image vertical slice complete
+- T5.5 — MVP scope alignment cleanup
+- T6 — cancelled from the MVP
+- T7 — restaurant/menu link analysis, next product feature
+- T8 — restaurant identification, to be reconsidered after T7
+- Later — map-app share-to-Foodseyo integration
 
-## Current limitations
-
-- No live OpenAI, restaurant, map, review, or translation API is connected.
-- Restaurant analysis, nearby listings, assistant responses, and evidence are deterministic demo flows.
-- Food Passport is stored only in the current browser.
-- Allergy and cross-contact safety is never guaranteed; users are directed to restaurant staff.
+Map-app sharing is not currently implemented.

@@ -1,11 +1,7 @@
 import { readFile } from "node:fs/promises";
-import type {
-  DietaryAssessment,
-  FoodseyoAnalysis,
-} from "../src/domain/foodseyo-analysis.ts";
+import type { FoodseyoAnalysis } from "../src/domain/foodseyo-analysis.ts";
 import { demoFoodseyoAnalysis } from "../src/data/demoFoodseyoAnalysis.ts";
 import {
-  compareDishWithPassport,
   createLiveAnalysisOverview,
   createLiveDishDetail,
   findLiveDish,
@@ -26,7 +22,6 @@ import {
   serializeCurrentAnalysis,
   tryWriteCurrentAnalysis,
 } from "../src/lib/storage.ts";
-import type { FoodPassport } from "../src/types/domain.ts";
 
 const passedChecks: string[] = [];
 const verify = (condition: boolean, label: string) => {
@@ -219,65 +214,20 @@ verify(
 // G. Dish Detail is canonical-only and section-safe.
 const detail = createLiveDishDetail(demoFoodseyoAnalysis, firstDish.id);
 verify(detail?.name === firstDish.name, "Dish Detail preserves canonical name");
-verify(detail?.canonicalDish === firstDish, "Dish Detail retains the canonical comparison source");
 verify(Boolean(detail?.description), "Dish Detail maps a nonempty description when available");
 verify((detail?.ingredients.length ?? 0) > 0, "Dish Detail maps available ingredients");
 verify(detail?.dietaryNotes.length === firstDish.dietary.items.length, "Dish Detail maps dietary notes without fabrication");
 verify(detail?.allergySafetyNotice.includes("cannot guarantee allergy safety") === true, "Dish Detail preserves allergy safety language");
 
-// H. Conservative Food Passport comparison.
-const unsetPassport: FoodPassport = {
-  allergies: [], diets: [], avoidedIngredients: [], spicePreference: "mild", preferredLanguage: "English", configured: false,
-};
-verify(compareDishWithPassport(firstDish, unsetPassport).length === 0, "unset Passport produces no fake match");
-const comparisonDish = structuredClone(firstDish);
-const assessment = (
-  key: DietaryAssessment["key"],
-  label: string,
-  status: DietaryAssessment["status"],
-): DietaryAssessment => ({
-  key,
-  label,
-  status,
-  explanation: null,
-  basis: "direct_observation",
-  sourceIds: [],
-  limitation: "Confirm with staff.",
-});
-comparisonDish.dietary.items = [
-  assessment("peanuts", "Peanuts", "likely_present"),
-  assessment("vegetarian", "Vegetarian", "confirmed_present"),
-];
-comparisonDish.visibleSpiceLabel = "Hot";
-const configuredPassport: FoodPassport = {
-  allergies: ["Peanuts"],
-  diets: ["Vegetarian"],
-  avoidedIngredients: [],
-  spicePreference: "mild",
-  preferredLanguage: "English",
-  configured: true,
-};
-const comparisons = compareDishWithPassport(comparisonDish, configuredPassport);
-verify(comparisons.some((item) => item.label === "Peanuts" && item.kind === "caution"), "listed allergen produces caution");
-verify(comparisons.some((item) => item.label === "Vegetarian" && item.kind === "match"), "confirmed dietary preference produces match");
-verify(comparisons.some((item) => item.label === "Spice" && item.kind === "caution"), "higher spice produces caution");
-verify(comparisons.some((item) => item.message.includes("Ask the restaurant")), "comparison directs uncertain users to staff");
-verify(comparisons.every((item) => !/\bsafe\b/i.test(item.message)), "comparison never claims a dish is safe");
-const unknownDish = structuredClone(firstDish);
-unknownDish.dietary.items = [];
-unknownDish.visibleSpiceLabel = null;
-unknownDish.generalKnowledge.typicalSpice = null;
-const unknownComparisons = compareDishWithPassport(unknownDish, configuredPassport);
-verify(unknownComparisons.some((item) => item.kind === "unknown"), "unknown information stays unknown");
-verify(unknownComparisons.some((item) => item.message.includes("cross-contact")), "cross-contact is not inferred away");
-
-// I and J. Source-level cleanup, route independence and forbidden scope.
+// H and I. Source-level cleanup, route independence and MVP scope.
 const menuScanSource = await readFile("src/components/menu-scan/MenuScanClient.tsx", "utf8");
 const overviewSource = await readFile("src/components/analysis/LiveAnalysisOverviewClient.tsx", "utf8");
 const detailSource = await readFile("src/components/analysis/LiveDishDetailClient.tsx", "utf8");
 const hookSource = await readFile("src/components/analysis/useCurrentAnalysisSession.ts", "utf8");
 const uiStateSource = await readFile("src/lib/menu-analysis-ui-state.ts", "utf8");
-const resultSource = `${overviewSource}\n${detailSource}\n${hookSource}`;
+const liveResultAdapterSource = await readFile("src/lib/live-analysis-results.ts", "utf8");
+const storageSource = await readFile("src/lib/storage.ts", "utf8");
+const resultSource = `${overviewSource}\n${detailSource}\n${hookSource}\n${liveResultAdapterSource}`;
 verify(menuScanSource.indexOf("tryWriteCurrentAnalysis") < menuScanSource.indexOf('type: "PERSISTED"'), "storage confirmation precedes navigating phase");
 verify(menuScanSource.indexOf('type: "PERSISTED"') < menuScanSource.indexOf("router.replace(MENU_ANALYSIS_RESULTS_PATH)"), "navigating phase precedes router.replace");
 verify((menuScanSource.match(/fetch\("\/api\/analyze\/menu-images"/g) ?? []).length === 1, "Menu Scan retains one API call site");
@@ -295,7 +245,11 @@ verify(overviewSource.includes("tryRemoveCurrentAnalysis") === false, "Overview 
 verify(overviewSource.includes("clearPendingFiles"), "Scan another menu clears pending intake");
 verify(overviewSource.includes('router.push("/")'), "Scan another menu returns Home");
 verify(!overviewSource.includes("localStorage.clear") && !hookSource.includes("sessionStorage.clear"), "no broad browser storage clear is used");
-verify(resultSource.includes("PASSPORT_STORAGE_KEY") === false, "Live components do not replace Passport storage");
+verify(!/passport/i.test(resultSource), "Live result UI and adapter contain no Passport comparison");
+verify(!/passport|localStorage/i.test(storageSource), "Passport storage keys and writes are absent");
+verify(overviewSource.includes("Scan another menu"), "Overview retains Scan another menu");
+verify(detailSource.includes("Dietary and allergy notes"), "Dish Detail retains menu-based caution notes");
+verify(detailSource.includes("ingredientsTitle"), "Dish Detail retains ingredient information");
 verify(!/fetch\(|OpenAI|openai/i.test(resultSource), "result pages contain no fetch or OpenAI call");
 verify(!/demoFoodseyoAnalysis|demoRestaurant|pai-northern/i.test(resultSource), "Live results contain no Demo or PAI fallback");
 verify(!/base64|data:image/i.test(resultSource), "Live results contain no Base64 payload");
@@ -320,7 +274,6 @@ globalThis.fetch = (() => {
 }) as typeof fetch;
 createLiveAnalysisOverview(demoFoodseyoAnalysis);
 createLiveDishDetail(demoFoodseyoAnalysis, firstDish.id);
-compareDishWithPassport(firstDish, configuredPassport);
 globalThis.fetch = originalFetch;
 verify(networkCalls === 0, "live result validation makes zero network calls");
 

@@ -1,5 +1,4 @@
 import type {
-  FoodPassport,
   MealPreferences,
   OrderRecommendation,
   OrderRecommendationItem,
@@ -18,7 +17,6 @@ const reasonByDish: Record<string, string> = {
 export function recommendOrder(
   restaurant: Restaurant,
   preferences: MealPreferences,
-  passport: FoodPassport,
 ): OrderRecommendation {
   let dishIds = ["khao-soi", "sai-ua", "mango-sticky-rice"];
 
@@ -45,9 +43,6 @@ export function recommendOrder(
     estimatedTotal,
     currency: "CAD",
     summary: `A ${preferences.sharing === "Share dishes" ? "shareable" : "flexible"} mix built around ${preferences.goal.toLowerCase()}.`,
-    warnings:
-      passport.configured && passport.allergies.length > 0
-        ? ["Saved dietary information requires confirmation with restaurant staff."]
-        : [],
+    warnings: [],
   };
 }

@@ -1,10 +1,10 @@
 # Foodseyo Shared Analysis Orchestration
 
-**Status:** Implemented for T4.1 and extended by T5
+**Status:** Implemented for T4.1 and aligned for T5.5
 
-**Date:** 2026-07-15
+**Date:** 2026-07-16
 
-T4 turns the T3 `FoodseyoAnalysis` contract into one internal execution pipeline. All six input paths share a dispatcher, analyzer boundary, normalization, structural validation, semantic validation, status and issue derivation, and envelope creation.
+T4 turns the T3 `FoodseyoAnalysis` contract into one internal execution pipeline. The schema-v1 union has six branches for compatibility, while T5.5 exposes only the menu-image analyzer and the link entry UI. The dispatcher still centralizes analyzer boundaries, normalization, structural validation, semantic validation, status and issue derivation, and envelope creation.
 
 The public internal service is:
 
@@ -13,7 +13,7 @@ analyzeFoodseyoInput(request)
   → Promise<FoodseyoAnalysis>
 ```
 
-The shared T4 core itself does not call a provider. T5 injects one server-only `menu_images` analyzer at the API route boundary; the default registry remains provider-free and capability-unavailable. The demo analyzer remains deterministic. Restaurant photo, screen, link, and nearby analyzers remain unavailable and never return demo data as a fallback.
+The shared T4 core itself does not call a provider. T5 injects one server-only `menu_images` analyzer at the API route boundary; the default registry remains provider-free and capability-unavailable. The demo analyzer remains deterministic. Legacy `restaurant_photo` and `restaurant_screen`, future `restaurant_link`, and nearby inputs remain unavailable and never return demo data as a fallback.
 
 ## Execution flow
 
@@ -36,7 +36,7 @@ Each responsibility lives under `src/services/analysis`. The canonical schemas r
 
 ## Transient requests and canonical results
 
-`AnalyzeFoodseyoRequest` is a discriminated union for:
+`AnalyzeFoodseyoRequest` preserves the schema-v1 discriminated union for compatibility and exhaustive dispatch:
 
 - `menu_images`
 - `restaurant_photo`
@@ -77,7 +77,7 @@ The demo analyzer:
 
 ### Default provider-free analyzers
 
-The default registry keeps menu images, restaurant photo, restaurant screen, restaurant link, and nearby search capability-unavailable. T5/T5.1 overrides only `menu_images` at the server route boundary with the concrete provider-backed analyzer. All other live analyzers continue to throw `AnalysisCapabilityUnavailableError`; none fabricate data or fall back to the demo analyzer.
+The default registry keeps every non-demo input capability-unavailable. The menu-image API route overrides only `menu_images` with the concrete provider-backed analyzer. Legacy `restaurant_photo` and `restaurant_screen` remain compatibility-only, `restaurant_link` waits for T7, and all unavailable paths throw `AnalysisCapabilityUnavailableError` without fabricating data or falling back to Demo.
 
 ## Analysis draft
 
@@ -216,9 +216,9 @@ Future restaurant-photo, screen, link, nearby, and research providers connect th
 
 ## T5.4 presentation boundary
 
-The canonical envelope is validated again before session persistence and on every Live result read. `src/lib/live-analysis-results.ts` is a pure view-model adapter above the orchestrator: it preserves canonical category and dish ordering, resolves safe Dish links, maps nonempty presentation sections, and performs deterministic Food Passport comparison. It does not mutate the envelope or call an analyzer, provider, OpenAI, web research, review source, restaurant endpoint, or any other network service.
+The canonical envelope is validated again before session persistence and on every Live result read. `src/lib/live-analysis-results.ts` is a pure view-model adapter above the orchestrator: it preserves canonical category and dish ordering, resolves safe Dish links, and maps nonempty presentation sections including menu-derived ingredients and cautions. It does not mutate the envelope or call an analyzer, provider, OpenAI, web research, review source, restaurant endpoint, or any other network service.
 
-`/analysis` is the common destination for every future analyzer, but only `menu_images` is live in T5.4. T6 restaurant photo/screen, T7 link analysis, and T8 identification/candidate confirmation keep their existing responsibilities and remain unimplemented.
+`/analysis` is the canonical result destination, and only `menu_images` is live at T5.5. T6 is cancelled from the MVP, T7 link analysis is next, and T8 identification will be reconsidered after T7.
 
 ## T5 transport boundary
 

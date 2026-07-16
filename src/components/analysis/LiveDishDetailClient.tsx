@@ -1,36 +1,19 @@
 "use client";
 
-import {
-  AlertTriangle,
-  CheckCircle2,
-  CircleHelp,
-  ShieldCheck,
-} from "lucide-react";
-import { useMemo, useState } from "react";
+import { AlertTriangle } from "lucide-react";
+import { useMemo } from "react";
 import { AnalysisRecoveryState } from "@/components/analysis/AnalysisRecoveryState";
 import { useCurrentAnalysisSession } from "@/components/analysis/useCurrentAnalysisSession";
-import { SecondaryButton } from "@/components/common/Controls";
 import { PageHeader } from "@/components/common/PageHeader";
 import { MobileShell } from "@/components/layout/MobileShell";
-import { FoodPassportSheet } from "@/components/passport/FoodPassportSheet";
-import { useFoodPassport } from "@/components/passport/PassportProvider";
-import {
-  compareDishWithPassport,
-  createLiveDishDetail,
-} from "@/lib/live-analysis-results";
+import { createLiveDishDetail } from "@/lib/live-analysis-results";
 
 export function LiveDishDetailClient({ dishId }: { readonly dishId: string }) {
   const { state } = useCurrentAnalysisSession();
-  const { passport, hydrated: passportHydrated } = useFoodPassport();
-  const [passportOpen, setPassportOpen] = useState(false);
   const analysis = state.status === "success" ? state.analysis : null;
   const detail = useMemo(
     () => (analysis ? createLiveDishDetail(analysis, dishId) : null),
     [analysis, dishId],
-  );
-  const comparisons = useMemo(
-    () => (detail && passportHydrated ? compareDishWithPassport(detail.canonicalDish, passport) : []),
-    [detail, passport, passportHydrated],
   );
 
   if (state.status === "loading") return <AnalysisRecoveryState kind="loading" />;
@@ -101,36 +84,6 @@ export function LiveDishDetailClient({ dishId }: { readonly dishId: string }) {
             </section>
           ) : null}
 
-          <section aria-labelledby="passport-compare-title" className="rounded-[22px] border border-[var(--border)] p-4">
-            <div className="flex items-center gap-2">
-              <ShieldCheck aria-hidden="true" size={19} className="text-[var(--primary)]" />
-              <h2 id="passport-compare-title" className="font-bold">Food Passport</h2>
-            </div>
-            {!passportHydrated || !passport.configured ? (
-              <p className="mt-2 text-sm leading-5 text-[var(--text-secondary)]">
-                Food Passport is not set. Add preferences to compare this dish.
-              </p>
-            ) : (
-              <ul className="mt-3 space-y-3">
-                {comparisons.map((comparison, index) => (
-                  <li key={`${comparison.label}-${index}`} className="flex gap-2 text-sm leading-5">
-                    {comparison.kind === "match" ? (
-                      <CheckCircle2 aria-hidden="true" size={17} className="mt-0.5 shrink-0 text-[var(--primary)]" />
-                    ) : comparison.kind === "caution" ? (
-                      <AlertTriangle aria-hidden="true" size={17} className="mt-0.5 shrink-0 text-[var(--accent)]" />
-                    ) : (
-                      <CircleHelp aria-hidden="true" size={17} className="mt-0.5 shrink-0 text-[var(--text-muted)]" />
-                    )}
-                    <span><strong>{comparison.label}:</strong> {comparison.message}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-            <SecondaryButton className="mt-4 w-full" onClick={() => setPassportOpen(true)}>
-              {passportHydrated && passport.configured ? "Edit Food Passport" : "Set Food Passport"}
-            </SecondaryButton>
-          </section>
-
           {detail.orderingNotes.length ? (
             <section aria-labelledby="ordering-note-title">
               <h2 id="ordering-note-title" className="text-xl font-bold">Ordering note</h2>
@@ -159,7 +112,6 @@ export function LiveDishDetailClient({ dishId }: { readonly dishId: string }) {
           ) : null}
         </main>
       </div>
-      <FoodPassportSheet open={passportOpen} onClose={() => setPassportOpen(false)} />
     </MobileShell>
   );
 }

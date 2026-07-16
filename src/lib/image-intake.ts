@@ -3,11 +3,8 @@ import {
   validateMenuImageSelection,
 } from "./menu-image-preprocessing.ts";
 
-export type ImageIntakeSource = "camera" | "gallery";
-
 export interface PendingImageIntake {
   readonly files: readonly File[];
-  readonly source: ImageIntakeSource;
   readonly staged: true;
 }
 
@@ -17,7 +14,6 @@ export type ImageSelectionResult =
   | {
       readonly kind: "ready";
       readonly files: readonly File[];
-      readonly source: ImageIntakeSource;
     };
 
 export type MenuScanAppendResult =
@@ -30,19 +26,12 @@ export const SAFE_IMAGE_SELECTION_ERROR_MESSAGE =
 
 export function prepareImageIntakeSelection(
   files: readonly File[],
-  source: ImageIntakeSource,
 ): ImageSelectionResult {
   if (files.length === 0) return { kind: "cancelled" };
-  if (source === "camera" && files.length !== 1) {
-    return {
-      kind: "invalid",
-      message: "Take one photo at a time.",
-    };
-  }
 
   try {
     validateMenuImageSelection(files);
-    return { kind: "ready", files: [...files], source };
+    return { kind: "ready", files: [...files] };
   } catch (error) {
     return {
       kind: "invalid",
@@ -56,12 +45,11 @@ export function prepareImageIntakeSelection(
 
 export function stagePendingImageIntake(
   files: readonly File[],
-  source: ImageIntakeSource,
 ): PendingImageIntake {
-  if (files.length === 0 || (source === "camera" && files.length !== 1)) {
+  if (files.length === 0) {
     throw new Error(SAFE_IMAGE_SELECTION_ERROR_MESSAGE);
   }
-  return { files: [...files], source, staged: true };
+  return { files: [...files], staged: true };
 }
 
 export function consumePendingImageIntake(

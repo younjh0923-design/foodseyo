@@ -113,7 +113,7 @@ verify(
       sourceType: "user_provided_screen",
       rightsStatus: "session_only",
       restaurantSpecific: false,
-      userFacingLabel: "From restaurant screen",
+      userFacingLabel: "Legacy user evidence",
       limitation: "May be used only as session evidence; do not republish.",
     }).success,
   "user-provided screen with a session-only image is accepted",

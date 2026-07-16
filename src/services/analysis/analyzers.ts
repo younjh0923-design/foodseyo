@@ -75,6 +75,8 @@ export function createAnalyzerRegistry(
     menu_images: new CapabilityUnavailableAnalyzer<AnalyzeRequestByType<"menu_images">>(
       "menu_images",
     ),
+    // Schema-v1 compatibility only. T5.5 has no UI, route, or provider override
+    // for these legacy inputs, so both remain explicitly unavailable.
     restaurant_photo: new CapabilityUnavailableAnalyzer<
       AnalyzeRequestByType<"restaurant_photo">
     >("restaurant_photo"),

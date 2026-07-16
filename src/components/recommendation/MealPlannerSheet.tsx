@@ -1,10 +1,9 @@
 "use client";
 
-import { AlertTriangle, Check, ReceiptText, Users } from "lucide-react";
+import { Check, ReceiptText, Users } from "lucide-react";
 import { useState } from "react";
 import { BottomSheet } from "@/components/common/BottomSheet";
 import { ChoiceChip, PrimaryButton } from "@/components/common/Controls";
-import { useFoodPassport } from "@/components/passport/PassportProvider";
 import { demoRestaurant } from "@/data/demoRestaurant";
 import { recommendOrder } from "@/lib/recommendation";
 import type { MealPreferences, OrderRecommendation } from "@/types/domain";
@@ -22,7 +21,6 @@ const sharingOptions = [
 ] as const;
 
 export function MealPlannerSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { passport } = useFoodPassport();
   const [preferences, setPreferences] = useState<MealPreferences>(initialPreferences);
   const [recommendation, setRecommendation] = useState<OrderRecommendation | null>(null);
   const update = <Key extends keyof MealPreferences>(key: Key, value: MealPreferences[Key]) => {
@@ -50,7 +48,7 @@ export function MealPlannerSheet({ open, onClose }: { open: boolean; onClose: ()
           <legend className="mb-3 text-sm font-bold">Serving style</legend>
           <div className="grid grid-cols-2 gap-2">{sharingOptions.map((option) => <ChoiceChip key={option.value} selected={preferences.sharing === option.value} onClick={() => update("sharing", option.value)}>{label(option.label, preferences.sharing === option.value)}</ChoiceChip>)}</div>
         </fieldset>
-        <PrimaryButton className="min-h-12 w-full" onClick={() => setRecommendation(recommendOrder(demoRestaurant, preferences, passport))}>Recommend an order</PrimaryButton>
+        <PrimaryButton className="min-h-12 w-full" onClick={() => setRecommendation(recommendOrder(demoRestaurant, preferences))}>Recommend an order</PrimaryButton>
 
         {recommendation ? (
           <section aria-live="polite" className="rounded-[22px] border border-[var(--border)] bg-[var(--surface)] p-4">
@@ -67,7 +65,6 @@ export function MealPlannerSheet({ open, onClose }: { open: boolean; onClose: ()
             </ol>
             <div className="mt-5 flex items-end justify-between border-t border-[var(--border)] pt-4"><span className="text-sm text-[var(--text-secondary)]">Estimated total</span><strong className="text-xl">{recommendation.currency} {recommendation.estimatedTotal}</strong></div>
             <p className="mt-2 text-xs leading-5 text-[var(--text-secondary)]">{recommendation.summary}</p>
-            {recommendation.warnings.map((warning) => <div key={warning} className="mt-4 flex gap-2 rounded-2xl bg-[var(--soft-orange)] p-3 text-xs leading-5 text-[#7d432b]"><AlertTriangle aria-hidden="true" className="mt-0.5 shrink-0" size={16} />{warning}</div>)}
           </section>
         ) : null}
       </div>

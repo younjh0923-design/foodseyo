@@ -1,5 +1,4 @@
-import Link from "next/link";
-import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from "react";
+import { forwardRef, type ButtonHTMLAttributes } from "react";
 
 function classes(...values: Array<string | undefined | false>) {
   return values.filter(Boolean).join(" ");
@@ -79,45 +78,6 @@ export function ChoiceChip({ selected, className, children, ...props }: ChoiceCh
       {...props}
     >
       {children}
-    </button>
-  );
-}
-
-interface ActionCardProps {
-  icon: ReactNode;
-  title: string;
-  description: string;
-  status?: string;
-  href?: string;
-  onClick?: () => void;
-  ariaLabel?: string;
-}
-
-export function ActionCard({ icon, title, description, status, href, onClick, ariaLabel }: ActionCardProps) {
-  const content = (
-    <>
-      <span className="flex size-11 items-center justify-center rounded-2xl bg-[var(--soft-green)] text-[var(--primary)]">
-        {icon}
-      </span>
-      <span className="mt-5 block text-[15px] font-bold leading-5 text-[var(--text)]">{title}</span>
-      <span className="mt-1 block text-xs leading-[18px] text-[var(--text-secondary)]">{description}</span>
-      {status ? (
-        <span className="mt-3 inline-flex min-h-6 max-w-full items-center rounded-2xl bg-[var(--canvas)] px-2.5 py-1 text-center text-[11px] font-bold leading-4 whitespace-normal break-words text-[var(--text-secondary)]">
-          {status}
-        </span>
-      ) : null}
-    </>
-  );
-  const cardClass =
-    "h-full min-h-[172px] w-full overflow-hidden rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-4 text-left transition-[background-color,border-color,transform] hover:border-[var(--border-strong)] hover:bg-[var(--canvas)] active:bg-[var(--canvas)]";
-
-  return href ? (
-    <Link href={href} aria-label={ariaLabel ?? title} className={cardClass}>
-      {content}
-    </Link>
-  ) : (
-    <button type="button" onClick={onClick} aria-label={ariaLabel ?? title} className={cardClass}>
-      {content}
     </button>
   );
 }

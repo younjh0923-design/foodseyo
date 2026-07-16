@@ -465,3 +465,11 @@ This log records accepted product and architecture decisions frozen in T2. Chang
 - **Impact:** Only genuine fetch/network failures use connection guidance. Support can correlate a short UI reference with privacy-safe Vercel metrics without logging images, menu content, secrets, raw provider output, or canonical results.
 - **Status:** Accepted
 - **Date:** 2026-07-15
+
+## D-059 — Align the MVP around menu photos and links
+
+- **Decision:** The active MVP entry surfaces are `menu_images` and the `restaurant_link` field. Menu photos use one native multi-file picker with no `capture` hint. The former Food Passport UI, provider, storage, and comparison logic are removed. T6 is cancelled; T7 link analysis is next; T8 identification is reconsidered after T7; map-app share-to-Foodseyo remains Later.
+- **Reason:** The team narrowed the MVP to the evidence flows needed for the competition experience and removed profile setup and unsupported image-intake promises that increased decision load without strengthening the live menu vertical slice.
+- **Impact:** Home has one full-width menu-photo CTA below the link field. Live results retain menu-derived ingredients and cautious allergy/dietary information but perform no stored-user comparison. Schema-v1 `restaurant_photo`, `restaurant_screen`, and `user_provided_screen` values remain parseable only for backward compatibility; they have no active UI, route, provider override, or successful live analyzer.
+- **Status:** Accepted
+- **Date:** 2026-07-16

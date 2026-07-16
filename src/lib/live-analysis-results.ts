@@ -4,7 +4,6 @@ import type {
   FoodseyoAnalysis,
   MenuCategory,
 } from "../domain/foodseyo-analysis.ts";
-import type { FoodPassport } from "../types/domain.ts";
 
 const cleanText = (value: string | null | undefined): string | null => {
   const trimmed = value?.trim();
@@ -255,7 +254,6 @@ export interface LiveDishDetailView {
   readonly orderingNotes: readonly string[];
   readonly uncertaintyNotes: readonly string[];
   readonly allergySafetyNotice: string;
-  readonly canonicalDish: Dish;
 }
 
 const dietaryStatusLabel: Record<DietaryAssessment["status"], string> = {
@@ -336,144 +334,5 @@ export function createLiveDishDetail(
     orderingNotes,
     uncertaintyNotes,
     allergySafetyNotice: analysis.payload.allergySafetyNotice,
-    canonicalDish: dish,
   };
-}
-
-export interface PassportComparisonView {
-  readonly kind: "match" | "caution" | "unknown";
-  readonly label: string;
-  readonly message: string;
-}
-
-const passportKeyByLabel: Record<string, DietaryAssessment["key"]> = {
-  peanuts: "peanuts",
-  "tree nuts": "tree_nuts",
-  shellfish: "shellfish",
-  dairy: "dairy",
-  eggs: "eggs",
-  gluten: "gluten",
-  vegetarian: "vegetarian",
-  vegan: "vegan",
-  "halal preference": "halal_preference",
-  "gluten avoidance": "gluten_avoidance",
-};
-
-const findDietaryItem = (dish: Dish, label: string) => {
-  const key = passportKeyByLabel[label.toLowerCase()];
-  return key ? dish.dietary.items.find((item) => item.key === key) : null;
-};
-
-const spiceRank = (value: string | null): number | null => {
-  const normalized = value?.toLowerCase() ?? "";
-  if (/extra hot|very hot/.test(normalized)) return 4;
-  if (/mild|low|not spicy/.test(normalized)) return 1;
-  if (/medium|moderate/.test(normalized)) return 2;
-  if (/hot|spicy/.test(normalized)) return 3;
-  return null;
-};
-
-export function compareDishWithPassport(
-  dish: Dish,
-  passport: FoodPassport,
-): PassportComparisonView[] {
-  if (!passport.configured) return [];
-  const comparisons: PassportComparisonView[] = [];
-
-  for (const allergy of passport.allergies) {
-    const item = findDietaryItem(dish, allergy);
-    if (!item || ["unknown", "confirm_with_staff"].includes(item.status)) {
-      comparisons.push({
-        kind: "unknown",
-        label: allergy,
-        message: "Ingredient information is incomplete. Ask the restaurant about ingredients and cross-contact.",
-      });
-    } else if (["confirmed_present", "likely_present"].includes(item.status)) {
-      comparisons.push({
-        kind: "caution",
-        label: allergy,
-        message: `${item.label} is listed as present or possible. Ask the restaurant before ordering.`,
-      });
-    } else if (item.status === "confirmed_absent") {
-      comparisons.push({
-        kind: "match",
-        label: allergy,
-        message: `${item.label} is listed as absent, but confirm ingredients and cross-contact with staff.`,
-      });
-    } else {
-      comparisons.push({
-        kind: "caution",
-        label: allergy,
-        message: `${item.label} may require a modification. Confirm directly with staff.`,
-      });
-    }
-  }
-
-  for (const diet of passport.diets) {
-    const item = findDietaryItem(dish, diet);
-    if (!item || ["unknown", "confirm_with_staff"].includes(item.status)) {
-      comparisons.push({
-        kind: "unknown",
-        label: diet,
-        message: "The menu does not confirm this preference. Ask the restaurant.",
-      });
-    } else if (item.status === "confirmed_present") {
-      comparisons.push({
-        kind: "match",
-        label: diet,
-        message: `${item.label} is listed for this dish. Confirm preparation details with staff if needed.`,
-      });
-    } else if (item.status === "confirmed_absent") {
-      comparisons.push({
-        kind: "caution",
-        label: diet,
-        message: `${item.label} is not listed for this dish.`,
-      });
-    } else {
-      comparisons.push({
-        kind: "caution",
-        label: diet,
-        message: `${item.label} may be possible with a modification. Ask the restaurant.`,
-      });
-    }
-  }
-
-  const selectedSpiceRank = { mild: 1, medium: 2, hot: 3 }[passport.spicePreference];
-  const dishSpiceRank = spiceRank(
-    firstText(dish.visibleSpiceLabel, dish.generalKnowledge.typicalSpice),
-  );
-  if (dishSpiceRank === null) {
-    comparisons.push({
-      kind: "unknown",
-      label: "Spice",
-      message: "The spice level is not clear. Ask the restaurant before ordering.",
-    });
-  } else if (dishSpiceRank > selectedSpiceRank) {
-    comparisons.push({
-      kind: "caution",
-      label: "Spice",
-      message: `This may be hotter than your ${passport.spicePreference} preference.`,
-    });
-  } else {
-    comparisons.push({
-      kind: "match",
-      label: "Spice",
-      message: `The listed spice level is within your ${passport.spicePreference} preference.`,
-    });
-  }
-
-  const ingredientText = uniqueText([
-    ...dish.restaurantSpecific.confirmedIngredients.values,
-    ...dish.generalKnowledge.commonIngredients,
-  ]).join(" ").toLowerCase();
-  for (const avoided of passport.avoidedIngredients) {
-    if (!ingredientText.includes(avoided.toLowerCase())) continue;
-    comparisons.push({
-      kind: "caution",
-      label: avoided,
-      message: `${avoided} appears in the available ingredient information. Confirm the recipe with staff.`,
-    });
-  }
-
-  return comparisons;
 }

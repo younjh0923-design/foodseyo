@@ -9,26 +9,21 @@ import {
   MapPin,
   Phone,
   ScanLine,
-  ShieldCheck,
   UtensilsCrossed,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { AnalysisRecoveryState } from "@/components/analysis/AnalysisRecoveryState";
 import { useCurrentAnalysisSession } from "@/components/analysis/useCurrentAnalysisSession";
-import { PrimaryButton, SecondaryButton } from "@/components/common/Controls";
+import { PrimaryButton } from "@/components/common/Controls";
 import { PageHeader } from "@/components/common/PageHeader";
 import { useImageIntake } from "@/components/intake/ImageIntakeProvider";
 import { MobileShell } from "@/components/layout/MobileShell";
-import { FoodPassportSheet } from "@/components/passport/FoodPassportSheet";
-import { useFoodPassport } from "@/components/passport/PassportProvider";
 import { createLiveAnalysisOverview } from "@/lib/live-analysis-results";
 
 export function LiveAnalysisOverviewClient() {
   const router = useRouter();
   const { clearPendingFiles } = useImageIntake();
-  const { passport, hydrated: passportHydrated } = useFoodPassport();
   const { state, clearCurrentAnalysis } = useCurrentAnalysisSession();
-  const [passportOpen, setPassportOpen] = useState(false);
   const analysis = state.status === "success" ? state.analysis : null;
   const overview = useMemo(
     () => (analysis ? createLiveAnalysisOverview(analysis) : null),
@@ -113,25 +108,6 @@ export function LiveAnalysisOverviewClient() {
             </section>
           ) : null}
 
-          <section aria-labelledby="passport-title" className="mt-4 rounded-[22px] border border-[var(--border)] p-4">
-            <div className="flex items-start gap-3">
-              <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-[var(--soft-green)] text-[var(--primary)]">
-                <ShieldCheck aria-hidden="true" size={21} />
-              </span>
-              <div className="min-w-0 flex-1">
-                <h2 id="passport-title" className="font-bold">Food Passport</h2>
-                <p className="mt-1 text-sm leading-5 text-[var(--text-secondary)]">
-                  {!passportHydrated || !passport.configured
-                    ? "Not set. Add preferences for conservative dish-by-dish notes."
-                    : "Your saved preferences are compared on each dish detail."}
-                </p>
-              </div>
-            </div>
-            <SecondaryButton className="mt-3 w-full" onClick={() => setPassportOpen(true)}>
-              {passportHydrated && passport.configured ? "Edit Food Passport" : "Set Food Passport"}
-            </SecondaryButton>
-          </section>
-
           {overview.orderingGuidance ? (
             <section aria-labelledby="ordering-title" className="mt-7">
               <h2 id="ordering-title" className="text-xl font-bold">Ordering guidance</h2>
@@ -210,7 +186,6 @@ export function LiveAnalysisOverviewClient() {
           </PrimaryButton>
         </main>
       </div>
-      <FoodPassportSheet open={passportOpen} onClose={() => setPassportOpen(false)} />
     </MobileShell>
   );
 }

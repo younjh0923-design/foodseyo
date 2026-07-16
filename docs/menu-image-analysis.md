@@ -6,7 +6,7 @@
 
 ## Purpose
 
-T5 replaces the Menu Scan demo redirect with real GPT-5.6 menu-image analysis. It keeps the existing capture, gallery selection, ordered previews, removal, and discard flow. The result is validated as the shared `FoodseyoAnalysis` contract, stored only in the current browser session, and opened automatically in the T5.4 canonical Live result UI.
+T5 replaces the Menu Scan demo redirect with real GPT-5.6 menu-image analysis. T5.5 uses one native multi-file picker with no `capture` hint, then keeps ordered previews, removal, and discard. The result is validated as the shared `FoodseyoAnalysis` contract, stored only in the current browser session, and opened automatically in the canonical Live result UI.
 
 T5 does not add restaurant web research, public reviews, menu-freshness verification, Vercel Blob, permanent image storage, multi-request batch merging, a database, or another live analyzer.
 
@@ -160,7 +160,7 @@ Completion safeguards are documented in [menu-analysis-completion-ui.md](./menu-
 
 ## Automatic tests
 
-`pnpm test` retains the previous 408 network-free assertions and adds T5.4 coverage for persistence confirmation, automatic navigation, failure fallbacks, all session read states, Overview mapping, encoded Dish navigation, Dish Detail, conservative Food Passport comparison, scoped cleanup, and forbidden-source guards. The suite prints the actual assertion count at runtime and makes zero network calls. It does not run a paid OpenAI smoke.
+`pnpm test` covers persistence confirmation, automatic navigation, failure fallbacks, all session read states, Overview mapping, encoded Dish navigation, Dish Detail, menu-derived ingredient/caution rendering, scoped cleanup, response boundaries, and MVP-scope guards. The suite prints the actual assertion count at runtime and makes zero network calls. It does not run a paid OpenAI smoke.
 
 After the first T5.4 Production iPhone retest, response-boundary regression coverage was added without changing the model, provider, prompt, token limit, timeout, or one-request policy. HTTP 200 is no longer treated as one generic client outcome: body read, JSON parsing, API schema, HTTP/body consistency, failed status, empty menu, and semantic validation have separate safe categories. Server responses carry a random correlation header and log only status/timing/byte-length/stage/count metadata. Synthetic 1-dish and 31-dish canonical bodies are parsed network-free; the runtime suite reports their actual byte lengths.
 

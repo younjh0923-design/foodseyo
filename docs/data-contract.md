@@ -1,8 +1,8 @@
 # Foodseyo Unified Analysis Data Contract
 
-**Status:** Implemented for T3, executed by T4, and populated by T5.1 menu analysis
+**Status:** Implemented for T3, executed by T4, and aligned with T5.5
 
-**Date:** 2026-07-15
+**Date:** 2026-07-16
 
 The canonical contract is implemented in `src/domain/foodseyo-analysis.ts`. Zod schemas are the source of truth; public TypeScript contract types are derived with `z.infer`. The contract contains JSON-serializable data only and is designed for a future GPT Structured Output payload without connecting an API in T3.
 
@@ -14,7 +14,7 @@ The canonical contract is implemented in `src/domain/foodseyo-analysis.ts`. Zod 
 - `analysisId`: an app-generated string;
 - `generatedAt`: an ISO 8601 string;
 - `status`: `complete`, `partial`, or `failed`;
-- `inputContext`: one of the six discriminated input contexts;
+- `inputContext`: one of the six schema-v1 discriminated contexts;
 - `payload`: a `FoodseyoAnalysisPayload`;
 - `issues`: recoverable information, warnings, and errors.
 
@@ -31,7 +31,7 @@ The envelope keeps app-generated IDs and timestamps outside the future model-gen
 
 ## Input contexts
 
-`InputContext` is a strict discriminated union on `type`:
+`InputContext` is a strict schema-v1 discriminated union on `type`. `menu_images` is the live input, `restaurant_link` is retained for T7, and `restaurant_photo`/`restaurant_screen` are deprecated compatibility values:
 
 - `menu_images`
 - `restaurant_photo`
@@ -151,7 +151,7 @@ Dietary status is:
 - `unknown`
 - `confirm_with_staff`
 
-Dietary keys reuse the concepts already present in Food Passport and the demo UI. Every dish carries the required warning that recipes may change, Foodseyo cannot guarantee allergy safety, and ingredients and cross-contact must be confirmed with staff.
+Dietary keys describe menu-derived or evidence-derived dish information independently of any user profile. Every dish carries the required warning that recipes may change, Foodseyo cannot guarantee allergy safety, and ingredients and cross-contact must be confirmed with staff.
 
 ## Dish images
 
@@ -188,7 +188,7 @@ Information gaps and operational failure are distinct. For example, restaurant i
 
 `src/data/demoFoodseyoAnalysis.ts` is the canonical demo fixture and is created with `FoodseyoAnalysisSchema.parse`. It is clearly labeled as `demo`, uses `demo_data` evidence, stores explicit fixture prices, records image provenance and rights, and does not claim to be live restaurant evidence.
 
-`src/data/demoRestaurant.ts` is a UI adapter. It derives the existing `Restaurant` and `Dish` view models from the canonical fixture so Restaurant Overview, Dish Detail, Food Passport, Meal Planner, Assistant mock, and routes can remain unchanged. The previous hand-authored `demoRestaurant` dataset is no longer a second source of truth.
+`src/data/demoRestaurant.ts` is a UI adapter. It derives the existing `Restaurant` and `Dish` view models from the canonical fixture so the clearly labeled Demo Overview, Dish Detail, Meal Planner, Assistant mock, and routes share one source of truth.
 
 ## Validation and T5 Structured Output
 
@@ -208,7 +208,7 @@ The application, not GPT, creates evidence IDs, entity IDs, restaurant resolutio
 
 T4 consumes the canonical schemas through `analyzeFoodseyoInput`. Input-specific analyzers return an internal draft rather than constructing envelopes. The shared orchestrator normalizes payload candidates, runs Zod structural validation, runs separate business semantic validation, derives status and issues, creates the app-managed envelope, validates the final result, and verifies JSON serialization.
 
-Transient binary and exact-location access exists only in the analyze request. It is never copied into this canonical contract. T5.1 supplies a route-injected `menu_images` analyzer while the default registry remains provider-free. Explicit restaurant input counts as user evidence without source IDs; unmatched image identity and contact details are not borrowed into that user-owned resolution. Direct-evidence confirmation still requires evidence source IDs. Demo remains implemented; restaurant photo, screen, link, and nearby inputs still return typed capability-unavailable errors.
+Transient binary and exact-location access exists only in the analyze request. It is never copied into this canonical contract. T5.1 supplies a route-injected `menu_images` analyzer while the default registry remains provider-free. Direct-evidence confirmation still requires evidence source IDs. Demo remains implemented. The schema-v1 `restaurant_photo` and `restaurant_screen` branches remain legacy compatibility values, while link and nearby inputs remain unavailable; all return typed capability-unavailable errors in the default registry.
 
 Runtime details are defined in [analysis-orchestration.md](./analysis-orchestration.md).
 
@@ -216,4 +216,4 @@ Runtime details are defined in [analysis-orchestration.md](./analysis-orchestrat
 
 The canonical schema is unchanged. T5.4 does not add a result-specific contract or copy canonical data into URL, Route props, local storage, IndexedDB, or a database. The browser session reader distinguishes valid data, a missing/empty key, invalid JSON, invalid schema or semantics, unsupported schema version, `failed` status, a zero-dish result, and unavailable session storage. Only a valid, non-failed result with at least one dish may render Live Overview or Dish Detail.
 
-`foodseyo.currentAnalysis` remains the only analysis result key. Food Passport continues to use its existing independent local-storage key. Removing the current result must not clear Passport or unrelated browser storage.
+`foodseyo.currentAnalysis` is the only active Foodseyo storage key. T5.5 removes the former user-profile key and all active local-storage reads and writes. Removing the current result must not clear unrelated browser storage.

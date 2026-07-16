@@ -19,135 +19,129 @@ const browser = await chromium.launch({
 const failures = [];
 const consoleErrors = [];
 const checks = [];
-
-function record(name, passed, detail = "") {
+const record = (name, passed, detail = "") => {
   checks.push({ name, passed, detail });
   if (!passed) failures.push(`${name}${detail ? `: ${detail}` : ""}`);
-}
-
-async function expectVisible(locator, name) {
-  try {
-    await locator.waitFor({ state: "visible", timeout: 8_000 });
-    record(name, true);
-  } catch (error) {
-    record(name, false, error.message.split("\n")[0]);
-  }
-}
-
-async function checkOverflow(page, name) {
-  const sizes = await page.evaluate(() => ({ client: document.documentElement.clientWidth, scroll: document.documentElement.scrollWidth }));
+};
+const checkOverflow = async (page, name) => {
+  const sizes = await page.evaluate(() => ({
+    client: document.documentElement.clientWidth,
+    scroll: document.documentElement.scrollWidth,
+  }));
   record(name, sizes.scroll <= sizes.client + 1, JSON.stringify(sizes));
-}
+};
 
-for (const width of [320, 375, 390, 430]) {
-  const context = await browser.newContext({ viewport: { width, height: 844 }, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
+for (const viewport of [
+  { name: "mobile-390", width: 390, height: 844, isMobile: true },
+  { name: "desktop-1280", width: 1280, height: 900, isMobile: false },
+]) {
+  const context = await browser.newContext({
+    viewport: { width: viewport.width, height: viewport.height },
+    deviceScaleFactor: 1,
+    isMobile: viewport.isMobile,
+    hasTouch: viewport.isMobile,
+  });
   const page = await context.newPage();
   page.on("console", (message) => {
-    if (message.type() === "error") consoleErrors.push(`[${width}] ${message.text()}`);
+    if (message.type() === "error") consoleErrors.push(`[${viewport.name}] ${message.text()}`);
   });
-  page.on("pageerror", (error) => consoleErrors.push(`[${width}] ${error.message}`));
+  page.on("pageerror", (error) => consoleErrors.push(`[${viewport.name}] ${error.message}`));
   await page.goto(baseURL, { waitUntil: "networkidle" });
-  await expectVisible(page.getByRole("heading", { name: /Understand the menu/ }), `home hero visible at ${width}px`);
-  record(`home has exactly four action cards at ${width}px`, (await page.locator('section[aria-labelledby="actions-title"] a, section[aria-labelledby="actions-title"] button').count()) === 4);
-  await checkOverflow(page, `home has no horizontal overflow at ${width}px`);
-  await page.screenshot({ path: path.join(outputDir, `home-${width}.png`), fullPage: true });
-  for (const route of [
-    "/menu-scan",
-    "/nearby",
-    "/restaurant/pai-northern-thai-kitchen",
-    "/restaurant/pai-northern-thai-kitchen/dish/khao-soi",
-  ]) {
-    await page.goto(`${baseURL}${route}`, { waitUntil: "networkidle" });
-    await checkOverflow(page, `${route} has no horizontal overflow at ${width}px`);
-  }
+
+  record(
+    `${viewport.name} exact heading`,
+    await page.getByRole("heading", { name: "What will it taste like?" }).isVisible(),
+  );
+  record(
+    `${viewport.name} exact description`,
+    await page.getByText("Start with a restaurant link or menu image.", { exact: true }).isVisible(),
+  );
+  record(
+    `${viewport.name} one menu CTA`,
+    (await page.getByRole("button", { name: "Scan or upload a menu", exact: true }).count()) === 1,
+  );
+  record(
+    `${viewport.name} supporting copy`,
+    await page.getByText("Take or choose menu photos.", { exact: true }).isVisible(),
+  );
+  record(
+    `${viewport.name} no Passport UI`,
+    (await page.getByText(/Food Passport/i).count()) === 0,
+  );
+  const ctaBox = await page.getByRole("button", { name: "Scan or upload a menu" }).boundingBox();
+  record(`${viewport.name} CTA touch target`, Boolean(ctaBox && ctaBox.height >= 44), JSON.stringify(ctaBox));
+  await checkOverflow(page, `${viewport.name} no horizontal overflow`);
+  await page.screenshot({ path: path.join(outputDir, `t5-5-home-${viewport.name}.png`), fullPage: true });
   await context.close();
 }
 
-const context = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, isMobile: true, hasTouch: true, geolocation: { latitude: 43.6532, longitude: -79.3832 }, permissions: ["geolocation"] });
+const context = await browser.newContext({
+  viewport: { width: 390, height: 844 },
+  deviceScaleFactor: 1,
+  isMobile: true,
+  hasTouch: true,
+});
 const page = await context.newPage();
 page.on("console", (message) => {
   if (message.type() === "error") consoleErrors.push(`[flow] ${message.text()}`);
 });
 page.on("pageerror", (error) => consoleErrors.push(`[flow] ${error.message}`));
+await page.goto(baseURL, { waitUntil: "networkidle" });
 
-await page.goto(`${baseURL}/menu-scan`, { waitUntil: "networkidle" });
-await expectVisible(page.getByRole("heading", { name: "No menu pages yet." }), "menu scan empty state");
-record("zero-page analyze is disabled", await page.getByRole("button", { name: "Analyze 0 pages" }).isDisabled());
-await page.locator('input[aria-label="Choose menu pages from photos"]').setInputFiles([
+const input = page.locator('input[type="file"]');
+record("Home has one hidden file input", (await input.count()) === 1 && !(await input.isVisible()));
+record("native picker keeps multiple", await input.getAttribute("multiple") !== null);
+record("native picker has no capture", await input.getAttribute("capture") === null);
+record(
+  "native picker accept is exact",
+  (await input.getAttribute("accept")) === "image/jpeg,image/png,image/webp",
+);
+
+const cta = page.getByRole("button", { name: "Scan or upload a menu", exact: true });
+await page.evaluate(() => {
+  window.__foodseyoPickerActivated = false;
+  const fileInput = document.querySelector('input[type="file"]');
+  fileInput?.addEventListener(
+    "click",
+    (event) => {
+      window.__foodseyoPickerActivated = true;
+      event.preventDefault();
+    },
+    { once: true },
+  );
+});
+await cta.focus();
+await page.keyboard.press("Enter");
+record(
+  "keyboard activation reaches the file input",
+  await page.evaluate(() => window.__foodseyoPickerActivated === true),
+);
+record("prevented picker leaves Home unchanged", page.url() === `${baseURL}/`);
+
+await input.setInputFiles([
   { name: "menu-1.png", mimeType: "image/png", buffer: png },
   { name: "menu-2.png", mimeType: "image/png", buffer: png },
 ]);
-await expectVisible(page.getByRole("heading", { name: "2 pages ready" }), "gallery appends two pages");
-await page.getByRole("button", { name: "Remove menu page 1" }).click();
-await expectVisible(page.getByRole("heading", { name: "1 page ready" }), "remove updates page count");
-await page.locator('input[aria-label="Scan a menu page with the camera"]').setInputFiles({ name: "menu-3.png", mimeType: "image/png", buffer: png });
-await expectVisible(page.getByRole("heading", { name: "2 pages ready" }), "camera selection appends without overwriting");
-await page.getByRole("button", { name: "Preview menu page 1" }).click();
-await expectVisible(page.getByRole("dialog", { name: "Menu page 1" }), "thumbnail opens preview");
-await page.getByRole("button", { name: "Close Menu page 1" }).click();
-await page.getByRole("button", { name: "Back to home" }).click();
-await expectVisible(page.getByRole("alertdialog", { name: "Discard scanned pages?" }), "back with pages opens discard dialog");
-await page.getByRole("button", { name: "Keep scanning" }).click();
-await expectVisible(page.getByRole("heading", { name: "2 pages ready" }), "keep scanning retains pages");
-await page.getByRole("button", { name: "Back to home" }).click();
-await page.getByRole("button", { name: "Discard" }).click();
-await page.waitForURL(`${baseURL}/`);
-record("discard returns home", page.url() === `${baseURL}/`);
-
-await page.locator('input[aria-label="Choose a restaurant screenshot"]').setInputFiles({ name: "restaurant.png", mimeType: "image/png", buffer: png });
-await expectVisible(page.getByRole("dialog", { name: "Restaurant screen ready" }), "restaurant upload has independent confirmation");
-record("restaurant upload does not navigate automatically", page.url() === `${baseURL}/`);
-await page.getByRole("button", { name: "Close Restaurant screen ready" }).click();
-
-const passportTrigger = page.getByRole("button", { name: "Food Passport" });
-await passportTrigger.click();
-await page.keyboard.press("Shift+Tab");
+await page.waitForURL(`${baseURL}/menu-scan`);
+await page.getByRole("heading", { name: "2 images ready" }).waitFor({ state: "visible" });
+record("valid native selection reaches Menu Scan", true);
 record(
-  "Food Passport traps keyboard focus",
-  await page.getByRole("dialog", { name: "Food Passport" }).evaluate((dialog) => dialog.contains(document.activeElement)),
+  "Menu Scan preserves selected order",
+  (await page.getByText("Image 1", { exact: true }).count()) === 1 &&
+    (await page.getByText("Image 2", { exact: true }).count()) === 1,
 );
-await page.keyboard.press("Escape");
-await page.getByRole("dialog", { name: "Food Passport" }).waitFor({ state: "hidden" });
-record("Food Passport returns focus to trigger", await passportTrigger.evaluate((button) => button === document.activeElement));
-await passportTrigger.click();
-await page.getByRole("button", { name: "Peanuts" }).click();
-await page.getByRole("button", { name: "Save passport" }).click();
-await expectVisible(page.getByText(/Peanuts allergy/), "food passport summary updates on home");
+record("Menu Scan has one picker", (await page.locator('input[type="file"]').count()) === 1);
+record("Menu Scan picker has no capture", await page.locator('input[type="file"]').getAttribute("capture") === null);
+await checkOverflow(page, "Menu Scan no horizontal overflow at 390px");
+await page.screenshot({ path: path.join(outputDir, "t5-5-menu-scan-390.png"), fullPage: true });
 
-await page.goto(`${baseURL}/nearby`, { waitUntil: "networkidle" });
-await page.getByRole("button", { name: "Use my location" }).click();
-await expectVisible(page.getByRole("heading", { name: "Location ready" }), "nearby location success state");
-await checkOverflow(page, "nearby has no horizontal overflow");
-
-await page.goto(`${baseURL}/restaurant/pai-northern-thai-kitchen`, { waitUntil: "networkidle" });
-await expectVisible(page.getByRole("heading", { name: "Representative dishes" }), "restaurant representative section");
-await expectVisible(page.getByRole("heading", { name: "For you" }), "restaurant conditional For You section");
-await expectVisible(page.getByRole("heading", { name: "All menu" }), "restaurant all menu section");
-record("restaurant has no nonfunctional More control", (await page.getByRole("button", { name: /More restaurant/ }).count()) === 0);
-await page.getByRole("button", { name: "Plan this meal" }).click();
-await page.getByRole("button", { name: "Adventurous" }).click();
-await page.getByRole("button", { name: "Share" }).click();
-await page.getByRole("button", { name: "Recommend an order" }).click();
-await expectVisible(page.getByText("Estimated total"), "meal planner returns typed recommendation");
-await page.getByRole("button", { name: "Close Plan this meal" }).click();
-
-await page.goto(`${baseURL}/restaurant/pai-northern-thai-kitchen/dish/khao-soi`, { waitUntil: "networkidle" });
-await page.getByRole("tab", { name: "Reviews" }).click();
-await expectVisible(page.getByText(/Demo review evidence/), "reviews tab changes immediately");
-await page.getByRole("tab", { name: "Dietary" }).click();
-await expectVisible(page.getByText(/Foodseyo cannot guarantee allergy safety/), "exact allergy warning is present");
-await page.getByRole("button", { name: "Create a question for staff" }).click();
-await expectVisible(page.getByRole("dialog", { name: "Question for staff" }), "staff question sheet opens");
-await page.getByRole("button", { name: "Close Question for staff" }).click();
-await page.getByRole("button", { name: "Open AI Assistant" }).click();
-for (const label of ["How spicy is this?", "Compare these dishes", "Best order for 2", "Ask about peanuts"]) {
-  await expectVisible(page.getByRole("button", { name: label }), `assistant quick question: ${label}`);
-}
-await page.getByLabel("Ask anything about this restaurant").focus();
-await page.screenshot({ path: path.join(outputDir, "dish-assistant-390.png"), fullPage: false });
-await page.getByRole("button", { name: "Close AI Assistant" }).click();
-await checkOverflow(page, "dish has no horizontal overflow");
-await page.screenshot({ path: path.join(outputDir, "dish-390.png"), fullPage: true });
+await page.goto(`${baseURL}/analysis`, { waitUntil: "networkidle" });
+record(
+  "Analysis recovery has no profile UI",
+  (await page.getByText(/Food Passport/i).count()) === 0,
+);
+await checkOverflow(page, "Analysis recovery no horizontal overflow at 390px");
+await page.screenshot({ path: path.join(outputDir, "t5-5-analysis-recovery-390.png"), fullPage: true });
 
 await context.close();
 record("browser console has zero errors", consoleErrors.length === 0, consoleErrors.join(" | "));

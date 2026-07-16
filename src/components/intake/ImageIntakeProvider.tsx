@@ -4,20 +4,16 @@ import {
   createContext,
   useCallback,
   useContext,
-  useMemo,
   useRef,
-  useState,
 } from "react";
 import {
   consumePendingImageIntake,
   stagePendingImageIntake,
-  type ImageIntakeSource,
   type PendingImageIntake,
 } from "@/lib/image-intake";
 
 interface ImageIntakeContextValue {
-  readonly pending: PendingImageIntake | null;
-  stageFiles(files: readonly File[], source: ImageIntakeSource): void;
+  stageFiles(files: readonly File[]): void;
   consumePendingFiles(): PendingImageIntake | null;
   clearPendingFiles(): void;
 }
@@ -26,32 +22,29 @@ const ImageIntakeContext = createContext<ImageIntakeContextValue | null>(null);
 
 export function ImageIntakeProvider({ children }: { children: React.ReactNode }) {
   const pendingRef = useRef<PendingImageIntake | null>(null);
-  const [pending, setPending] = useState<PendingImageIntake | null>(null);
 
-  const stageFiles = useCallback((files: readonly File[], source: ImageIntakeSource) => {
-    const next = stagePendingImageIntake(files, source);
+  const stageFiles = useCallback((files: readonly File[]) => {
+    const next = stagePendingImageIntake(files);
     pendingRef.current = next;
-    setPending(next);
   }, []);
 
   const consumePendingFiles = useCallback(() => {
     const next = consumePendingImageIntake(pendingRef.current);
     pendingRef.current = next.pending;
-    setPending(next.pending);
     return next.consumed;
   }, []);
 
   const clearPendingFiles = useCallback(() => {
     pendingRef.current = null;
-    setPending(null);
   }, []);
 
-  const value = useMemo<ImageIntakeContextValue>(
-    () => ({ pending, stageFiles, consumePendingFiles, clearPendingFiles }),
-    [clearPendingFiles, consumePendingFiles, pending, stageFiles],
+  return (
+    <ImageIntakeContext.Provider
+      value={{ stageFiles, consumePendingFiles, clearPendingFiles }}
+    >
+      {children}
+    </ImageIntakeContext.Provider>
   );
-
-  return <ImageIntakeContext.Provider value={value}>{children}</ImageIntakeContext.Provider>;
 }
 
 export function useImageIntake(): ImageIntakeContextValue {

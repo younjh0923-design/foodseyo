@@ -1,6 +1,6 @@
 "use client";
 
-import { Camera, Images, LoaderCircle, ScanLine, Trash2 } from "lucide-react";
+import { Images, LoaderCircle, ScanLine, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import { BottomSheet } from "@/components/common/BottomSheet";
@@ -49,8 +49,7 @@ function makeId() {
 export function MenuScanClient() {
   const router = useRouter();
   const { consumePendingFiles } = useImageIntake();
-  const cameraRef = useRef<HTMLInputElement>(null);
-  const galleryRef = useRef<HTMLInputElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
   const pagesRef = useRef<MenuPage[]>([]);
   const abortRef = useRef<AbortController | null>(null);
   const watchdogCancelRef = useRef<(() => void) | null>(null);
@@ -314,24 +313,11 @@ export function MenuScanClient() {
 
         <main className="page-padding flex-1 pb-8">
           <input
-            ref={cameraRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            capture="environment"
-            aria-label="Scan a menu page with the camera"
-            className="sr-only"
-            onChange={(event) => {
-              appendFiles(Array.from(event.currentTarget.files ?? []));
-              event.currentTarget.value = "";
-            }}
-          />
-          <input
-            ref={galleryRef}
+            ref={imageInputRef}
             type="file"
             accept="image/jpeg,image/png,image/webp"
             multiple
-            aria-label="Choose menu pages from photos"
-            className="sr-only"
+            hidden
             onChange={(event) => {
               appendFiles(Array.from(event.currentTarget.files ?? []));
               event.currentTarget.value = "";
@@ -354,20 +340,14 @@ export function MenuScanClient() {
                 No images yet.
               </h2>
               <p className="mx-auto mt-2 max-w-[28ch] text-sm leading-5 text-[var(--text-secondary)]">
-                Take a photo or choose images to begin.
+                Choose menu photos to begin.
               </p>
               <PrimaryButton
                 className="mt-6 w-full"
-                onClick={() => cameraRef.current?.click()}
+                onClick={() => imageInputRef.current?.click()}
               >
-                <Camera aria-hidden="true" size={18} /> Take a photo
+                <Images aria-hidden="true" size={18} /> Choose menu photos
               </PrimaryButton>
-              <SecondaryButton
-                className="mt-2 w-full"
-                onClick={() => galleryRef.current?.click()}
-              >
-                <Images aria-hidden="true" size={18} /> Choose from photos
-              </SecondaryButton>
             </section>
           ) : (
             <section aria-labelledby="ready-pages-title" className="mt-2">
@@ -419,18 +399,13 @@ export function MenuScanClient() {
                 ))}
               </div>
 
-              <div className="mt-4 grid grid-cols-2 gap-2">
+              <div className="mt-4">
                 <SecondaryButton
+                  className="w-full"
                   disabled={analyzing || pages.length >= MAX_MENU_IMAGE_COUNT}
-                  onClick={() => cameraRef.current?.click()}
+                  onClick={() => imageInputRef.current?.click()}
                 >
-                  <Camera aria-hidden="true" size={17} /> Take another photo
-                </SecondaryButton>
-                <SecondaryButton
-                  disabled={analyzing || pages.length >= MAX_MENU_IMAGE_COUNT}
-                  onClick={() => galleryRef.current?.click()}
-                >
-                  <Images aria-hidden="true" size={17} /> Choose from photos
+                  <Images aria-hidden="true" size={17} /> Add more menu photos
                 </SecondaryButton>
               </div>
             </section>

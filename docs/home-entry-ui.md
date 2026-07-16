@@ -1,63 +1,44 @@
 # Foodseyo Home Entry UI
 
-**Status:** Implemented for T5.2
+**Status:** T5.5 MVP scope alignment
 
-**Date:** 2026-07-15
+**Date:** 2026-07-16
 
-## Frozen visible structure
+## Visible structure
 
 Home shows, in order:
 
 1. `FOODSEYO` and `AI Food Copilot`;
-2. `What should I order?` and `Start with a restaurant link or image.`;
-3. the restaurant/menu link bar;
-4. equal **Food Passport** and **Scan or upload** cards.
+2. `What will it taste like?`;
+3. `Start with a restaurant link or menu image.`;
+4. the `Paste a restaurant or menu link` field;
+5. one full-width `Scan or upload a menu` action with `Take or choose menu photos.`
 
-Nearby, Recent, the fixed PAI demo card, and separate screenshot/menu cards are not shown. Their routes and analyzer architecture remain intact.
+The link field accepts syntactically valid HTTP/HTTPS URLs. Link analysis is not implemented yet: the field makes no request, shows an honest availability message, and never redirects to a fake or demo result.
 
-## Honest actions
+## Native menu-photo picker
 
-The link field accepts only syntactically valid HTTP or HTTPS URLs. It makes no request and has no demo fallback while the live link analyzer is unavailable.
+The full CTA is a keyboard-operable button whose accessible name is exactly `Scan or upload a menu`. It directly activates one hidden `type="file"` input with:
 
-**Scan or upload** opens **Add an image** with **Take a photo** and **Choose from photos**. Home opens each picker from its button's click, validates the selection, and stages ordered Files only in React memory. Menu Scan consumes them once, clears the provider, and owns all preview object URLs. Refresh may discard pending Files by design.
+- `multiple` enabled;
+- `accept="image/jpeg,image/png,image/webp"`;
+- no `capture` attribute.
 
-The current live backend analyzes menu text only. Restaurant-photo and restaurant-screen classification or routing is deferred.
+Foodseyo does not recreate the device picker choices. On iPhone, Safari may offer Photo Library, Take Photo, or Choose Files as native options.
 
-## Responsive manual QA
+Cancellation leaves the user on Home. A valid selection of up to ten ordered Files is validated, staged only in React memory, and handed once to `/menu-scan`. Menu Scan owns and revokes preview object URLs. No raw File is placed in local storage, session storage, IndexedDB, Base64, a URL, or permanent storage.
 
-Verify at 320×568, 360×800, 375×812, 390×844, 430×932, and desktop 1280px with the centered MobileShell:
+## Responsive and accessibility QA
+
+Check mobile at approximately 390 px and a desktop viewport:
 
 - natural heading and description wrapping;
-- no horizontal scroll or link-button overlap;
-- equal card heights, Food Passport on the left, Scan or upload on the right;
-- untruncated card copy and contained Passport status;
-- readable Bottom Sheet actions and safe-area spacing;
-- no oversized empty region after removal of Recent.
+- no horizontal overflow or link-button collision;
+- one full-width image CTA below the link field;
+- CTA touch area larger than 44 px;
+- exact accessible name and keyboard activation;
+- no duplicate accessible file-input control;
+- picker cancellation leaves Home unchanged;
+- valid selection reaches `/menu-scan` with order preserved.
 
-## iPhone Safari checklist
-
-These items require a physical-device run and are not claimed as passed by automated tests.
-
-Home:
-
-- verify card tap targets, link keyboard and Enter submission;
-- open and close the Bottom Sheet, check focus return and body scroll;
-- confirm Food Passport remains left and Scan or upload right.
-
-Take a photo:
-
-- rear camera opens and cancellation returns safely;
-- one portrait and one landscape photo preserve orientation;
-- one selected photo appears in Menu Scan.
-
-Choose from photos:
-
-- library opens for one, multiple, and ten images;
-- eleven images and unsupported HEIC show a safe error without navigation;
-- selection order matches Menu Scan previews;
-- cancellation stays on Home.
-
-Navigation:
-
-- verify Back, discard, direct `/menu-scan`, refresh, and Home return;
-- confirm consumed pending Files are not reused.
+A physical iPhone Safari run remains the authority for the exact native picker wording and device-specific presentation.

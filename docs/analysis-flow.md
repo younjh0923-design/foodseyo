@@ -1,8 +1,8 @@
 # Foodseyo Shared Analysis Flow
 
-**Status:** Updated through T5.4 canonical live results
+**Status:** Updated through T5.5 MVP scope alignment
 
-**Date:** 2026-07-15
+**Date:** 2026-07-16
 
 All supported inputs converge on one shared analysis process and one final objective: help the user decide what to order. The process is evidence-driven and may skip steps that are unnecessary for the current input.
 
@@ -16,7 +16,7 @@ Supported input
 → Resolve restaurant identity when necessary
 → Separate general knowledge from restaurant-specific facts
 → Normalize into one shared analysis structure
-→ Apply user preferences and meal constraints
+→ Apply supported meal constraints when present
 → Present structured ordering guidance
 → Use AI Assistant only for exceptional questions
 ```
@@ -26,7 +26,6 @@ Restaurant matching is conditional, not a universal gate:
 - a restaurant link may identify the restaurant at input time;
 - nearby search allows the user to select the restaurant;
 - menu images may not contain enough identity evidence;
-- a restaurant photo may need candidate resolution first;
 - the user may choose to continue without matching.
 
 ## Stage 1 — Extract available evidence
@@ -104,7 +103,7 @@ Every input should be able to populate the applicable parts of:
 - review consensus, freshness, evidence, and limitations;
 - menu freshness status;
 - dietary status and staff-confirmation actions;
-- Food Passport preferences and meal constraints;
+- optional meal constraints;
 - ordering guidance, combinations, and limitations;
 - evidence sources and explicit unknown values.
 
@@ -131,7 +130,7 @@ Web research, reviews, and official freshness comparison remain later enrichment
 
 ### Menu Scan completion and result navigation
 
-T5.4 completes the menu-image vertical slice before T6:
+T5–T5.4.1 complete the menu-image vertical slice:
 
 ```text
 idle
@@ -145,7 +144,7 @@ idle
 
 Normal success requires storage readback validation and does not show a completion card, Analyze again, View results, or another action. Loading remains active through `navigating` and uses one honest label. A storage failure keeps an abnormal completion fallback without navigation. A stalled client transition may attempt one same-origin hard replacement and then exposes **Open menu results** if navigation still fails. No fallback loops or reanalysis.
 
-`/analysis` and `/analysis/dishes/[dishId]` read the validated canonical result after hydration and make zero result-page network calls. Refresh works in the same tab. Missing, invalid, unsupported, failed, zero-dish, or unavailable session data uses a safe recovery state and never Demo fallback. Dish navigation uses canonical IDs; category and dish order are preserved. Food Passport comparison is local, conservative, and never guarantees allergy safety.
+`/analysis` and `/analysis/dishes/[dishId]` read the validated canonical result after hydration and make zero result-page network calls. Refresh works in the same tab. Missing, invalid, unsupported, failed, zero-dish, or unavailable session data uses a safe recovery state and never Demo fallback. Dish navigation uses canonical IDs; category and dish order are preserved. Menu-derived ingredients, dietary clues, uncertainty, and allergy cautions remain visible without comparison to stored user settings.
 
 A synchronous attempt gate still blocks duplicate submissions, monotonic attempt IDs ignore late responses, and a 105-second client watchdog ends an unresolved browser request after the existing 80-second provider and 90-second Route limits. T5.3 feedback scrolling remains for abnormal completion and errors. Full details are in [menu-analysis-completion-ui.md](./menu-analysis-completion-ui.md) and [live-analysis-results.md](./live-analysis-results.md).
 
@@ -164,9 +163,9 @@ When restaurant-specific facts are unavailable, use:
 
 > Restaurant-specific details were not confirmed.
 
-## Preferences and ordering guidance
+## Meal constraints and ordering guidance
 
-After normalization, Foodseyo applies Food Passport preferences and meal constraints such as party size, budget, ordering goal, and sharing style.
+When a supported flow supplies party size, budget, ordering goal, or sharing style, deterministic recommendation logic may use those meal constraints. The MVP does not store allergy, diet, or spice profiles.
 
 Calculable recommendation logic belongs in TypeScript so it is deterministic and testable. AI may explain or supplement a recommendation, but it must not replace straightforward calculation or hide missing evidence.
 

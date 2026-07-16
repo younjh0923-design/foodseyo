@@ -33,7 +33,7 @@ const evidenceLabels: Record<EvidenceBadgeKind, string> = {
   official_website: "Officially confirmed",
   official_social: "Official social source",
   uploaded_menu: "Uploaded menu",
-  user_provided_screen: "Restaurant screen",
+  user_provided_screen: "User-provided evidence",
   public_web: "Public source",
   web_search_result: "Web search result",
   platform_api_sample: "Public source",

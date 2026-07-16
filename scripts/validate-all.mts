@@ -6,3 +6,4 @@ await import("./validate-home-entry-ui.mts");
 await import("./validate-menu-analysis-completion.mts");
 await import("./validate-live-analysis-results.mts");
 await import("./validate-menu-analysis-response-boundaries.mts");
+await import("./validate-mvp-scope.mts");

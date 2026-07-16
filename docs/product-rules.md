@@ -1,318 +1,108 @@
 # Foodseyo Product Rules
 
-**Status:** Frozen product rules with T5.4 canonical live-result clarification
+**Status:** Normative MVP definition through T5.5
 
-**Date:** 2026-07-15
+**Date:** 2026-07-16
 
-This document is the normative product definition for Foodseyo. It defines the product goal, information boundaries, safety rules, UX principles, and competition scope. Detailed input behavior is defined in [input-architecture.md](./input-architecture.md), the shared reasoning sequence in [analysis-flow.md](./analysis-flow.md), research behavior in [web-research-policy.md](./web-research-policy.md), and source-honest dish imagery in [image-policy.md](./image-policy.md).
+This document defines the active MVP scope, information boundaries, safety rules, and roadmap. Detailed mechanics live in [input-architecture.md](./input-architecture.md), [analysis-flow.md](./analysis-flow.md), [data-contract.md](./data-contract.md), and [image-policy.md](./image-policy.md). Historical decisions remain in [decision-log.md](./decision-log.md).
 
-## Official product definition
+## Product definition
 
-- **Product name:** Foodseyo
-- **Category:** Your AI Travel Food Copilot
-- **Core slogan:** Understand the menu. Order with confidence.
-- **Final product goal:** Help a traveler decide what to order.
+> Foodseyo starts from menu photos or a restaurant/menu link and turns supported evidence into structured guidance for deciding what to order.
 
-Foodseyo is not only a menu-scanning app. It accepts different kinds of restaurant information and turns available evidence into structured ordering guidance.
-
-> Foodseyo accepts different kinds of restaurant information, including menu photos, restaurant images, screenshots, links, and location, and turns them into structured guidance for deciding what to order.
-
-한국어 의미:
-
-> Foodseyo는 메뉴 사진, 식당 사진, 캡처 화면, 식당 링크, 위치 정보 등 다양한 입력을 받아 사용자가 무엇을 주문할지 결정할 수 있도록 구조화된 정보를 제공한다.
-
-## Product model
-
-Users may begin through any one of six independent, parallel input paths:
-
-- `menu_images`
-- `restaurant_photo`
-- `restaurant_screen`
-- `restaurant_link`
-- `nearby_search`
-- `demo`
-
-These are not mandatory steps in a vertical funnel. Menu scanning is one entry path, not the required first step. Every supported path converges on the same goal:
+The active convergence is:
 
 ```text
-Extract available evidence
-→ Research missing information when useful
-→ Normalize into a shared structured analysis
-→ Help the user decide what to order
+menu_images ───────┐
+                   ├─→ shared canonical analysis → ordering guidance
+restaurant_link ───┘
 ```
 
-Restaurant identification is conditional. Foodseyo must continue to provide useful general dish explanations and ordering support when a restaurant cannot be confirmed.
+`menu_images` is live. `restaurant_link` currently has UI and URL syntax validation only; live analysis is T7.
 
-## Restaurant identity states
+## Home and menu intake
 
-Restaurant identity uses exactly four internal states:
+Home shows the exact heading `What will it taste like?` and description `Start with a restaurant link or menu image.` The link field precedes one full-width `Scan or upload a menu` CTA with `Take or choose menu photos.`
 
-| State | Meaning | Product behavior |
-| --- | --- | --- |
-| `confirmed` | The restaurant is established by input evidence or explicit user selection. | Restaurant-specific facts may be shown when supported by evidence. |
-| `likely` | One candidate is plausible but not confirmed. | Show the candidate and ask the user to confirm; continue general dish guidance meanwhile. |
-| `unconfirmed` | No restaurant could be confirmed. | Continue general dish and ordering guidance; label restaurant-specific information as unconfirmed. |
-| `not_attempted` | Matching was not attempted or the user chose to continue without it. | Continue without blocking the analysis. |
+The CTA directly activates one native multi-file picker:
 
-Approved user-facing labels are:
+- JPEG, PNG, and WEBP only;
+- one to ten images;
+- picker order preserved;
+- no `capture` hint;
+- cancellation leaves Home unchanged;
+- Files move to `/menu-scan` through React memory only;
+- no permanent upload, browser database, Base64, or URL transport.
 
-- **Restaurant confirmed**
-- **Likely match**
-- **Restaurant not confirmed**
+Foodseyo does not recreate or label device-native picker choices. It officially supports menu photos and does not add a separate classifier to police the subject of every selected file.
 
-Foodseyo must not display numeric match probabilities such as “Restaurant match: 87%” or “93% confidence.”
+## Link honesty
 
-## Restaurant identification rules
+The Home link field:
 
-Possible identification signals include:
+- accepts HTTP and HTTPS syntax;
+- rejects malformed and unsafe schemes;
+- makes no analysis request at T5.5;
+- stores no submitted URL;
+- never redirects to Demo or fabricates a completed result.
 
-- restaurant name, sign, logo, address, or phone number;
-- website, restaurant link, or user-provided restaurant name;
-- price, currency, menu composition, or a restaurant screen;
-- current location;
-- explicit user selection or final confirmation.
+## Results
 
-Current location is a supporting signal, not sufficient proof by itself. Foodseyo must not request location permission automatically on Home. It should request location only after the user enters a location-relevant context and must offer:
+Analysis Overview retains restaurant match status, dishes found, extraction state, limitations, category-ordered dishes, menu-derived tags, Dish Detail links, and **Scan another menu**.
 
-- **Use my location**
-- **Enter restaurant name**
-- **Continue without matching**
+Dish Detail retains source-grounded description, ingredients, dietary/allergy cautions, ordering considerations, uncertainty, and the required safety notice. The product does not compare those fields with a stored user allergy, diet, or spice profile.
 
-Denying location permission must not block core ordering support.
+## Evidence and claims
 
-## Information hierarchy
+Foodseyo distinguishes:
 
-Every result must distinguish two information layers.
+- direct menu evidence;
+- general food knowledge;
+- restaurant-specific evidence;
+- explicit uncertainty and unavailable values.
 
-### General dish knowledge
+General knowledge must never be presented as restaurant-confirmed. Restaurant match signals create candidates, not automatic confirmation. A `likely` match is not a numeric confidence score and should be communicated as uncertain.
 
-- general definition and regional background;
-- typical taste, texture, spice level, and common ingredients;
-- similar dishes;
-- general ordering considerations.
+Price, currency, ingredients, preparation, dietary status, review claims, popularity, and freshness must retain their actual evidence basis. Missing evidence stays missing.
 
-### At this restaurant
+## Allergy and dietary safety
 
-- descriptions visibly present in an uploaded menu or user-provided screen;
-- confirmed prices and options;
-- official menu information;
-- confirmed restaurant-specific ingredients or preparation details;
-- confirmed signature-dish status;
-- review findings backed by accessible evidence;
-- restaurant-specific facts verified through official or public sources.
+Menu-derived ingredient and dietary clues are informational and conservative. Foodseyo must never claim that a dish is allergy-safe. Every canonical result retains the notice that recipes and preparation may change and that ingredients and cross-contact must be confirmed with restaurant staff.
 
-General food knowledge must never be presented as a restaurant-specific fact.
+Unknown information must not become a match. Explicit menu labels may be shown with their limitations, but they are not a substitute for staff confirmation.
 
-## Evidence and data rules
+## Dish imagery
 
-Foodseyo separates where information came from, how a claim was produced, and whether a value was obtained. These are independent fields in the shared data contract.
+Dish imagery must have source and reuse-rights metadata. Unverified or unclear-rights assets remain hidden. AI-generated food imagery is not part of the MVP. Demo food assets remain clearly labeled and are not treated as live evidence.
 
-`EvidenceSourceType` records an actual source or user-provided evidence location:
+## Storage and privacy
 
-- `official_menu`
-- `official_website`
-- `official_social`
-- `uploaded_menu`
-- `user_provided_screen`
-- `public_web`
-- `web_search_result`
-- `platform_api_sample`
-- `staff_confirmation`
-- `demo_data`
+- Raw menu Files remain transient and are not permanently stored.
+- `foodseyo.currentAnalysis` in `sessionStorage` is the only active Foodseyo storage key.
+- Current results may survive refresh in the same tab but not browser restarts or other devices.
+- Logs must not contain images, Base64, filenames, restaurant/menu content, provider raw output, API keys, or full canonical analysis.
 
-`ClaimBasis` records how a claim was established:
+## Canonical compatibility
 
-- `direct_observation`
-- `external_source`
-- `general_food_knowledge`
-- `ai_inference`
-- `user_confirmation`
-- `deterministic_calculation`
+The `FoodseyoAnalysis` schema version remains `1.0.0`. Legacy `restaurant_photo` and `restaurant_screen` enum branches and `user_provided_screen` evidence remain parseable only to avoid an unnecessary contract migration. No Home control, public API route, provider override, or successful live analyzer exposes them; the default registry returns a typed capability-unavailable error.
 
-`Availability` records whether the value was obtained:
+## Out of MVP
 
-- `available`
-- `unknown`
-- `unavailable`
-- `insufficient`
+- stored allergy, diet, avoided-ingredient, language, or spice profiles;
+- user-profile comparison and personalized match/conflict calculations;
+- T6, which is cancelled from the MVP;
+- live link analysis before T7;
+- restaurant identification before post-T7 reevaluation;
+- map-app share-to-Foodseyo integration;
+- database, authentication, permanent history, or shareable result links.
 
-AI inference is not an evidence source. General food knowledge is a claim basis, not restaurant evidence. `unavailable` describes value availability, not provenance.
+## Roadmap
 
-When evidence is absent, Foodseyo must not invent or assert:
+- **T5–T5.4.1:** menu-image vertical slice complete.
+- **T5.5:** MVP Scope Alignment Cleanup.
+- **T6:** cancelled from the MVP.
+- **T7:** restaurant/menu link analysis, next product feature.
+- **T8:** restaurant identification, reconsider after T7.
+- **Later:** map-app share-to-Foodseyo integration.
 
-- actual restaurant ingredients or cooking methods;
-- signature-dish status;
-- unverified reviews or review consensus;
-- missing prices or options;
-- menu freshness guarantees;
-- allergy safety, absence of cross-contact, or dietary safety.
-
-Unknown data uses explicit fallback values:
-
-- unknown price → `null`
-- unknown spice → `unknown`
-- insufficient review evidence → `insufficient`
-- unidentified restaurant → `unconfirmed`
-- unverified freshness → `could_not_verify`
-
-## MVP data handling
-
-- `FoodseyoAnalysis` stores input context and normalized results, not original image bytes, `File` objects, `Blob` objects, or base64 image data.
-- API keys and authentication tokens are never stored in analysis results.
-- Exact user-location coordinates are not permanently copied into analysis results. The contract may record that location was used; a restaurant's public location is a separate field.
-- MVP analysis inputs and results are session-only by default.
-- Login, database storage, permanent image storage, and server-side user accounts remain post-submission scope.
-- Server logging should not record original images, API keys, authentication tokens, or exact user location.
-
-## Dish image policy
-
-Foodseyo MVP does not generate dish images with AI. GPT-5.6 analysis of user-provided menu, restaurant, and screen images remains P0; generating replacement food photography is a separate capability and is not part of the MVP.
-
-Dish imagery follows this order:
-
-1. an image in a user-uploaded menu or restaurant screen;
-2. an image clearly connected to the dish on an official menu;
-3. an image clearly connected to the dish on an official website;
-4. an image clearly connected to the dish on a confirmed official social account;
-5. a rights-cleared, source-traceable general dish reference;
-6. an accessible placeholder.
-
-General references must be labeled as references with **Actual presentation may differ.** They must never be presented as restaurant-specific images. Missing imagery does not block dish explanation or ordering support. Source categories, labels, rights checks, future metadata requirements, and missing-image behavior are defined in [image-policy.md](./image-policy.md).
-
-## Dietary safety
-
-Dietary status uses:
-
-- `confirmed_present`
-- `likely_present`
-- `confirmed_absent`
-- `may_be_modifiable`
-- `unknown`
-- `confirm_with_staff`
-
-General recipes must not be used to declare restaurant-specific allergy safety. The required safety notice is:
-
-> Recipes and preparation practices may change.<br>
-> Foodseyo cannot guarantee allergy safety.<br>
-> Confirm ingredients and cross-contact directly with restaurant staff.
-
-## UX and design rules
-
-- Use ergonomic, minimal, mobile-first interaction inspired by Apple’s clarity principles.
-- Minimize the number of user actions and give every screen one clear purpose.
-- Support one-handed use with touch targets of at least 44 px.
-- Provide clear progress, success, failure, and recovery states.
-- Ask for sensitive permissions only in context.
-- Prefer structured UI over chat when ordinary UI can resolve the task.
-- Do not trigger a new AI call when a user opens a menu card or switches a tab.
-- Treat multi-image input as a basic convenience, not a differentiator or core marketing claim.
-- Do not force the number of representative dishes to exactly three.
-- Keep deterministic, calculable order recommendations in TypeScript; use the Assistant only as support.
-
-### T5.2 Home entry surface
-
-The persistent Home surface contains only the brand, one ordering question and explanation, one restaurant/menu link field, and two equal action cards in this order:
-
-1. **Food Passport** — personalization settings, not an analysis input;
-2. **Scan or upload** — a Bottom Sheet with **Take a photo** and **Choose from photos**.
-
-Nearby search, recent analysis, fixed demo cards, and separate screenshot/menu cards are hidden from Home without deleting their routes or analyzer architecture. Home action count does not need to equal the six canonical input types. At T5.2, selected images prepare the existing Menu Scan session; only `menu_images` has a live provider. Restaurant photo, restaurant screen, restaurant link, and nearby live analysis remain deferred.
-
-The visible link field performs local HTTP/HTTPS syntax validation only. A valid link receives an honest coming-soon message; it is not fetched, persisted, sent to a provider, or redirected to Demo.
-
-## Competition P0 scope
-
-There is no separate P1 list for the competition. All of the following are P0 before submission.
-
-### P0 — Parallel Inputs
-
-- menu images;
-- restaurant photos;
-- restaurant screens;
-- restaurant links;
-- nearby restaurants based on current location;
-- a clearly labeled demo restaurant.
-
-### P0 — Core Understanding
-
-- GPT-5.6 structured analysis;
-- GPT-5.6 analysis of uploaded menu, restaurant, and screen images, without generating dish images;
-- menu and restaurant-signal extraction;
-- general dish explanations;
-- taste, texture, spice, and common ingredients;
-- separation of general knowledge and restaurant-specific facts;
-- fallback when a restaurant is not confirmed;
-- one shared structured analysis result.
-
-### P0 — Restaurant and Evidence Enrichment
-
-- restaurant identity state;
-- location-based candidate discovery;
-- explicit user confirmation;
-- OpenAI web search research;
-- official site and menu research;
-- public review research;
-- review consensus and limitations;
-- menu freshness state;
-- search-failure fallback.
-
-### P0 — Ordering Decision Support
-
-- Restaurant Overview and Dish Detail;
-- Reviews and Dietary views;
-- Food Passport;
-- TypeScript order recommendations using party size, budget, goal, and sharing preference;
-- GPT-5.6 supporting Assistant;
-- staff-question generation;
-- demo fallback.
-
-### P0 — Submission
-
-- public GitHub repository;
-- Vercel production deployment;
-- README;
-- Codex `/feedback`;
-- public YouTube demo video;
-- Devpost submission;
-- mobile QA, error handling, accessibility, and API-key security.
-
-The internal implementation order is:
-
-1. Freeze product documentation.
-2. Define the shared data contract.
-3. Build the shared analysis orchestrator.
-4. Implement menu-photo analysis.
-5. Implement restaurant-photo and screen analysis.
-6. Implement link analysis.
-7. Implement restaurant identification and user confirmation.
-8. Add web research and evidence enrichment.
-9. Connect the shared result UI.
-10. Complete order recommendations.
-11. Add the GPT-5.6 Assistant.
-12. Prepare demo assets.
-13. Complete QA.
-14. Prepare submission materials.
-
-### Current checkpoint roadmap
-
-- **T5.4 — Canonical Live Results and Automatic Navigation:** complete the live `menu_images` vertical slice through `/analysis` and `/analysis/dishes/[dishId]` without another model call.
-- **T6 — Restaurant photo and restaurant-screen analysis:** unchanged and not started by T5.4.
-- **T7 — Restaurant/menu link analysis:** unchanged and not started by T5.4.
-- **T8 — Restaurant identification and candidate confirmation:** unchanged and not started by T5.4.
-- **Later:** Nearby discovery, database/account/history, and shareable result links.
-
-Every future analyzer converges on the same validated canonical result destination. The result Routes do not fetch, enrich, infer popularity, or call AI again. They display only the current canonical result plus conservative, deterministic Food Passport comparisons.
-
-## Post-submission scope
-
-The following are explicitly outside the competition submission scope:
-
-- login, database, and server-side user accounts;
-- Community Dish Photos & Reviews, including user photo uploads, public review creation, image storage, reporting, deletion, and moderation;
-- synchronized favorites;
-- PWA, Capacitor, App Store distribution, and payments;
-- voice input;
-- reservations, directions, and map-first UI;
-- background location tracking;
-- fully automatic matching for every restaurant worldwide;
-- collection of every review on the internet.
+The Later item is documentation only. No share extension or inbound map-app share flow exists today.

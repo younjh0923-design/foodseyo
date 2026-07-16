@@ -26,6 +26,7 @@ export interface MenuImagesAnalyzeRequest {
   location: TransientLocationContext | null;
 }
 
+/** @deprecated Compatibility-only request; the default analyzer is unavailable. */
 export interface RestaurantPhotoAnalyzeRequest {
   type: "restaurant_photo";
   image: TransientImageInput;
@@ -33,6 +34,7 @@ export interface RestaurantPhotoAnalyzeRequest {
   location: TransientLocationContext | null;
 }
 
+/** @deprecated Compatibility-only request; the default analyzer is unavailable. */
 export interface RestaurantScreenAnalyzeRequest {
   type: "restaurant_screen";
   image: TransientImageInput;
