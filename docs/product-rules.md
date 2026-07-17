@@ -109,7 +109,8 @@ The canonical reader supports legacy `FoodseyoAnalysis` `1.0.0`, C1.2 `1.1.0`, a
 - **C1.2.1:** restaurant-resolution provenance correction completed.
 - **C2.1-0.1:** exact-cache contracts and pre-provider preparation boundary completed.
 - **C2.1-A:** managed database and environment setup completed.
-- **C2.1-B:** reviewed schema, migrations, repositories, and cache implementation after C2.1-A.
+- **C2.1-B:** four-table physical exact-cache schema and first Development migration completed; no runtime client or cache behavior added.
+- **C2.1-C:** pooled runtime database client and repository checkpoint; not started.
 - **C2.2:** exact menu snapshot cache.
 - **C2.3:** dish-level reuse.
 - **C2.4:** cache safety.

@@ -1,6 +1,6 @@
 # C2.1-A database environment setup
 
-**Status:** Verified complete
+**Status:** C2.1-A verified; C2.1-B Development schema verified
 
 **Verified:** 2026-07-17
 
@@ -56,7 +56,7 @@ The following roles exist independently on all three branches:
 
 The Neon owner role remains an infrastructure-administration role. Application runtime and ordinary migration workflows must not use it.
 
-Application tables do not exist yet, so table, sequence, and default privileges were intentionally not granted in C2.1-A. C2.1-B must add only the reviewed table and sequence privileges required by the implemented schema. It must keep DDL on the migrator path and DML on the runtime path.
+C2.1-A intentionally created no application tables or table privileges. C2.1-B subsequently created exactly four application tables on Development only and granted only the reviewed runtime privileges described below. Preview and Production still have no C2.1 application tables or table grants. DDL remains on the migrator path and DML remains on the runtime path.
 
 ## Environment-variable contract
 
@@ -110,17 +110,33 @@ The Free recovery window and lack of branch protection are acceptable for C2.1-B
 - Rotate a credential immediately if it is exposed, without copying the value into an issue, log, document, or chat.
 - The supplied DOCX and SQL architecture references remain untracked, unstaged, and unexecuted.
 
-## C2.1-B entry boundary
+## C2.1-B Development migration result
 
-C2.1-B may install the specifically reviewed database dependencies and implement the reviewed schema, migrations, repositories, and exact-cache behavior. It must:
+- Drizzle schema: `src/lib/database/schema/analysis-cache.ts`
+- Migration identifier: `0000_c2_1_b_analysis_cache_schema`
+- Migration ledger: `public.__drizzle_migrations`
+- Target: Neon project `lucky-shadow-32441683`, Development branch `br-dark-cherry-awci0faj`
+- First run: one migration applied
+- Second run: zero migrations applied; the ledger remained at one entry
+- Development catalog: exactly four application tables, all with zero rows
+- Preview and Production: read-only checks confirmed zero C2.1 application tables after the Development migration
 
-1. supply `DATABASE_MIGRATION_URL` only through a dedicated operator or CI migration environment outside the live Vercel application runtime, and use it only for reviewed migrations;
-2. use `DATABASE_URL` only for runtime database access;
-3. create application objects through the migrator role;
-4. grant the runtime role only approved table and sequence privileges;
-5. preserve the exact-cache contract in `docs/database-cache-contract.md`;
-6. avoid executing the supplied v1.2 SQL reference directly;
-7. validate Development first and require a separate approval before any Production migration or deployment.
+Drizzle's stock PostgreSQL migrator issues `CREATE SCHEMA IF NOT EXISTS` even when its ledger schema is configured as the already existing `public` schema. That command requires database-level `CREATE`, which the dedicated migrator intentionally does not have. C2.1-B did not broaden the role. The checked-in migration runner instead uses Drizzle's versioned migration-file reader and hash metadata, creates only `public.__drizzle_migrations` in the already authorized schema, takes a transaction-scoped advisory lock, executes the reviewed statements in one transaction, and records the same migration hash and timestamp metadata. The direct credential is read only from process environment and is not stored.
+
+### Development runtime privilege matrix
+
+| Table | SELECT | INSERT | UPDATE | DELETE | Owner |
+| --- | --- | --- | --- | --- | --- |
+| `analysis_contracts` | yes | yes | none | no | `foodseyo_migrator` |
+| `menu_evidence_sets` | yes | yes | none | no | `foodseyo_migrator` |
+| `analysis_runs` | yes | yes | `status`, `safe_error_code`, `lease_expires_at`, `finished_at`, `updated_at` only | no | `foodseyo_migrator` |
+| `analysis_snapshots` | yes | yes | `last_accessed_at`, `invalidated_at`, `safe_invalidation_code` only | no | `foodseyo_migrator` |
+
+The runtime role has no schema `CREATE`, table ownership, administrative role membership, database administration attributes, table-level `UPDATE`, immutable-column `UPDATE`, `DELETE`, or access to the migration ledger. Transaction-scoped capability probes confirmed that schema creation, deletion, and immutable-column updates are rejected. No default privileges were broadened.
+
+## C2.1-C boundary
+
+C2.1-C has not started. It may introduce the reviewed pooled runtime client and repository layer, using only `DATABASE_URL`, after this schema contract is accepted. It must not obtain migration credentials from Vercel runtime, migrate Preview or Production implicitly, execute the supplied v1.2 SQL reference, or change the live analysis pipeline outside its own approved checkpoint.
 
 ## Authoritative platform references
 

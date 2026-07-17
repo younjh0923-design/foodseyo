@@ -542,3 +542,11 @@ This log records accepted product and architecture decisions frozen in T2. Chang
 - **Impact:** C2.1-B must inject the direct migrator credential only into its controlled migration process. This correction does not delete or rotate a database role, change any pooled runtime credential, create a table or migration, deploy the application, or start C2.1-B.
 - **Status:** Accepted
 - **Date:** 2026-07-17
+
+## D-068 — Apply the exact-cache schema through a least-privilege Development migration
+
+- **Decision:** C2.1-B creates exactly `analysis_contracts`, `menu_evidence_sets`, `analysis_runs`, and `analysis_snapshots` from Drizzle definitions and the reviewed `0000_c2_1_b_analysis_cache_schema` migration. The migration uses the `public.__drizzle_migrations` ledger and runs only on Development as `foodseyo_migrator`. Runtime receives SELECT and INSERT on the four tables plus only the reviewed mutable-column UPDATE grants; it receives no DELETE, schema CREATE, ownership, migration-ledger access, or immutable-column UPDATE.
+- **Reason:** The physical schema must preserve the exact-cache identity, ownership, snapshot-integrity, invalidation, and audit-history contract without importing the stale 24-table reference schema or granting application runtime DDL capability. Drizzle's stock PostgreSQL migrator attempts `CREATE SCHEMA IF NOT EXISTS` and therefore requires database-level CREATE even for the existing `public` schema. The dedicated role must not be broadened solely for that bootstrap statement.
+- **Impact:** The checked-in least-privilege runner uses Drizzle's versioned migration reader and hash metadata, creates only the ledger table in the already authorized schema, serializes execution with a transaction-scoped advisory lock, and applies reviewed SQL transactionally. Development contains four empty application tables and one ledger entry; a second run is a no-op. Preview and Production remain unmigrated. No runtime client, repository, cache lookup, provider bypass, API change, OpenAI call, or deployment is part of C2.1-B; C2.1-C has not started.
+- **Status:** Accepted
+- **Date:** 2026-07-17

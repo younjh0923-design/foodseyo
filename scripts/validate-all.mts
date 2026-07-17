@@ -10,6 +10,7 @@ await import("./validate-mvp-scope.mts");
 await import("./validate-analysis-consistency.mts");
 await import("./validate-consistency-integration.mts");
 await import("./validate-menu-cache-contract.mts");
+await import("./validate-analysis-cache-schema.mts");
 
 const { reportValidationTotal } = await import("./test-support/validation.mts");
 reportValidationTotal("Foodseyo full network-free validation");

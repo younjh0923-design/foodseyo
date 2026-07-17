@@ -1,8 +1,14 @@
 # C2.1 database and exact-cache contract
 
-This file is the current source of truth for the C2.1 database/cache contract. The supplied `Foodseyo_Database_Architecture_v1.2.docx` and `Foodseyo_PostgreSQL_Schema_v1.2.sql` remain reference artifacts. Where they differ from this file, this file governs C2.1. Executable Drizzle schema and reviewed migrations will be created in C2.1-B; the formal architecture artifact can be regenerated from the implemented schema afterward.
+This file is the current source of truth for the C2.1 database/cache contract. The supplied `Foodseyo_Database_Architecture_v1.2.docx` and `Foodseyo_PostgreSQL_Schema_v1.2.sql` remain reference artifacts. Where they differ from this file, this file governs C2.1. The executable Drizzle schema and first reviewed Development migration were created in C2.1-B; the formal architecture artifact can be regenerated from the implemented schema afterward.
 
-This checkpoint freezes contracts only. It does not create a database, implement cache lookup or PostgreSQL repositories, acquire a real lease, persist a snapshot, or change the live API response.
+The contract-freezing checkpoint did not create a database, implement cache lookup or PostgreSQL repositories, acquire a real lease, persist a snapshot, or change the live API response. C2.1-B implements only the physical schema and first Development migration. Runtime database access and cache behavior remain deferred to C2.1-C and later checkpoints.
+
+## Physical implementation status
+
+C2.1-B defines exactly `analysis_contracts`, `menu_evidence_sets`, `analysis_runs`, and `analysis_snapshots` in `src/lib/database/schema/analysis-cache.ts`. The reviewed migration is `0000_c2_1_b_analysis_cache_schema` and its ledger is `public.__drizzle_migrations`.
+
+The migration was applied once to Neon Development (`br-dark-cherry-awci0faj`) and a second run applied zero migrations. All four application tables remain empty. Preview (`br-misty-breeze-awy83urg`) and Production (`br-blue-night-awieb03l`) were verified through read-only transactions and were not migrated. C2.1-C has not started.
 
 ## Exact identity and immutable contracts
 
