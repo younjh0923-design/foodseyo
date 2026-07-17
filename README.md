@@ -48,18 +48,19 @@ pnpm verify:full     # final lint, typecheck, all tests, build, and security che
 
 ## MVP roadmap
 
-- T5–T5.4.1 — menu-image vertical slice complete
-- T5.5 — MVP scope alignment cleanup
+- T1 — working mobile UI baseline (completed)
+- T2 — product, research, and source-honest evidence architecture (completed)
+- T3 — unified Foodseyo analysis contract (completed)
+- T4 — shared analysis orchestration and safeguards (completed)
+- T5–T5.4.1 — menu-image vertical slice (completed)
+- T5.5 — MVP scope alignment cleanup (completed)
 - T6 — cancelled from the MVP
-- R1 — non-functional codebase and development workflow optimization
+- R1 — non-functional codebase and development workflow optimization (completed)
 - C1.1 / C1.1.1 — consistency and fingerprint foundations (completed)
 - C1.2 — live menu-image consistency integration (completed)
 - C1.2.1 — restaurant-resolution provenance correction (completed)
-- C2.1-0.1 — exact-cache contracts and pre-provider boundary frozen (current)
-- C2.1-A / C2.1-B — manual infrastructure, then reviewed database implementation (next)
-- C2.2–C2.4 — later relational and cache-safety checkpoints
+- C2.1 — relational cache foundation (in progress)
+- C2.2–C2.4 — relational model and cache-safety checkpoints (next)
 - T7 — restaurant/menu link analysis after C2
 - T8 — restaurant identification, to be reconsidered after T7
 - Later — map-app share-to-Foodseyo integration
-
-Map-app sharing is not currently implemented.
