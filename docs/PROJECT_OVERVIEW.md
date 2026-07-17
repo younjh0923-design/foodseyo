@@ -115,11 +115,11 @@ The repository may retain compatibility types or clearly labeled deterministic d
 
 1. **C2.1-C:** pooled runtime database client, repositories, validated reads/writes, and atomic ready-snapshot persistence — completed.
 2. **C2.1-D:** exact snapshot lookup, cache hit/miss behavior, corrupt/expired-snapshot quarantine, and safe post-provider persistence — completed locally, not deployed.
-3. **C2.1-E:** pre-provider lease ownership, duplicate-request control, bounded polling, and failure recovery — next.
+3. **C2.1-E:** pre-provider lease ownership, duplicate-request control, bounded polling, and failure recovery — completed locally, not deployed.
 4. **C2.1-F:** real Development database integrity and concurrency tests.
 5. **C2.1-G:** explicitly reviewed Preview and Production rollout with recovery checks.
 
-C2.1-D is implementation-complete locally, but it must not be rolled out or deployed before C2.1-E is complete and the required C2.1-F validation passes.
+C2.1-E is complete locally, including controlled PostgreSQL verification on disposable Development child branches. It must not be rolled out or deployed before the required C2.1-F validation passes.
 
 ### After the exact-cache rollout
 

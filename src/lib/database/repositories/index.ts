@@ -2,6 +2,11 @@ export {
   getOrCreateAnalysisContract,
 } from "./analysis-contracts.ts";
 export {
+  acquireAnalysisRunOwnership,
+  EXPIRED_ANALYSIS_RUN_SAFE_ERROR_CODE,
+  findProcessingAnalysisRunForIdentity,
+} from "./analysis-run-ownership.ts";
+export {
   createProcessingAnalysisRun,
   findAnalysisRunById,
   markProcessingAnalysisRunFailed,
@@ -29,6 +34,10 @@ export {
   MenuEvidenceSetRecordSchema,
   UploadedMenuEvidenceInputSchema,
 } from "./contracts.ts";
+export type {
+  AnalysisRunOwnershipInput,
+  AnalysisRunOwnershipResult,
+} from "./analysis-run-ownership.ts";
 export type {
   AnalysisCacheRepositoryErrorCode,
   AnalysisContractIdentity,

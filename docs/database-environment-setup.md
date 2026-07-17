@@ -150,6 +150,16 @@ The official Vercel CLI injected only the Development environment into the verif
 
 This verification changed no schema or credential, used no migration role, invoked neither OpenAI nor the live analysis POST route, and touched neither Preview nor Production. The code remains local and undeployed. C2.1-E pre-provider ownership, duplicate-request control, polling, and recovery is next; rollout remains prohibited until C2.1-E and the required C2.1-F validation pass.
 
+## C2.1-E Development ownership verification
+
+C2.1-E replaces the temporary post-provider run path in the live local adapter with pre-provider lease ownership. It uses the existing `foodseyo_runtime` grants and the existing four-table schema; no migration, DDL, role change, credential change, or new dependency is required.
+
+The deterministic suite verifies one owner, duplicate snapshot reuse, the 120-second lease, the 2-second bounded wait, 100–250 millisecond polling bounds, the frozen 409/503 policy, ambiguous-outcome recovery by proposed UUID, expired-owner recovery, owner-only persistence, corrupt-snapshot rejection, and zero network/OpenAI calls.
+
+The controlled real PostgreSQL verifier is intentionally guarded by `FOODSEYO_EPHEMERAL_DEVELOPMENT_VALIDATION=1`. `scripts/run-c2-1-e-development-validation.ps1` creates a one-hour, empty ephemeral child of Development branch `br-dark-cherry-awci0faj`, resolves a pooled `foodseyo_runtime` connection in process memory, runs the verifier, and deletes the exact child branch in `finally`. The verifier commits synthetic concurrency rows only inside that disposable branch, verifies exactly one provider owner and one ready snapshot, checks strict non-owner rejection, active-owner 409 behavior, and expired-lease recovery.
+
+Two independent controlled runs passed on `br-damp-poetry-awrh7604` and `br-wild-recipe-awnapjbv`. Each reported pooled TLS as `foodseyo_runtime`, one concurrent owner, one synthetic provider call, completed-snapshot reuse, active-owner 409, strict owner persistence, expired-lease recovery, and zero OpenAI calls. Both exact ephemeral branches reported `ephemeralBranchCleanup=deleted`. The permanent Development branch, Preview, and Production were not changed.
+
 ## Authoritative platform references
 
 - [Neon branching](https://neon.com/docs/introduction/branching)

@@ -5,12 +5,14 @@ import {
   AnalysisStructuralValidationError,
 } from "../analysis/analysis-errors.ts";
 import type { MenuAnalysisApiErrorCode, MenuAnalysisApiErrorResponse } from "./menu-analysis-api.ts";
+import { MenuAnalysisCachePublicError } from "./menu-analysis-exact-cache.ts";
 import { MenuAnalysisError } from "./menu-analysis-errors.ts";
 import { MenuUploadValidationError } from "./menu-upload-validation.ts";
 
 export interface SafeMenuAnalysisError {
   readonly status: number;
   readonly body: MenuAnalysisApiErrorResponse;
+  readonly retryAfterSeconds?: number;
 }
 
 const safeError = (
@@ -24,6 +26,19 @@ const safeError = (
 });
 
 export function mapMenuAnalysisError(error: unknown): SafeMenuAnalysisError {
+  if (error instanceof MenuAnalysisCachePublicError) {
+    return {
+      ...safeError(
+        error.result.httpStatus,
+        error.result.code,
+        error.message,
+        error.result.retryable,
+      ),
+      ...("retryAfterSeconds" in error.result
+        ? { retryAfterSeconds: error.result.retryAfterSeconds }
+        : {}),
+    };
+  }
   if (error instanceof MenuUploadValidationError) {
     return safeError(error.status, error.code, error.message, false);
   }

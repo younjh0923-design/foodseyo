@@ -1,19 +1,18 @@
 # Foodseyo Codex Handoff
 
 **Updated:** 2026-07-17
-**Current checkpoint:** C2.1-D complete locally; C2.1-E is next but not started
+**Current checkpoint:** C2.1-E complete locally; C2.1-F is next but not started
 
 This file is intentionally operational and may change at every checkpoint. Stable product intent belongs in [PROJECT_OVERVIEW.md](./PROJECT_OVERVIEW.md).
 
 ## Repository position
 
-- Current branch: `c2.1-d-exact-cache-integration`
-- C2.1-D starting HEAD: `2564cc0b7407c035b3b5ac1042c8e9d2f4090f94`
-- Latest completed implementation before C2.1-D: `2564cc0b7407c035b3b5ac1042c8e9d2f4090f94`
-- C2.1-D delivery: the local checkpoint commit containing this handoff; use `git rev-parse HEAD` for its immutable SHA
+- Current branch: `c2.1-e-analysis-ownership`
+- C2.1-E starting HEAD and completed C2.1-D commit: `6062826f92c8a872ca474019ee73cd9b63bb9809`
+- C2.1-E delivery: the local checkpoint commit containing this handoff; use `git rev-parse HEAD` for its immutable SHA
 - Local `main`: `cfbb93750c0b8f41f470963eddaf203d3b82457f`
 - Local `origin/main` baseline: `d3c255d29b4029589e6f6b562a482134c0e28b99`
-- Ahead/behind before the C2.1-D commit: `6/0`.
+- Ahead/behind after the C2.1-E commit: `8/0`.
 - No local checkpoint commit has been pushed or deployed.
 
 The only untracked and unstaged files are:
@@ -49,19 +48,24 @@ They are reference artifacts only. Do not stage, modify, execute, or treat the s
 - C2.1-B exact four-table schema, reviewed Development migration, idempotency check, and least-privilege verification
 - C2.1-C pooled runtime client, validated four-table repositories, atomic ready-snapshot persistence, and rollback-only Development verification
 - C2.1-D exact lookup before provider construction, strict valid-hit reuse, corrupt/expired snapshot quarantine, safe uncached fallback, best-effort post-provider persistence, and rollback-only Development verification
+- C2.1-E pre-provider lease ownership, duplicate coordination, bounded polling, expired-owner recovery, frozen 409/503 failure policy, strict owner persistence, and controlled PostgreSQL concurrency verification
 - project context freeze separating stable product intent, current handoff state, and the public README
 
 Development contains four empty application tables and one migration-ledger row. Preview and Production contain no Foodseyo application tables. The local route now composes exact-cache behavior above the existing analysis flow, but no checkpoint commit has been pushed or deployed. The deployed Production application therefore remains on its existing uncached provider flow.
 
 The C2.1-D focused suite passed 22 deterministic assertions, and the complete network-free suite passed 968 assertions. The controlled Development check used the scoped Vercel `DATABASE_URL` in process memory only, connected as `foodseyo_runtime` over a pooled TLS socket, quarantined a synthetic corrupt snapshot, persisted and re-read a valid exact snapshot, made zero provider calls, rolled back, and confirmed zero application rows afterward. No UI or user-visible copy changed, so browser visual QA was not required.
 
-## Next checkpoint: C2.1-E
+## Completed C2.1-E
 
-C2.1-E may add pre-provider lease acquisition, duplicate-request ownership, bounded polling, expired-owner recovery, provider-failure transitions, and the already frozen busy/indeterminate public policy.
+C2.1-E now implements pre-provider lease acquisition, duplicate-request ownership, a fixed 200-millisecond poll within the frozen 2-second bound, expired-owner recovery, strict owner-aware failure and ready persistence, and the frozen HTTP 409/503 policy. Provider calls remain outside database transactions. Pre-ownership failures may use the proven uncached path without persistence; acquisition and later ambiguity fail closed.
 
-C2.1-D deliberately creates and completes its temporary `processing` run only inside the post-provider persistence transaction. It does not prevent duplicate provider calls and must not be mistaken for the C2.1-E ownership protocol. C2.1-E must preserve fail-open behavior before ownership, prove ownership before provider execution, keep all provider calls outside database transactions, and preserve the unchanged UI/session/API behavior except for the already frozen safe busy/indeterminate cases.
+The focused deterministic suite passes 19 checks covering ownership, one-provider concurrency, completed-snapshot reuse, bounded busy polling, public 409/503 responses, ambiguous acquisition recovery, expired-lease takeover, invalid canonical rejection, corrupt-snapshot safety, and owner-only persistence with zero network or OpenAI calls. The complete network-free regression suite passes 965 assertions.
 
-Do not migrate Preview or Production, push, deploy, call OpenAI in automated tests, or start C2.1-F during C2.1-E. The D→E→F rollout gate remains mandatory: no cache rollout or deployment before C2.1-E is complete and the required C2.1-F Development integrity and concurrency validation passes.
+The controlled PostgreSQL verifier passed independently on ephemeral Development child branches `br-damp-poetry-awrh7604` and `br-wild-recipe-awnapjbv`. Both runs connected over pooled TLS as `foodseyo_runtime`, observed exactly one owner and one synthetic provider call, verified completed-snapshot reuse, active-owner 409, strict owner persistence, expired-lease recovery, and zero OpenAI calls, then reported exact branch cleanup as deleted.
+
+## Next checkpoint: C2.1-F
+
+C2.1-F must perform the required deeper Development database integrity and concurrency validation before any cache rollout. Do not migrate Preview or Production, push, deploy, call OpenAI, or start C2.1-F without a new instruction. The D→E→F rollout gate remains mandatory.
 
 ## Delivery rules
 

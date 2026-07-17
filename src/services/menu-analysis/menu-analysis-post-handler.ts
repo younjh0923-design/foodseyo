@@ -17,9 +17,11 @@ import {
 } from "./menu-images-analyzer.ts";
 import {
   resolveMenuAnalysisWithExactCache,
+  MenuAnalysisCachePublicError,
   type MenuAnalysisCacheReadState,
   type MenuAnalysisCacheWriteState,
   type MenuAnalysisExactCache,
+  type MenuAnalysisExactCacheCoordinatorDependencies,
 } from "./menu-analysis-exact-cache.ts";
 import { prepareMenuImagesAnalysis } from "./menu-analysis-preparation.ts";
 import type { MenuVisionProvider } from "./menu-vision-provider.ts";
@@ -61,6 +63,7 @@ export interface MenuAnalysisObservation {
 export interface MenuAnalysisPostHandlerDependencies {
   createProvider(modelVersion: MenuAnalysisModel): MenuVisionProvider;
   analysisCache?: MenuAnalysisExactCache;
+  cacheCoordinator?: MenuAnalysisExactCacheCoordinatorDependencies;
   environment?: Readonly<Record<string, string | undefined>>;
   createCorrelationId?(): string;
   now?(): number;
@@ -77,6 +80,7 @@ const createJsonResponse = (
   body: MenuAnalysisApiResponse,
   status: number,
   correlationId: string,
+  retryAfterSeconds?: number,
 ): { readonly response: Response; readonly byteLength: number } => {
   const serialized = JSON.stringify(body);
   return {
@@ -86,6 +90,9 @@ const createJsonResponse = (
         ...MENU_ANALYSIS_NO_STORE_HEADERS,
         "Content-Type": "application/json; charset=utf-8",
         [MENU_ANALYSIS_CORRELATION_HEADER]: correlationId,
+        ...(retryAfterSeconds === undefined
+          ? {}
+          : { "Retry-After": String(retryAfterSeconds) }),
       },
     }),
     byteLength: responseEncoder.encode(serialized).byteLength,
@@ -134,6 +141,13 @@ export const describeMenuAnalysisFailure = (
     };
   }
   if (error instanceof MenuAnalysisError) {
+    return {
+      failureStageCode: "menu_analysis",
+      structuralErrorCount: 0,
+      semanticErrorCount: 0,
+    };
+  }
+  if (error instanceof MenuAnalysisCachePublicError) {
     return {
       failureStageCode: "menu_analysis",
       structuralErrorCount: 0,
@@ -258,6 +272,8 @@ export function createMenuAnalysisPostHandler(
       const cacheResult = await resolveMenuAnalysisWithExactCache({
         prepared,
         cache: dependencies.analysisCache,
+        coordinator: dependencies.cacheCoordinator,
+        signal: request.signal,
         async analyzeUncached() {
           const registry = createAnalyzerRegistry({
             menu_images: createPreparedMenuImagesAnalyzer(prepared, {
@@ -302,6 +318,10 @@ export function createMenuAnalysisPostHandler(
       });
       return result.response;
     } catch (error) {
+      if (error instanceof MenuAnalysisCachePublicError) {
+        cacheReadState = error.cacheReadState;
+        cacheWriteState = error.cacheWriteState;
+      }
       if (
         providerCompletedAt !== null &&
         serverValidationDurationMs === null
@@ -316,6 +336,7 @@ export function createMenuAnalysisPostHandler(
         safe.body,
         safe.status,
         correlationId,
+        safe.retryAfterSeconds,
       );
       observe(
         safe.status,

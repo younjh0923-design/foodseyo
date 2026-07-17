@@ -62,7 +62,8 @@ Validated analysis is stored under `foodseyo.currentAnalysis` in `sessionStorage
 - C2.1-A/B — isolated database infrastructure and Development schema (completed)
 - C2.1-C — runtime repositories (completed)
 - C2.1-D — exact cache integration (completed locally; not deployed)
-- C2.1-E–C2.1-G — ownership, concurrency validation, and reviewed rollout (next)
+- C2.1-E — ownership and failure policy (completed locally; not deployed)
+- C2.1-F–C2.1-G — required integrity/concurrency validation and reviewed rollout (next)
 - C2.2–C2.4 — planning audit before broader relational expansion
 - T7.1–T7.4 — restaurant/menu link analysis after C2
 - T8 — restaurant identification, reconsider after T7

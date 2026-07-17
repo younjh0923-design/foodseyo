@@ -29,6 +29,7 @@ export {
   createPreparedMenuImagesAnalyzer,
 } from "./menu-images-analyzer.ts";
 export {
+  MenuAnalysisCachePublicError,
   resolveMenuAnalysisWithExactCache,
 } from "./menu-analysis-exact-cache.ts";
 export {
@@ -59,11 +60,14 @@ export type {
   FutureAnalysisCachePublicResult,
 } from "./menu-cache-contract.ts";
 export type {
+  MenuAnalysisCacheIdentityContext,
+  MenuAnalysisCacheOwnership,
   MenuAnalysisCacheReadState,
-  MenuAnalysisCacheWriteContext,
   MenuAnalysisCacheWriteState,
   MenuAnalysisExactCache,
-  MenuAnalysisExactCacheLookup,
+  MenuAnalysisExactCacheClaim,
+  MenuAnalysisExactCacheCoordinatorDependencies,
+  MenuAnalysisExactCachePoll,
   MenuAnalysisExactCacheResult,
 } from "./menu-analysis-exact-cache.ts";
 export type {

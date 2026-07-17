@@ -114,7 +114,7 @@ The canonical reader supports legacy `FoodseyoAnalysis` `1.0.0`, C1.2 `1.1.0`, a
 - **C2.1-B:** four-table physical exact-cache schema and first Development migration completed.
 - **C2.1-C:** pooled runtime database client, validated repositories, atomic ready-snapshot persistence, and rollback-only Development verification completed; no live cache behavior added.
 - **C2.1-D:** exact snapshot cache lookup, hit/miss, quarantine, and best-effort post-provider persistence completed locally; no rollout or deployment.
-- **C2.1-E:** pre-provider lease ownership, concurrency, polling, and failure policy.
+- **C2.1-E:** pre-provider lease ownership, concurrency, polling, and failure policy completed locally; not deployed.
 - **C2.1-F:** real Development database integrity and concurrency validation.
 - **C2.1-G:** reviewed Preview and Production rollout.
 - **C2.2–C2.4:** planning audit after C2.1-G and before broader relational expansion.
