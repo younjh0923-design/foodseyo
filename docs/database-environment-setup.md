@@ -15,7 +15,7 @@ This document records the non-secret infrastructure boundary completed in C2.1-A
 - Function runtime and region: Node.js in `iad1`
 - Node.js version: `24.x`
 - Menu-analysis route: Node.js runtime with a 90-second maximum duration
-- Fluid Compute: enabled by Vercel's project default; this project was created on 2026-07-15, after Fluid Compute became the default for new projects, and the repository has no deployment-level `fluid` override
+- Fluid Compute: enabled — directly verified through the authenticated Vercel Project API on 2026-07-17; both `defaultResourceConfig.fluid` and `resourceConfig.fluid` were `true`
 - Neon Marketplace resource: `foodseyo` (`store_n6y8hPoEyVjAIAZO`)
 - Neon project: `foodseyo` (`lucky-shadow-32441683`)
 - Neon cloud and region: AWS `aws-us-east-1`, colocated with Vercel `iad1`
@@ -25,7 +25,7 @@ This document records the non-secret infrastructure boundary completed in C2.1-A
 
 ## Environment isolation
 
-Each logical environment has its own Neon branch, compute endpoint, role credentials, and Vercel environment scope.
+Each logical environment has its own Neon branch, compute endpoint, and database roles. Vercel holds only the pooled runtime credential for the matching branch and environment scope.
 
 | Logical environment | Neon branch | Branch ID | Compute endpoint ID | Vercel scope |
 | --- | --- | --- | --- | --- |
@@ -33,7 +33,7 @@ Each logical environment has its own Neon branch, compute endpoint, role credent
 | Preview | `preview` | `br-misty-breeze-awy83urg` | `ep-floral-bread-aw4mx0h1` | Preview |
 | Production | `main` | `br-blue-night-awieb03l` | `ep-raspy-poetry-aw8wx2hz` | Production |
 
-Development and Preview are persistent copy-on-write child branches of `main`. This is the verified Preview strategy for C2.1-A. Neither environment receives Production connection credentials, and Production does not receive Development or Preview credentials.
+Development and Preview are persistent copy-on-write child branches of `main`. The permanent shared `preview` Neon branch is isolated from Production and is the verified Preview strategy for C2.1-A. Neither environment receives Production runtime credentials, and Production does not receive Development or Preview runtime credentials.
 
 Branch protection is not enabled because Neon protected branches are a paid-plan feature. A paid-plan change was not approved or required for C2.1-B. Protection and a stronger Production recovery posture must be reconsidered before a Production database rollout.
 
@@ -52,7 +52,7 @@ The following roles exist independently on all three branches:
   - login and database `CONNECT`;
   - schema `USAGE` and `CREATE`;
   - no superuser, `neon_superuser`, `CREATEDB`, `CREATEROLE`, replication, or row-level-security bypass;
-  - used only by the direct `DATABASE_MIGRATION_URL` migration contract.
+  - used only by the direct `DATABASE_MIGRATION_URL` migration contract supplied through a dedicated operator or CI migration environment outside the live Vercel application runtime.
 
 The Neon owner role remains an infrastructure-administration role. Application runtime and ordinary migration workflows must not use it.
 
@@ -60,13 +60,15 @@ Application tables do not exist yet, so table, sequence, and default privileges 
 
 ## Environment-variable contract
 
-Only names and scopes are documented. Values must remain in Vercel's secret store.
+Only names and scopes are documented. For Foodseyo's database application contract, Vercel contains only environment-scoped pooled `DATABASE_URL` runtime credentials.
 
-| Vercel scope | `DATABASE_URL` | `DATABASE_MIGRATION_URL` |
-| --- | --- | --- |
-| Development | Development branch, `foodseyo_runtime`, pooled, encrypted | Development branch, `foodseyo_migrator`, direct, encrypted |
-| Preview | Preview branch, `foodseyo_runtime`, pooled, sensitive | Preview branch, `foodseyo_migrator`, direct, sensitive |
-| Production | Production branch, `foodseyo_runtime`, pooled, sensitive | Production branch, `foodseyo_migrator`, direct, sensitive |
+| Vercel scope | `DATABASE_URL` |
+| --- | --- |
+| Development | Development branch, `foodseyo_runtime`, pooled, encrypted |
+| Preview | Preview branch, `foodseyo_runtime`, pooled, sensitive |
+| Production | Production branch, `foodseyo_runtime`, pooled, sensitive |
+
+Vercel has no `DATABASE_MIGRATION_URL` entry in Development, Preview, or Production. Migration credentials are stored and supplied only through a dedicated operator or CI migration environment outside the live Vercel application runtime and build environment. The `foodseyo_migrator` roles remain present on all three Neon branches for controlled C2.1-B and future migrations.
 
 No credential-bearing variable uses a `NEXT_PUBLIC_` prefix.
 
@@ -112,7 +114,7 @@ The Free recovery window and lack of branch protection are acceptable for C2.1-B
 
 C2.1-B may install the specifically reviewed database dependencies and implement the reviewed schema, migrations, repositories, and exact-cache behavior. It must:
 
-1. use `DATABASE_MIGRATION_URL` only for reviewed migrations;
+1. supply `DATABASE_MIGRATION_URL` only through a dedicated operator or CI migration environment outside the live Vercel application runtime, and use it only for reviewed migrations;
 2. use `DATABASE_URL` only for runtime database access;
 3. create application objects through the migrator role;
 4. grant the runtime role only approved table and sequence privileges;

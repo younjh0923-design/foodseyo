@@ -148,7 +148,7 @@ verify(
   ),
   "package scripts expose all four verification tiers",
 );
-verify(readme.includes("R1 — non-functional codebase and development workflow optimization"), "README roadmap includes R1");
+verify(readme.includes("R1 — codebase and development workflow optimization (completed)"), "README roadmap includes R1");
 verify(menuDocs.includes("T5.5 superseded that UI") && menuDocs.includes("one native multi-file picker"), "technical docs distinguish historical Bottom Sheet from current native picker");
 
 report();
