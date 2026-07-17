@@ -85,10 +85,10 @@ The database/cache work is an enabling trust layer, not the primary product pitc
 - Vercel application infrastructure
 - isolated Neon Development, Preview, and Production branches
 - Drizzle and PostgreSQL four-table exact-cache schema on Development only
-- server-only pooled PostgreSQL runtime client and validated four-table repositories
+- server-only pooled PostgreSQL runtime client, validated repositories, and local exact-cache integration
 - network-free automated validation and production build checks
 
-Runtime database repositories exist and have passed rollback-only Development verification, but cache lookup is not connected to the live analysis route. Preview and Production have not received the application schema.
+The local C2.1-D branch connects exact lookup, quarantine, provider bypass on a valid hit, and best-effort ready-snapshot persistence to the menu analysis route. The flow has passed rollback-only Development verification but has not been pushed or deployed. Preview and Production have not received the application schema.
 
 ## Explicit non-goals for the active MVP
 
@@ -114,12 +114,12 @@ The repository may retain compatibility types or clearly labeled deterministic d
 ### C2.1 exact-cache runtime
 
 1. **C2.1-C:** pooled runtime database client, repositories, validated reads/writes, and atomic ready-snapshot persistence — completed.
-2. **C2.1-D:** exact snapshot lookup, cache hit/miss behavior, and corrupt-snapshot quarantine — next.
-3. **C2.1-E:** lease ownership, duplicate-request control, bounded polling, and failure recovery.
+2. **C2.1-D:** exact snapshot lookup, cache hit/miss behavior, corrupt/expired-snapshot quarantine, and safe post-provider persistence — completed locally, not deployed.
+3. **C2.1-E:** pre-provider lease ownership, duplicate-request control, bounded polling, and failure recovery — next.
 4. **C2.1-F:** real Development database integrity and concurrency tests.
 5. **C2.1-G:** explicitly reviewed Preview and Production rollout with recovery checks.
 
-C2.1-D may implement and validate cache integration, but it must not be rolled out or deployed before C2.1-E is complete and the required C2.1-F validation passes.
+C2.1-D is implementation-complete locally, but it must not be rolled out or deployed before C2.1-E is complete and the required C2.1-F validation passes.
 
 ### After the exact-cache rollout
 

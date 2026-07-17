@@ -11,6 +11,7 @@ import { MenuAnalysisError } from "./menu-analysis-errors.ts";
 import {
   prepareMenuImagesAnalysis,
   type MenuAnalysisPreparationDependencies,
+  type PreparedMenuImagesAnalysis,
 } from "./menu-analysis-preparation.ts";
 import { MenuImageModelOutputSchema } from "./menu-image-model-schema.ts";
 import type { MenuVisionProvider } from "./menu-vision-provider.ts";
@@ -22,8 +23,13 @@ export interface MenuImagesAnalyzerDependencies
   readonly environment?: Readonly<Record<string, string | undefined>>;
 }
 
-export function createMenuImagesAnalyzer(
-  dependencies: MenuImagesAnalyzerDependencies,
+export interface PreparedMenuImagesAnalyzerDependencies {
+  readonly createProvider: (modelVersion: MenuAnalysisModel) => MenuVisionProvider;
+}
+
+export function createPreparedMenuImagesAnalyzer(
+  prepared: PreparedMenuImagesAnalysis,
+  dependencies: PreparedMenuImagesAnalyzerDependencies,
 ): AnalysisAnalyzer<MenuImagesAnalyzeRequest> {
   return {
     inputType: "menu_images",
@@ -31,18 +37,6 @@ export function createMenuImagesAnalyzer(
       request: MenuImagesAnalyzeRequest,
       context: AnalyzerExecutionContext,
     ): Promise<AnalysisDraft> {
-      const prepared = await prepareMenuImagesAnalysis(
-        request,
-        {
-          environment: dependencies.environment ?? process.env,
-          createImageHash: dependencies.createImageHash,
-          createSourceIdentity: dependencies.createSourceIdentity,
-        },
-        context.signal,
-      );
-
-      // Future exact-cache lookup and lease ownership belong at this boundary.
-      // Provider credentials and the provider instance are intentionally created after it.
       const provider = dependencies.createProvider(prepared.modelVersion);
       if (provider.modelVersion !== prepared.modelVersion) {
         throw new MenuAnalysisError(
@@ -104,6 +98,32 @@ export function createMenuImagesAnalyzer(
         degradedCapabilities: degraded ? ["menu_analysis"] : [],
         coreCapability: "menu_analysis",
       };
+    },
+  };
+}
+
+export function createMenuImagesAnalyzer(
+  dependencies: MenuImagesAnalyzerDependencies,
+): AnalysisAnalyzer<MenuImagesAnalyzeRequest> {
+  return {
+    inputType: "menu_images",
+    async analyze(
+      request: MenuImagesAnalyzeRequest,
+      context: AnalyzerExecutionContext,
+    ): Promise<AnalysisDraft> {
+      const prepared = await prepareMenuImagesAnalysis(
+        request,
+        {
+          environment: dependencies.environment ?? process.env,
+          createImageHash: dependencies.createImageHash,
+          createSourceIdentity: dependencies.createSourceIdentity,
+        },
+        context.signal,
+      );
+
+      return createPreparedMenuImagesAnalyzer(prepared, {
+        createProvider: dependencies.createProvider,
+      }).analyze(request, context);
     },
   };
 }

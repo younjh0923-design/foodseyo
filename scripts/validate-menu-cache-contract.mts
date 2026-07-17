@@ -119,6 +119,13 @@ const analyzerSource = await readFile(
   new URL("../src/services/menu-analysis/menu-images-analyzer.ts", import.meta.url),
   "utf8",
 );
+const handlerSource = await readFile(
+  new URL(
+    "../src/services/menu-analysis/menu-analysis-post-handler.ts",
+    import.meta.url,
+  ),
+  "utf8",
+);
 verify(
   !/OPENAI_API_KEY|createOpenAIMenuVisionProvider|new OpenAI/u.test(
     preparationSource,
@@ -126,9 +133,14 @@ verify(
   "preparation has no provider credential or provider construction dependency",
 );
 verify(
-  analyzerSource.indexOf("await prepareMenuImagesAnalysis") <
-    analyzerSource.indexOf("dependencies.createProvider"),
-  "the provider factory boundary follows complete preparation",
+  handlerSource.indexOf(
+    "const prepared = await prepareMenuImagesAnalysis",
+  ) <
+    handlerSource.indexOf(
+      "const cacheResult = await resolveMenuAnalysisWithExactCache",
+    ) &&
+    analyzerSource.includes("createPreparedMenuImagesAnalyzer"),
+  "the exact-cache boundary follows preparation and precedes provider execution",
 );
 
 const orderedImageContentHashes = await Promise.all([

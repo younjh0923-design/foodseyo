@@ -37,7 +37,7 @@ The Home link field validates HTTP/HTTPS syntax only. It does not fetch or analy
 - controlled vocabularies, deterministic wording, semantic validation, and versioned fingerprints reduce avoidable drift;
 - automated validation is network-free and never makes a paid OpenAI request.
 
-Neon/Vercel Development, Preview, and Production database environments are isolated. The four-table exact-cache schema exists only in Development today. The pooled runtime client and validated repository layer are implemented and verified against Development with a fully rolled-back transaction, but cache lookup is not connected to the live route. Preview/Production migrations and application deployment of database behavior have not started.
+Neon/Vercel Development, Preview, and Production database environments are isolated. The four-table exact-cache schema exists only in Development today. The local C2.1-D branch integrates validated exact lookup, corrupt/expired snapshot quarantine, provider bypass on a valid hit, and best-effort post-provider persistence. Development verification ran inside a fully rolled-back transaction. Preview/Production migrations and application deployment of database behavior have not started; rollout remains blocked until C2.1-E and the required C2.1-F validation pass.
 
 ## Run locally
 
@@ -86,7 +86,7 @@ Codex has supported the repository-wide implementation workflow: product-scope c
 - C2.1-A / C2.1-A.1 — isolated managed infrastructure and credential correction (completed)
 - C2.1-B — four-table schema and Development migration (completed)
 - C2.1-C — pooled runtime database client and repositories (completed)
-- C2.1-D — exact snapshot cache integration; no rollout before C2.1-E and required C2.1-F validation
+- C2.1-D — exact snapshot cache integration (completed locally; not deployed)
 - C2.1-E — lease, concurrency, polling, and failure policy
 - C2.1-F — real Development database integrity and concurrency validation
 - C2.1-G — reviewed Preview and Production rollout

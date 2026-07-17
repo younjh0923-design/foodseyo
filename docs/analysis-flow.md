@@ -126,7 +126,7 @@ Menu images
 
 **Restaurant matching is not required to explain the menu.**
 
-T5.1 hardens this path with 1-10 ordered JPEG, PNG, or WEBP inputs. The browser applies 25,000,000-byte per-file and 100,000,000-byte source-set guards, then adaptively preprocesses toward 3,800,000 bytes while retaining a readability floor. The route and analyzer independently enforce the 4,000,000-byte processed total before all images are sent in one GPT-5.6 Responses API request with no web tools. The resulting narrow Structured Output is deterministically adapted and passed through the shared orchestrator. See [menu-image-analysis.md](./menu-image-analysis.md).
+T5.1 hardens this path with 1-10 ordered JPEG, PNG, or WEBP inputs. The browser applies 25,000,000-byte per-file and 100,000,000-byte source-set guards, then adaptively preprocesses toward 3,800,000 bytes while retaining a readability floor. The route and analyzer independently enforce the 4,000,000-byte processed total. On the local C2.1-D branch, complete source and contract identity is prepared before cache lookup: a validated exact snapshot returns without constructing the provider, while a miss sends all images in one GPT-5.6 Responses API request with no web tools. The resulting narrow Structured Output is deterministically adapted and passed through the shared orchestrator. See [menu-image-analysis.md](./menu-image-analysis.md).
 
 Web research, reviews, and official freshness comparison remain later enrichment capabilities and are not silently performed by the T5 menu-image analyzer.
 
@@ -149,6 +149,8 @@ Normal success requires storage readback validation and does not show a completi
 `/analysis` and `/analysis/dishes/[dishId]` read the validated canonical result after hydration and make zero result-page network calls. Refresh works in the same tab. Missing, invalid, unsupported, failed, zero-dish, or unavailable session data uses a safe recovery state and never Demo fallback. Dish navigation uses canonical IDs; category and dish order are preserved. Menu-derived ingredients, dietary clues, uncertainty, and allergy cautions remain visible without comparison to stored user settings.
 
 C1 is a consistency checkpoint before C2 and T7. C1.2 computes ordered-image source identity before the existing provider call, then normalizes and validates the provider consistency object and renders deterministic wording. C1.2.1 creates canonical `1.1.1` with explicit restaurant provenance and scope before the shared analysis boundary. It does not add another provider call, cache, database, or link analyzer.
+
+C2.1-D locally composes that identity boundary with the Development exact cache. Valid hits preserve the existing response and session/UI flow with zero provider calls. Cache read failures, unconfirmed quarantine, and persistence failures fall back to the already proven uncached behavior without a new public error. Lease acquisition, duplicate-request polling, and ownership failure policy remain C2.1-E work. This local integration is not authorized for rollout until C2.1-E and the required C2.1-F validation pass.
 
 A synchronous attempt gate still blocks duplicate submissions, monotonic attempt IDs ignore late responses, and a 105-second client watchdog ends an unresolved browser request after the existing 80-second provider and 90-second Route limits. T5.3 feedback scrolling remains for abnormal completion and errors. Full details are in [menu-analysis-completion-ui.md](./menu-analysis-completion-ui.md) and [live-analysis-results.md](./live-analysis-results.md).
 

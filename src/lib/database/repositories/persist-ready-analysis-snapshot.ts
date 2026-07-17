@@ -1,8 +1,14 @@
 import { z } from "zod";
 
 import type { ConsistentFoodseyoAnalysis } from "../../../domain/foodseyo-analysis.ts";
-import { createSnapshotResultFingerprint } from "../../../services/menu-analysis/menu-cache-contract.ts";
-import type { AnalysisCacheTransactionManager } from "../database-port.ts";
+import {
+  ANALYSIS_RUN_LEASE_DURATION_MS,
+  createSnapshotResultFingerprint,
+} from "../../../services/menu-analysis/menu-cache-contract.ts";
+import type {
+  AnalysisCacheQueryExecutor,
+  AnalysisCacheTransactionManager,
+} from "../database-port.ts";
 import { analysisRunSelectColumns } from "./analysis-runs.ts";
 import {
   AnalysisCacheRepositoryError,
@@ -44,6 +50,21 @@ export interface PersistReadyAnalysisSnapshotInput {
 export interface PersistReadyAnalysisSnapshotResult {
   readonly analysisRun: AnalysisRunRecord;
   readonly snapshot: ValidatedAnalysisSnapshotRecord;
+}
+
+export type PersistUncachedReadyAnalysisSnapshotInput =
+  PersistReadyAnalysisSnapshotInput;
+
+export type PersistUncachedReadyAnalysisSnapshotResult =
+  | { readonly state: "already_present" }
+  | ({
+      readonly state: "persisted";
+    } & PersistReadyAnalysisSnapshotResult);
+
+interface PreparedReadySnapshotPersistence {
+  readonly input: z.infer<typeof PersistReadyAnalysisSnapshotInputSchema>;
+  readonly canonicalResult: ConsistentFoodseyoAnalysis;
+  readonly resultFingerprint: string;
 }
 
 const processingContextSelectColumns = `
@@ -89,10 +110,9 @@ const validatePersistenceIdentity = (
   });
 };
 
-export async function persistReadyAnalysisSnapshot(
-  database: AnalysisCacheTransactionManager,
+const prepareReadySnapshotPersistence = async (
   candidate: PersistReadyAnalysisSnapshotInput,
-): Promise<PersistReadyAnalysisSnapshotResult> {
+): Promise<PreparedReadySnapshotPersistence> => {
   const input = parseRepositoryValue(
     PersistReadyAnalysisSnapshotInputSchema,
     {
@@ -106,8 +126,14 @@ export async function persistReadyAnalysisSnapshot(
   const resultFingerprint = await createSnapshotResultFingerprint(
     canonicalResult,
   );
+  return { input, canonicalResult, resultFingerprint };
+};
 
-  return database.withTransaction(async (executor) => {
+const persistPreparedReadySnapshot = async (
+  executor: AnalysisCacheQueryExecutor,
+  prepared: PreparedReadySnapshotPersistence,
+): Promise<PersistReadyAnalysisSnapshotResult> => {
+    const { input, canonicalResult, resultFingerprint } = prepared;
     const contextResult = await executor.query<ProcessingRunContextRow>({
       name: "foodseyo-lock-processing-run-for-ready-snapshot",
       text: `
@@ -256,5 +282,107 @@ export async function persistReadyAnalysisSnapshot(
         canonicalResultJson: canonicalResult,
       },
     };
+};
+
+export async function persistReadyAnalysisSnapshot(
+  database: AnalysisCacheTransactionManager,
+  candidate: PersistReadyAnalysisSnapshotInput,
+): Promise<PersistReadyAnalysisSnapshotResult> {
+  const prepared = await prepareReadySnapshotPersistence(candidate);
+  return database.withTransaction((executor) =>
+    persistPreparedReadySnapshot(executor, prepared),
+  );
+}
+
+export async function persistUncachedReadyAnalysisSnapshot(
+  database: AnalysisCacheTransactionManager,
+  candidate: PersistUncachedReadyAnalysisSnapshotInput,
+): Promise<PersistUncachedReadyAnalysisSnapshotResult> {
+  const prepared = await prepareReadySnapshotPersistence(candidate);
+  const leaseExpiresAt = new Date(
+    prepared.input.persistedAt.getTime() +
+      ANALYSIS_RUN_LEASE_DURATION_MS,
+  );
+
+  return database.withTransaction(async (executor) => {
+    const activeResult = await executor.query<{ readonly id: string }>({
+      name: "foodseyo-select-active-snapshot-before-uncached-persistence",
+      text: `
+        SELECT id
+        FROM public.analysis_snapshots
+        WHERE menu_evidence_set_id = $1
+          AND analysis_contract_id = $2
+          AND invalidated_at IS NULL
+        LIMIT 1
+      `,
+      values: [
+        prepared.input.menuEvidenceSetId,
+        prepared.input.analysisContractId,
+      ],
+    });
+    if (activeResult.rows[0]) return { state: "already_present" };
+
+    const processingResult = await executor.query<AnalysisRunRecord>({
+      name: "foodseyo-insert-post-provider-processing-analysis-run",
+      text: `
+        INSERT INTO public.analysis_runs (
+          id,
+          menu_evidence_set_id,
+          analysis_contract_id,
+          status,
+          attempt_number,
+          safe_error_code,
+          started_at,
+          lease_expires_at,
+          finished_at,
+          created_at,
+          updated_at
+        )
+        SELECT
+          $1,
+          $2,
+          $3,
+          'processing',
+          COALESCE(MAX(attempt_number), 0) + 1,
+          NULL,
+          $4,
+          $5,
+          NULL,
+          $4,
+          $4
+        FROM public.analysis_runs
+        WHERE menu_evidence_set_id = $2
+          AND analysis_contract_id = $3
+        RETURNING ${analysisRunSelectColumns}
+      `,
+      values: [
+        prepared.input.analysisRunId,
+        prepared.input.menuEvidenceSetId,
+        prepared.input.analysisContractId,
+        prepared.input.persistedAt,
+        leaseExpiresAt,
+      ],
+    });
+    const processingRow = processingResult.rows[0];
+    if (!processingRow) {
+      throw new AnalysisCacheRepositoryError("ANALYSIS_RUN_NOT_FOUND");
+    }
+    const processingRun = parseRepositoryValue(
+      AnalysisRunRecordSchema,
+      processingRow,
+    );
+    if (
+      processingRun.id !== prepared.input.analysisRunId ||
+      processingRun.menuEvidenceSetId !==
+        prepared.input.menuEvidenceSetId ||
+      processingRun.analysisContractId !==
+        prepared.input.analysisContractId ||
+      processingRun.status !== "processing"
+    ) {
+      throw new AnalysisCacheRepositoryError("ANALYSIS_RUN_NOT_FOUND");
+    }
+
+    const result = await persistPreparedReadySnapshot(executor, prepared);
+    return { state: "persisted", ...result };
   });
 }

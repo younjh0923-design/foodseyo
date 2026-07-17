@@ -483,13 +483,9 @@ const liveRouteSources = await Promise.all([
   ),
 ]);
 verify(
-  liveRouteSources.every(
-    (source) =>
-      !source.includes("getAnalysisCacheRuntimeDatabase") &&
-      !source.includes("findActiveAnalysisSnapshot") &&
-      !source.includes("persistReadyAnalysisSnapshot"),
-  ),
-  "C2.1-C leaves the live analysis route and provider boundary uncached",
+  liveRouteSources[0]?.includes("createRuntimeMenuAnalysisExactCache") &&
+    liveRouteSources[1]?.includes("createPreparedMenuImagesAnalyzer"),
+  "C2.1-D composes the existing repositories above the prepared provider boundary",
 );
 
 networkGuard.restore();

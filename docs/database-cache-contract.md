@@ -2,7 +2,7 @@
 
 This file is the current source of truth for the C2.1 database/cache contract. The supplied `Foodseyo_Database_Architecture_v1.2.docx` and `Foodseyo_PostgreSQL_Schema_v1.2.sql` remain reference artifacts. Where they differ from this file, this file governs C2.1. The executable Drizzle schema and first reviewed Development migration were created in C2.1-B; the formal architecture artifact can be regenerated from the implemented schema afterward.
 
-The contract-freezing checkpoint did not create a database, implement cache lookup or PostgreSQL repositories, acquire a real lease, persist a snapshot, or change the live API response. C2.1-B implemented only the physical schema and first Development migration. C2.1-C now implements the isolated runtime client and repository primitives, but it does not connect them to the live route or activate cache behavior.
+The contract-freezing checkpoint did not create a database, implement cache lookup or PostgreSQL repositories, acquire a real lease, persist a snapshot, or change the live API response. C2.1-B implemented only the physical schema and first Development migration. C2.1-C implemented the isolated runtime client and repository primitives. C2.1-D now composes exact lookup, quarantine, provider bypass, and best-effort persistence into the local analysis route without changing its public response or user experience. The integration has not been pushed or deployed.
 
 ## Physical implementation status
 
@@ -20,6 +20,20 @@ C2.1-C adds:
 - one short atomic transaction that locks the owned, unexpired processing run, inserts the ready snapshot, and transitions that run to `ready`.
 
 The controlled Development verification connected as `foodseyo_runtime` through the pooled TLS contract, exercised all four repositories, re-read the validated canonical snapshot, and rolled the transaction back. All four application tables had zero rows before and after verification. No schema, migration, Preview/Production database, live API route, or provider path changed.
+
+C2.1-D adds:
+
+- complete source and five-value contract preparation before cache lookup or provider construction;
+- strict active-snapshot inspection with structural, semantic, exact-identity, and whole-snapshot fingerprint validation;
+- guarded, non-destructive quarantine for corrupt or expired snapshots;
+- valid-hit provider bypass with the unchanged canonical API response;
+- fail-open uncached analysis for cache-read failures and unconfirmed quarantine, without replacement persistence;
+- best-effort persistence of a validated live result, with run creation, snapshot insert, and `ready` transition contained in one short post-provider transaction;
+- privacy-safe cache read/write state and provider-call-count observation.
+
+The C2.1-D post-provider transaction is deliberately not the C2.1-E ownership protocol. Its `processing` run is created and transitioned entirely inside the final transaction, so no lease is exposed before or during the provider request. It does not prevent duplicate provider calls, poll another owner, recover an expired lease, or add a new public cache error. A concurrent persistence conflict rolls back and returns the already validated live result uncached. C2.1-E must move ownership acquisition before provider execution and implement the frozen concurrency and failure policy.
+
+The controlled C2.1-D Development verification used the same pooled TLS runtime role inside one outer transaction. It inserted a synthetic corrupt snapshot, confirmed guarded quarantine, persisted a valid replacement, re-read it as an exact hit, made zero provider calls, rolled back, and confirmed all four application tables still had zero rows. No DDL, migration credential, OpenAI request, live POST invocation, Preview/Production operation, push, or deployment occurred.
 
 ## Exact identity and immutable contracts
 
@@ -126,7 +140,7 @@ Future cache telemetry may contain only cache stage, hit/miss/busy/uncached stat
 
 ## C2.1 non-goals
 
-C2.1 does not persist raw images; create restaurant, dish-concept, observation, or logical-menu catalogs; implement dish-level reuse; analyze links; change the canonical schema, provider prompt/schema/model defaults, or source/dish fingerprint semantics; or change UI/session behavior. Through C2.1-C there is still no cache hit, provider bypass, lease acquisition orchestration, duplicate-request waiting, new public live error response, Preview/Production migration, or deployment.
+C2.1 does not persist raw images; create restaurant, dish-concept, observation, or logical-menu catalogs; implement dish-level reuse; analyze links; change the canonical schema, provider prompt/schema/model defaults, or source/dish fingerprint semantics; or change UI/session behavior. Through C2.1-D there is still no pre-provider lease acquisition, duplicate-request waiting, busy polling, ownership failure policy, new public live error response, Preview/Production migration, push, or deployment. The D→E→F rollout gate remains mandatory.
 
 ## Infrastructure prerequisite status
 

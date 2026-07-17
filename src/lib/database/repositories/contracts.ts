@@ -24,7 +24,8 @@ export type AnalysisCacheRepositoryErrorCode =
   | "PROCESSING_RUN_NOT_OWNED"
   | "ANALYSIS_RUN_TRANSITION_CONFLICT"
   | "SNAPSHOT_PERSISTENCE_CONFLICT"
-  | "SNAPSHOT_INTEGRITY_FAILURE";
+  | "SNAPSHOT_INTEGRITY_FAILURE"
+  | "SNAPSHOT_EXPIRED";
 
 export class AnalysisCacheRepositoryError extends Error {
   readonly code: AnalysisCacheRepositoryErrorCode;

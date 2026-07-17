@@ -1,10 +1,10 @@
 # C2.1-A database environment setup
 
-**Status:** C2.1-A infrastructure, C2.1-B Development schema, and C2.1-C Development runtime repositories verified
+**Status:** C2.1-A infrastructure through C2.1-D Development exact-cache integration verified
 
 **Verified:** 2026-07-17
 
-This document records the non-secret infrastructure boundary completed in C2.1-A and the controlled Development verification performed in C2.1-B and C2.1-C. It does not authorize cache integration, another migration, Production migration, or application deployment. `docs/database-cache-contract.md` remains the source of truth for the C2.1 exact-cache contract.
+This document records the non-secret infrastructure boundary completed in C2.1-A and the controlled Development verification performed through C2.1-D. It does not authorize another migration, Preview/Production migration, or application deployment. `docs/database-cache-contract.md` remains the source of truth for the C2.1 exact-cache contract.
 
 ## Infrastructure inventory
 
@@ -140,9 +140,15 @@ C2.1-C implements a server-only, module-scoped `pg.Pool` using only the pooled `
 
 The controlled Development check used the official Vercel CLI to inject the Development environment into one process without writing a database value to disk. It directly verified the `foodseyo_runtime` role and encrypted client socket, exercised the four repository modules and atomic ready-snapshot transaction, re-read the canonical object through all validation boundaries, and then rolled back. The four application tables contained zero rows before and after the check.
 
-The application route is not connected to these repositories. C2.1-C did not obtain a migration credential, run DDL, write or apply a migration, execute the supplied v1.2 SQL reference, migrate Preview or Production, call OpenAI, invoke the live analysis POST route, push, deploy, or start cache orchestration.
+At C2.1-C the application route was not connected to these repositories. C2.1-C did not obtain a migration credential, run DDL, write or apply a migration, execute the supplied v1.2 SQL reference, migrate Preview or Production, call OpenAI, invoke the live analysis POST route, push, deploy, or start cache orchestration.
 
-The next checkpoint is C2.1-D implementation and network-free validation of exact snapshot lookup, hit/miss behavior, and corrupt-snapshot quarantine. It must not be rolled out or deployed before C2.1-E ownership behavior is complete and the required C2.1-F Development validation passes.
+## C2.1-D Development integration verification
+
+C2.1-D connects the local menu-analysis route to a lazy server-only exact-cache adapter. Lookup is complete before provider construction. Only a structurally, semantically, contractually, and fingerprint-valid active snapshot may bypass the provider. Corrupt and expired snapshots use guarded non-destructive invalidation. Cache read failures and unconfirmed quarantine preserve the uncached response path without replacement persistence. A validated live miss is persisted best-effort; failure returns that live result uncached.
+
+The official Vercel CLI injected only the Development environment into the verification process without writing a database credential to a repository file or printing a value. The check connected as `foodseyo_runtime` over pooled TLS, created a synthetic corrupt row inside an outer transaction, confirmed quarantine, persisted and re-read a valid exact snapshot, recorded zero provider calls, rolled everything back, and confirmed zero application rows afterward.
+
+This verification changed no schema or credential, used no migration role, invoked neither OpenAI nor the live analysis POST route, and touched neither Preview nor Production. The code remains local and undeployed. C2.1-E pre-provider ownership, duplicate-request control, polling, and recovery is next; rollout remains prohibited until C2.1-E and the required C2.1-F validation pass.
 
 ## Authoritative platform references
 

@@ -1,6 +1,6 @@
 # Foodseyo Menu Image Analysis
 
-**Status:** C1.2.1 restaurant-resolution semantics on the existing C1.2 live slice
+**Status:** C2.1-D exact-cache integration completed locally; rollout blocked by C2.1-E and C2.1-F
 
 **Date:** 2026-07-15
 
@@ -20,7 +20,8 @@ T5 does not add restaurant web research, public reviews, menu-freshness verifica
 → server MIME, magic-byte, count, and byte-limit validation
 → transient ordered byte handles
 → injected menu_images analyzer
-→ one OpenAI Responses API request
+→ exact Development snapshot lookup on the local C2.1-D branch
+→ valid hit: zero provider calls; miss: one OpenAI Responses API request
 → strict MenuImageModelOutput Structured Output
 → deterministic canonical adapter
 → shared T4 structural and semantic validation
@@ -119,11 +120,11 @@ Source indexes are zero-based, non-empty for extracted categories, dishes, price
 
 ## Canonical adapter and evidence semantics
 
-After upload validation, the analyzer hashes the server-received bytes in selection order and creates a `source_` fingerprint before the one provider call. It stores only the resulting source fingerprint, never the raw hashes, bytes, Base64, or filenames. Fingerprint failure stops before provider execution.
+After upload validation, the analyzer hashes the server-received bytes in selection order and creates a `source_` fingerprint before cache lookup or any provider construction. It stores only the resulting source fingerprint, never the raw hashes, bytes, Base64, or filenames. Fingerprint failure stops before cache or provider execution. A valid exact snapshot returns the existing canonical API response with zero provider calls. A miss performs the existing one-provider-call path.
 
 After provider output parsing, the adapter reuses the C1 normalizer and semantic validator. It fixes safe aliases, duplicates, ordering, count overflow, and ingredient-basis conflicts; invalid levels become `unknown`, malformed ingredients are removed, and defined texture contradictions clear only the texture axis before one final validation. Remaining blocking issues use the existing provider-invalid boundary without another OpenAI call. Foodseyo code renders the stored deterministic wording.
 
-The deterministic adapter creates one `uploaded_menu` evidence record per submitted image and maps model source indexes to stable evidence IDs. Category, dish, option, and price-option IDs are app-generated with deterministic duplicate suffixes. Dish identity combines the source fingerprint with the extracted source-stated name, description, category, and price; result identity separately binds normalized consistency, wording, and five version values. Neither identity activates a cache.
+The deterministic adapter creates one `uploaded_menu` evidence record per submitted image and maps model source indexes to stable evidence IDs. Category, dish, option, and price-option IDs are app-generated with deterministic duplicate suffixes. Dish identity combines the source fingerprint with the extracted source-stated name, description, category, and price; result identity separately binds normalized consistency, wording, and five version values. Exact source identity plus the immutable five-value analysis contract now authorizes only whole-snapshot reuse; dish-level identity still does not activate reuse.
 
 Restaurant resolution follows these rules:
 

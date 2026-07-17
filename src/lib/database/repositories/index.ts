@@ -8,11 +8,16 @@ export {
 } from "./analysis-runs.ts";
 export {
   findActiveAnalysisSnapshot,
+  inspectActiveAnalysisSnapshot,
+  invalidateActiveAnalysisSnapshot,
+  SAFE_SNAPSHOT_INVALIDATION_CODES,
+  touchActiveAnalysisSnapshot,
 } from "./analysis-snapshots.ts";
 export {
   getOrCreateUploadedMenuEvidenceSet,
 } from "./menu-evidence-sets.ts";
 export {
+  persistUncachedReadyAnalysisSnapshot,
   persistReadyAnalysisSnapshot,
 } from "./persist-ready-analysis-snapshot.ts";
 export {
@@ -37,6 +42,12 @@ export type {
   ValidatedAnalysisSnapshotRecord,
 } from "./contracts.ts";
 export type {
+  ActiveAnalysisSnapshotInspection,
+  SafeSnapshotInvalidationCode,
+} from "./analysis-snapshots.ts";
+export type {
+  PersistUncachedReadyAnalysisSnapshotInput,
+  PersistUncachedReadyAnalysisSnapshotResult,
   PersistReadyAnalysisSnapshotInput,
   PersistReadyAnalysisSnapshotResult,
 } from "./persist-ready-analysis-snapshot.ts";

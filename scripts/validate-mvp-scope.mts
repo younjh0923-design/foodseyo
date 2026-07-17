@@ -108,7 +108,7 @@ verify(!/localStorage|sessionStorage|indexedDB|base64/i.test(intake + intakeProv
 verify(home.includes("restaurant-link"), "restaurant/menu link input remains on Home");
 verify(!home.includes("fetch("), "link UI has no analysis request");
 verify(apiRoute.includes("createOpenAIMenuVisionProvider"), "menu_images API route remains live");
-verify(postHandler.includes("menu_images: createMenuImagesAnalyzer"), "only menu_images is overridden by the live route");
+verify(postHandler.includes("menu_images: createPreparedMenuImagesAnalyzer"), "only menu_images is overridden by the live route");
 verify(!/restaurant_photo: create|restaurant_screen: create/.test(postHandler), "legacy image inputs receive no live provider override");
 verify(analyzers.includes('>("restaurant_photo")'), "legacy photo input remains capability-unavailable");
 verify(analyzers.includes('>("restaurant_screen")'), "legacy screen input remains capability-unavailable");
