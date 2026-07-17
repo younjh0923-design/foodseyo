@@ -1,9 +1,9 @@
 # Foodseyo Database Logical Model v3
 
-**Status:** C2.2-A logical model accepted locally; no physical schema or migration
+**Status:** C2.2-A1 culinary-contract gap audit accepted locally; no physical schema or migration
 **Reviewed:** 2026-07-17
 
-This document is the C2.2-A source of truth for the future relational model. It audits the external `Foodseyo Complete ERD v2` proposal against the implemented C2.1 cache, the canonical `FoodseyoAnalysis` contract, the active MVP, and the T7/T8 ordering.
+This document is the C2.2-A and C2.2-A1 source of truth for the future relational model. It audits the external `Foodseyo Complete ERD v2` proposal against the implemented C2.1 cache, the canonical `FoodseyoAnalysis` contract, the frozen C1 consistency profile, the active MVP, and the T7/T8 ordering.
 
 It defines responsibilities, relationships, exclusions, and unresolved decisions. It does not define PostgreSQL types, nullability, keys, triggers, grants, Drizzle tables, SQL, or migrations. Those belong to later approved checkpoints. Nothing in this document authorizes a database mutation, application integration, Preview or Production rollout, image retention, account system, or new product capability.
 
@@ -39,6 +39,27 @@ The simplified domain map is in [database-erd-master-map-v3.mmd](./database-erd-
 - General culinary knowledge never overrides a source-stated menu fact and is never presented as restaurant-confirmed.
 - Deferred user and community tables do not become active merely because they appear in a future diagram.
 - Every implementation slice receives its own Development validation and Preview/Production gate. There is no final all-at-once C2.9 rollout.
+
+## C2.2-A1 culinary and sensory preservation audit
+
+C2.2-A1 found that the C1 runtime contract was intact, but the first v3 wording was too generic to guarantee that a future relational design would preserve it. The following matrix closes that logical gap without changing the canonical schema or activating the deferred knowledge domain.
+
+| Required contract | Verification after C2.2-A1 |
+| --- | --- |
+| Separate sensory axes | Preserved as basic tastes, flavor notes, textures, heat, and richness. |
+| No ambiguous `taste` bucket | Basic tastes, flavor notes, and textures have separate vocabularies and typed claim details. No generic `taste` value may represent them. |
+| Heat/richness scale isolation | Preserved as different ordered scales. Every value reference includes its scale identity, so a heat value cannot satisfy a richness relation or the reverse. |
+| Baseline distribution metadata | Typed claims can carry typical value, minimum and maximum where ordered, plus prevalence, variability, calibrated culinary confidence, basis, provenance, review state, and profile version. |
+| Variable culinary baseline | A baseline describes a reviewed distribution across preparations, regions, or sources. It is not a universal assertion about every restaurant instance. |
+| Ingredient roles | Baseline ingredient claims distinguish `core`, `typical`, `optional`, `regional_variant`, and `preparation_dependent`. These roles are separate from C1 evidence basis. |
+| Menu precedence | Frozen as `source_stated > inferred_from_source > culinary_baseline > unknown`. |
+| Baseline fill behavior | Baseline claims fill only missing context, retain a visible culinary-baseline label, and are suppressed for the affected axis when menu evidence contradicts them. |
+| Unknown safety | `unknown` never means absent, false, allergen-safe, dietary-safe, or available for an automatic match. |
+| Heat adjustability | User-selectable spice or heat adjustment is a separate menu-specific claim and never rewrites observed or typical heat. |
+| Relational typed claims | Common metadata may be shared, but every claim owns exactly one allowed typed detail. Polymorphic `(type, id)` references, unrestricted EAV, and opaque claim-value JSON are forbidden. |
+| Knowledge lifecycle | Generation origin, review state, and lifecycle are separate. Model-generated, unreviewed, reviewed, superseded, and retired states remain distinguishable. |
+
+The exact live vocabulary and normalization behavior remain owned by `foodseyo-consistency-v1` in [analysis-consistency.md](./analysis-consistency.md) and `src/lib/analysis-consistency/profile.ts`. Future knowledge profiles record the consistency-profile version they use; they do not silently reinterpret an older canonical result under a newer vocabulary.
 
 ## Implemented foundation: C2.1
 
@@ -106,6 +127,19 @@ C2.2-B must translate these into an enforcement matrix:
 - projections are immutable and are not used by the live route in the first implementation checkpoint;
 - invalidation or expiry of the source snapshot never silently turns a derived projection into an independently trusted analysis.
 
+### Successful materialization and failure observability
+
+Representing success directly through `menu_snapshots` remains accepted, subject to these future physical-contract requirements:
+
+- `(analysis_snapshot, projector_version)` is the idempotency key for a successful projection;
+- the `menu_snapshots` row and all section, item, and price rows are inserted in one transaction;
+- any projection, constraint, or commit failure leaves no menu snapshot or child row;
+- a uniqueness race re-reads the already committed projection instead of writing a second structure;
+- failed work is never represented by a partial or failed `menu_snapshots` row;
+- safe operational observability records only a correlation identifier, source snapshot identifier, projector version, stage/failure code, duration, structural counts, and outcome—never menu text or canonical payload data.
+
+The first synchronous slice may satisfy failure observability through allowlisted application telemetry. If durable retries or historical attempt audit become an operational requirement, a separately approved append-only `menu_projection_attempts` entity may be introduced. It must remain outside the menu structure, must not count as a successful projection, and must never authorize partial child rows. This preserves failure evidence without reviving the omitted `analysis_snapshot_materializations` status table.
+
 ## Restaurant and location identity: deferred until T7/T8
 
 ```mermaid
@@ -162,6 +196,7 @@ erDiagram
   GEOGRAPHIC_REGIONS ||--o{ DISH_CONCEPT_REGIONS : classifies
   DISH_CONCEPTS ||--o{ DISH_CONCEPT_PROFILE_VERSIONS : versioned_as
   DISH_CONCEPT_PROFILE_VERSIONS ||--o{ KNOWLEDGE_CLAIMS : contains
+  KNOWLEDGE_CLAIMS ||--|| KNOWLEDGE_TYPED_DETAILS : has_exactly_one
   KNOWLEDGE_CLAIMS ||--o{ KNOWLEDGE_CLAIM_EVIDENCE : supported_by
   KNOWLEDGE_SOURCES ||--o{ KNOWLEDGE_CLAIM_EVIDENCE : supports
 ```
@@ -171,8 +206,8 @@ erDiagram
 - `dish_concepts`, `dish_concept_aliases`, `dish_concept_relationships`
 - `cuisines`, `geographic_regions`, `dish_concept_cuisines`, `dish_concept_regions`
 - `dish_concept_profile_versions`
-- `sensory_terms`
-- `ordinal_scales`, `ordinal_scale_values`
+- C1-aligned `basic_taste_terms`, `flavor_note_terms`, and `texture_terms`
+- separate heat and richness ordered scales, represented through scale-bound ordinal values
 - `ingredient_categories`, `ingredient_concepts`, `ingredient_aliases`
 - `preparation_methods`
 - `dietary_traits`, `allergens`
@@ -180,7 +215,27 @@ erDiagram
 
 ### Replaced claim model
 
-`knowledge_claims` is the real parent of one typed claim detail. Typed details may cover sensory, ordinal, ingredient, preparation, dietary, or allergen assessment. `knowledge_claim_evidence` references that parent, so evidence never uses an unenforceable `(fact_type, fact_id)` pseudo-foreign-key.
+`knowledge_claims` is the real parent of exactly one typed claim detail. The closed detail family covers basic taste, flavor note, texture, heat, richness, ingredient, preparation, dietary, and allergen claims. The logical names are distinct even if a later physical design safely shares infrastructure:
+
+- a basic-taste detail references one of `sweet`, `salty`, `sour`, `bitter`, or `savory` and may carry ordered intensity range;
+- a flavor-note detail references the C1 flavor-note vocabulary;
+- a texture detail references the C1 texture vocabulary;
+- a heat detail references only the heat scale and may carry minimum, typical, and maximum heat values;
+- a richness detail references only the richness scale and may carry minimum, typical, and maximum richness values;
+- an ingredient detail references an ingredient concept and one of `core`, `typical`, `optional`, `regional_variant`, or `preparation_dependent`;
+- preparation, dietary, and allergen details retain their own typed targets and safety semantics.
+
+Common claim metadata owns prevalence, variability, calibrated culinary confidence, basis, generation origin, provenance, review state, lifecycle state, and profile version. Minimum, typical, and maximum values live only in a detail whose value domain is ordered. `knowledge_claim_evidence` references the real claim parent, so evidence never uses an unenforceable `(fact_type, fact_id)` pseudo-foreign-key.
+
+The typed-detail family is closed and relational. A claim must have exactly one matching detail, enforced later through subtype keys and a constrained transaction or deferred database rule. An unrestricted `attribute_name`/`attribute_value` EAV table, arbitrary `claim_type`, or opaque JSON value cannot replace typed details.
+
+Generation origin, review state, and lifecycle are orthogonal:
+
+- model-generated knowledge is marked `model_generated` at origin and begins `unreviewed`;
+- review may move a claim to `reviewed` or reject it, but it never rewrites its generation origin;
+- replacement creates a new version and marks the old claim or profile `superseded`;
+- intentionally withdrawn knowledge becomes `retired`;
+- only a reviewed, current profile may supply a culinary baseline.
 
 The following v2 tables are therefore not retained as independent top-level facts:
 
@@ -196,13 +251,33 @@ Their queryable attributes move into typed detail records owned by `knowledge_cl
 
 The v2 `ingredient_dietary_traits` and `ingredient_allergens` direct links are also removed. Ingredient-derived dietary or allergen information is contextual knowledge with provenance, review state, uncertainty, and versioning—not timeless truth and never a restaurant safety guarantee.
 
+### Frozen sensory and baseline semantics
+
+The five C1 axes remain separate:
+
+- basic tastes: `sweet`, `salty`, `sour`, `bitter`, `savory`, with the C1 1–3 intensity domain;
+- flavor notes: the versioned C1 flavor-note vocabulary;
+- textures: the versioned C1 texture vocabulary;
+- heat: `none < mild < medium < hot < very_hot`, plus non-orderable `unknown`;
+- richness: `light < moderate < rich`, plus non-orderable `unknown`.
+
+Basic taste, flavor note, and texture values cannot share an ambiguous `taste` column or term namespace. Heat and richness cannot share values merely because both are ordinal: every value is identified together with its scale, and every typed claim constrains the expected scale.
+
+A dish-concept profile is a reviewed culinary baseline, not a recipe guarantee. It may represent a typical value, minimum/maximum range, prevalence across known preparations, variability by region or preparation, calibrated culinary confidence, basis, provenance, review state, and immutable profile version. These fields describe uncertainty and distribution; they do not assert that every restaurant preparation has the same characteristics.
+
+Ingredient role and evidence basis are different dimensions. `core`, `typical`, `optional`, `regional_variant`, and `preparation_dependent` describe the baseline relationship between an ingredient and a dish concept. C1 `stated`, `typical`, and `uncertain` describe how a menu-specific ingredient claim was obtained. Neither dimension may silently promote the other.
+
 ### Deferred knowledge invariants
 
 - profile corrections append a new version;
 - at most one published profile version is active for one concept and policy;
-- every published claim has review state and sufficient provenance;
+- every published claim is reviewed, current, and has sufficient provenance;
+- generation origin, review state, and active/superseded/retired lifecycle remain independently queryable;
+- ordered claims preserve minimum <= typical <= maximum when those values are present;
+- prevalence, variability, and confidence use explicit bounded domains rather than uncalibrated free text;
 - each ordinal value belongs to the stated scale;
-- minimum, typical, and maximum ordering is valid;
+- heat claims accept only heat-scale values and richness claims accept only richness-scale values;
+- exactly one typed detail exists per claim, and its type agrees with the parent claim kind;
 - relationship type defines directionality, symmetry, duplicate reversal, and cycle policy;
 - no model-created knowledge becomes published solely because it was generated;
 - source-stated menu claims remain separate from culinary baseline claims.
@@ -216,6 +291,8 @@ Version 3 changes:
 - `menu_item_concept_links` becomes `menu_item_concept_candidates`; one selected candidate is not automatically a confirmed identity.
 - `menu_item_analyses` must preserve composite agreement among menu item, analysis snapshot, evidence set, and analysis contract.
 - A common `menu_item_claims` parent owns basis, availability, uncertainty, and preserved evidence reference; typed sensory, ordinal, ingredient, preparation, dietary, and allergen details hang from it.
+- Menu-specific basic taste, flavor note, texture, heat, and richness claims retain the same separated axes as C1.
+- `menu_item_heat_adjustability_claims` records source-supported selectable spice levels or adjustment availability separately from observed menu heat and typical culinary-baseline heat.
 - Evidence links reference the claim parent, not a polymorphic table/id pair.
 - `menu_item_effective_profiles` is not one-to-one with an analysis. Multiple immutable outputs may exist for different merge-policy and baseline-profile versions.
 - An effective profile records the exact merge policy and every baseline version used.
@@ -229,7 +306,7 @@ source_stated
 > unknown
 ```
 
-A contradiction in source evidence suppresses only the affected baseline claim. `unknown` remains unknown. Dietary or allergen safety is never derived as a guaranteed result.
+A culinary baseline may fill only an otherwise missing menu context and must remain labeled as baseline rather than restaurant-confirmed. A contradiction in source evidence suppresses only the affected baseline claim; it never mutates the baseline profile or unrelated axes. `unknown` remains unknown and never means absent, false, allergen-safe, dietary-safe, or automatically compatible. Heat adjustability does not lower or raise the observed or typical heat claim; it is a separate source-backed option.
 
 ## User, personalization, Passport, and community: excluded
 
@@ -261,8 +338,8 @@ A future audit system must use allowlisted safe event fields. Generic `before_js
 | Restaurant | Restaurants, aliases, locations, two scope-specific external-ref tables | `menu_snapshot_restaurant_links` → candidates; remove ownership semantics and numeric-confidence truth | Entire area after T7/T8 |
 | Persisted evidence | None in active model | Existing evidence set remains fingerprint identity only | Artifacts and members blocked by retention decision |
 | Dish concepts | Concepts, aliases, relationships, cuisine/region mappings, profile versions | Relationship semantics and active-version policy must be explicit | Entire area deferred |
-| Vocabularies | Sensory terms, ordinal scales/values, ingredients, preparation, dietary traits, allergens, sources | Ordinal value must remain bound to its scale | Entire area deferred |
-| Knowledge facts | None as standalone v2 fact rows | Common `knowledge_claims`, typed details, and `knowledge_claim_evidence` | Ingredient truth links removed pending versioned claim design |
+| Vocabularies | Separate C1 basic-taste, flavor-note, texture vocabularies; scale-bound heat/richness values; ingredients, preparation, dietary traits, allergens, sources | No generic `taste`; heat/richness scale identity remains part of every value reference | Entire area deferred |
+| Knowledge facts | None as standalone v2 fact rows | Common `knowledge_claims`, exactly one relational typed detail, and `knowledge_claim_evidence` | EAV/opaque JSON and ingredient truth links rejected |
 | Menu analysis | Menu item analyses and typed query intent | Candidate naming, common claim parent, composite identity, versioned effective profiles | Entire area deferred |
 | User/community | None in active model | Future bounded-context redesign | All v2 user/community tables excluded |
 | Audit | Safe structural events only in future | Remove generic entity pointer and before/after payload | Generic `audit_events` excluded |
@@ -276,9 +353,12 @@ A future audit system must use allowlisted safe event fields. Generic `before_js
 5. A selected concept or restaurant candidate is at most one per exact context; any “must have one” rule belongs to a guarded state transition.
 6. Symmetric and directional dish relationships require different duplicate and cycle rules.
 7. Every evidence link must target a real claim parent with an enforceable foreign key.
-8. Soft deletion cannot silently free a natural identifier unless reuse policy explicitly allows it.
-9. Append-only and immutable are permission and transaction rules, not documentation adjectives.
-10. Foreign-key existence and foreign-key lookup indexing are separate physical-design checks.
+8. Each knowledge or menu claim must own exactly one allowed typed detail that agrees with its claim kind.
+9. Heat and richness values must remain bound to their distinct scales through enforceable relational keys.
+10. Heat adjustability must not reuse the observed or baseline heat relation.
+11. Soft deletion cannot silently free a natural identifier unless reuse policy explicitly allows it.
+12. Append-only and immutable are permission and transaction rules, not documentation adjectives.
+13. Foreign-key existence and foreign-key lookup indexing are separate physical-design checks.
 
 ## Unresolved product decisions
 
@@ -300,12 +380,18 @@ These decisions are recorded for C2.2-C. Each blocks only the affected domain.
 | P-12 | Store allergen severity or medical-adjacent profile data? | No | Personalization |
 | P-13 | Food Passport visibility and deletion defaults? | Private concept only; no implementation | Passport |
 | P-14 | Review, media, moderation, and privacy policy? | No community storage | Community |
+| P-15 | How are culinary prevalence, variability, and confidence calibrated? | Use no public numeric certainty and publish no baseline until bounded semantics are reviewed | Knowledge publication |
+| P-16 | Which source-backed heat-adjustment states are supported? | Preserve only explicit source text; do not infer adjustability | Menu heat-adjustability claims |
 
 ## Revised checkpoint order
 
 ### C2.2-A — logical model audit
 
 Completed by this document. No database or runtime change.
+
+### C2.2-A1 — culinary-contract gap audit
+
+Completed by the preservation matrix and typed-claim clarifications above. The C1 runtime vocabulary, canonical schema, and C2.1 physical database remain unchanged.
 
 ### C2.2-B — physical integrity contract
 
@@ -350,7 +436,7 @@ Development migration and adversarial validation
 
 ## C2.2-B entry gate
 
-C2.2-B may begin only from this v3 scope and must not:
+C2.2-B may begin only from this v3 plus C2.2-A1 scope and must not:
 
 - redefine the four C2.1 tables;
 - include evidence artifacts, restaurant identity, knowledge, user, or community tables;

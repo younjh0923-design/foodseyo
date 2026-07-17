@@ -1,21 +1,23 @@
 # Foodseyo Codex Handoff
 
 **Updated:** 2026-07-17
-**Current checkpoint:** C2.2-A logical ERD audit complete locally; C2.2-B is next but not started
+**Current checkpoint:** C2.2-A1 culinary-contract gap audit complete locally; C2.2-B is next but not started
 
 This file is intentionally operational and may change at every checkpoint. Stable product intent belongs in [PROJECT_OVERVIEW.md](./PROJECT_OVERVIEW.md).
 
 ## Repository position
 
-- Current branch: `c2.2-a-erd-logical-audit`
+- Current branch: `c2.2-a1-culinary-contract-audit`
 - C2.2-A starting HEAD and preserved C2.1-G commit: `e08249182241d30a21aeebd17a0cd75e110591af`
-- C2.2-A delivery: the local checkpoint commit containing this handoff; use `git rev-parse HEAD` for its immutable SHA
+- C2.2-A delivery: `6c11da84325373eedce5d6e5cf551912e9c8205a`
+- C2.2-A1 starting HEAD: `6c11da84325373eedce5d6e5cf551912e9c8205a`
+- C2.2-A1 delivery: the local checkpoint commit containing this handoff; use `git rev-parse HEAD` for its immutable SHA
 - Local `main`: `cfbb93750c0b8f41f470963eddaf203d3b82457f`
 - Local `origin/main` baseline: `d3c255d29b4029589e6f6b562a482134c0e28b99`
-- Ahead/behind at the committed C2.2-A checkpoint: `11/0`.
+- Ahead/behind at the committed C2.2-A1 checkpoint: `12/0`.
 - GitHub branch `c2.1-g-rollout-review` points to exact preserved commit `e08249182241d30a21aeebd17a0cd75e110591af`; no pull request or `main` change occurred.
 - That branch push created automatic Ready Preview deployment `dpl_3xMW3EWK5PWYpAEDPPhsnSk4akSZ` from the exact Git SHA. It was not promoted, tested through the live POST route, or accompanied by a Preview database migration.
-- The C2.2-A branch and checkpoint commit have not been pushed or deployed.
+- The C2.2-A and C2.2-A1 branches and checkpoint commits have not been pushed or deployed.
 
 The only untracked and unstaged files are:
 
@@ -57,6 +59,7 @@ They are reference artifacts only. Do not stage, modify, execute, or treat the s
 - C2.1-G local rollout-readiness review, staged Preview plan, recovery design, Production go/no-go gate, and competition freeze recommendation
 - C2.1-H exact C2.1-G feature-branch preservation and read-only automatic Preview provenance verification
 - C2.2-A complete v2 logical audit, scoped ERD v3, entity responsibilities, relationship corrections, and unresolved decision register
+- C2.2-A1 C1 culinary/sensory preservation audit, typed-claim clarification, variable-baseline contract, and materialization-failure observability boundary
 - project context freeze separating stable product intent, current handoff state, and the public README
 
 Development contains four empty application tables and one migration-ledger row. Preview and Production contain no Foodseyo application tables. The exact-cache route exists in the preserved automatic Preview build, but the absent Preview schema means that build is not a validated database rollout and its analysis POST route was not invoked. The deployed Production application remains on its existing uncached provider flow.
@@ -75,9 +78,19 @@ The v3 logical model and master map are [database-logical-model-v3.md](./databas
 
 `pnpm verify:full`, `git diff --check`, and repository security validation pass at the completed worktree. The supplied DOCX and SQL references remain untracked and unstaged. No push, deployment, migration, Preview/Production mutation, live POST invocation, or OpenAI request occurred.
 
+## Completed C2.2-A1
+
+C2.2-A1 compared logical ERD v3 with the canonical `FoodseyoAnalysis` types, `foodseyo-consistency-v1`, C1 repeatability decisions, and the active product and safety contracts. The C1 runtime contract was already sound; the gap was that v3's generic vocabulary and claim wording did not fully prevent a future relational design from collapsing established axes or weakening baseline semantics.
+
+The corrected logical contract now explicitly preserves separate basic-taste, flavor-note, texture, heat, and richness axes; scale-bound heat and richness values; variable versioned baselines with range, prevalence, variability, confidence, basis, provenance, review, and lifecycle; ingredient roles distinct from menu evidence basis; strict menu precedence and unknown safety; separate source-backed heat adjustability; and exactly one relational typed detail per common claim parent. EAV, opaque claim JSON, and unverifiable polymorphic references are rejected.
+
+Successful projection remains represented directly by one unique `menu_snapshots` row per analysis snapshot and projector version. The future physical contract must insert the snapshot and all children atomically, roll back every structural row on failure, re-read a committed winner after a uniqueness race, and keep failure observability in allowlisted safe telemetry rather than partial menu rows. A durable attempt entity requires a separate future justification.
+
+`pnpm verify:full`, `git diff --check`, and repository security validation pass at the completed C2.2-A1 worktree. No runtime code, canonical schema, C2.1 database schema, Drizzle definition, SQL, migration, repository, database connection, platform resource, OpenAI call, push, or deployment changed.
+
 ## Next checkpoint: C2.2-B
 
-C2.2-B is a documentation-only physical integrity contract. It may specify columns, PostgreSQL types, nullability, defaults, candidate keys, foreign keys, deletion/update actions, uniqueness, checks, partial or exclusion indexes, immutability, grants, and enforcement ownership for the implemented C2.1 compatibility boundary and only `menu_snapshots`, `menu_sections`, `menu_items`, and `menu_item_prices`.
+C2.2-B is a documentation-only physical integrity contract. It starts from the C2.2-A plus C2.2-A1 logical source of truth and may specify columns, PostgreSQL types, nullability, defaults, candidate keys, foreign keys, deletion/update actions, uniqueness, checks, partial or exclusion indexes, immutability, grants, and enforcement ownership for the implemented C2.1 compatibility boundary and only `menu_snapshots`, `menu_sections`, `menu_items`, and `menu_item_prices`.
 
 Do not create Drizzle schema code, SQL, migration files, repositories, connections, database rows, platform changes, or live-route behavior in C2.2-B. Do not push, deploy, migrate Preview or Production, merge `main`, invoke the live POST route, or call OpenAI without a separate instruction.
 

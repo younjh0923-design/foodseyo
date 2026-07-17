@@ -1,6 +1,6 @@
 # Foodseyo Product Rules
 
-**Status:** Normative MVP definition through local C2.2-A logical audit
+**Status:** Normative MVP definition through local C2.2-A1 contract gap audit
 
 **Date:** 2026-07-17
 
@@ -63,6 +63,8 @@ Foodseyo distinguishes:
 
 General knowledge must never be presented as restaurant-confirmed. Restaurant match signals create candidates, not automatic confirmation. A `likely` match is not a numeric confidence score and should be communicated as uncertain.
 
+Any future culinary baseline remains variable by region and preparation, versioned, reviewed, and explicitly labeled. It may fill missing menu context but cannot override contradictory source evidence. Basic tastes, flavor notes, textures, heat, and richness remain separate; heat adjustability is not the same claim as observed or typical heat. Unknown culinary, dietary, or allergen information never becomes absence or safety.
+
 A user-entered restaurant name is a declaration, not independent verification. Without compatible source-stated identity it remains `likely` at restaurant scope. Source-stated names may confirm restaurant-level identity; branch scope requires preserved branch-specific evidence. Conflicting user and source names remain unconfirmed and neither identity is silently selected or combined. Location alone never confirms a restaurant or branch.
 
 Price, currency, ingredients, preparation, dietary status, review claims, popularity, and freshness must retain their actual evidence basis. Missing evidence stays missing.
@@ -118,6 +120,7 @@ The canonical reader supports legacy `FoodseyoAnalysis` `1.0.0`, C1.2 `1.1.0`, a
 - **C2.1-F:** real Development database integrity and concurrency validation completed locally; not deployed.
 - **C2.1-G:** rollout-readiness review completed locally; staged plan documented and Production rollout deferred.
 - **C2.2-A:** scoped logical ERD v3 and future-domain audit completed locally; no schema or migration.
+- **C2.2-A1:** C1 culinary and sensory contract preservation audit completed locally; no schema or migration.
 - **C2.2-B:** next physical integrity contract, limited to the existing C2.1 boundary and minimal structured-menu candidate.
 - **C2.2-C / C2.2-D:** scoped product decisions followed by unexecuted schema drafting.
 - **C2.3 candidate:** Development-only structured menu projection after the C2.2 gates.

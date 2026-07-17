@@ -18,11 +18,31 @@ flowchart LR
   end
 
   subgraph KNOWLEDGE[Deferred reviewed knowledge]
-    F[Culinary concepts and versioned claims]
-    G[Menu item claim projection]
+    F[Versioned culinary baselines]
+    K1[Basic tastes]
+    K2[Flavor notes]
+    K3[Textures]
+    K4[Heat ordered scale]
+    K5[Richness ordered scale]
+    K6[Ingredient roles and variations]
+    K7[Common claim metadata]
+    K8[Exactly one relational typed detail]
+    K9[Origin review and lifecycle]
+    K10[Source over inference over baseline over unknown]
+    G[Menu claims and separate heat adjustability]
     H[Versioned effective guidance]
+    F --> K7
+    K9 --> K7
+    K1 --> K8
+    K2 --> K8
+    K3 --> K8
+    K4 --> K8
+    K5 --> K8
+    K6 --> K8
+    K7 --> K8
+    K10 --> G
     C --> G
-    F --> H
+    K8 --> H
     G --> H
   end
 
