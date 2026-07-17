@@ -111,15 +111,8 @@ Future cache telemetry may contain only cache stage, hit/miss/busy/uncached stat
 
 C2.1 does not persist raw images; create restaurant, dish-concept, observation, or logical-menu catalogs; implement dish-level reuse; analyze links; change the canonical schema, provider prompt/schema/model defaults, or source/dish fingerprint semantics; or change UI/session behavior. C2.1-0.1 adds no database dependency, connection, schema, migration, SQL execution, cache hit, provider bypass, or new public live error response.
 
-## Manual infrastructure prerequisites
+## Infrastructure prerequisite status
 
-Before C2.1-B, the user must complete the C2.1-A infrastructure boundary outside this checkpoint:
+C2.1-A is complete. The verified non-secret architecture, environment mapping, least-privilege roles, variable scopes, operational limits, and C2.1-B entry boundary are recorded in [database-environment-setup.md](./database-environment-setup.md).
 
-- create or select the managed Neon account, project, and region;
-- create isolated Development, Preview, and Production database branches or projects;
-- authorize the existing Vercel project integration without relinking or creating a second project;
-- create separate least-privilege runtime and migration roles;
-- configure environment-scoped runtime and migration variable names through the hosting dashboards;
-- confirm backup/PITR, restore, TLS, connection-limit, and operational monitoring policies.
-
-Return only non-secret evidence such as project/branch names, selected region, environment-scope confirmation, role names, and readiness screenshots with values redacted. Never paste or commit passwords, tokens, database URLs, connection strings, API keys, or environment values.
+The infrastructure setup does not activate the cache or authorize schema creation outside C2.1-B. Passwords, tokens, database URLs, connection strings, API keys, hostnames, and environment values remain excluded from repository files and reports.
