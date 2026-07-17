@@ -2,7 +2,7 @@
 
 This file is the current source of truth for the C2.1 database/cache contract. The supplied `Foodseyo_Database_Architecture_v1.2.docx` and `Foodseyo_PostgreSQL_Schema_v1.2.sql` remain reference artifacts. Where they differ from this file, this file governs C2.1. The executable Drizzle schema and first reviewed Development migration were created in C2.1-B; the formal architecture artifact can be regenerated from the implemented schema afterward.
 
-The contract-freezing checkpoint did not create a database, implement cache lookup or PostgreSQL repositories, acquire a real lease, persist a snapshot, or change the live API response. C2.1-B implemented only the physical schema and first Development migration. C2.1-C implemented the isolated runtime client and repository primitives. C2.1-D composed exact lookup, quarantine, provider bypass, and best-effort persistence into the local analysis route. C2.1-E now implements the frozen pre-provider ownership and public busy/indeterminate policy locally. The integration has not been pushed or deployed.
+The contract-freezing checkpoint did not create a database, implement cache lookup or PostgreSQL repositories, acquire a real lease, persist a snapshot, or change the live API response. C2.1-B implemented only the physical schema and first Development migration. C2.1-C implemented the isolated runtime client and repository primitives. C2.1-D composed exact lookup, quarantine, provider bypass, and best-effort persistence into the local analysis route. C2.1-E implements the frozen pre-provider ownership and public busy/indeterminate policy locally. C2.1-F independently validates that implementation against adversarial real-PostgreSQL behavior in Development. The integration has not been pushed or deployed.
 
 ## Physical implementation status
 
@@ -45,7 +45,11 @@ C2.1-E adds:
 - pre-ownership-only uncached fail-open behavior and fail-closed behavior from the moment acquisition may have created state;
 - deterministic concurrency, corruption, ambiguous-acquisition, expired-lease, owner-only persistence, and public-response validation with zero network or OpenAI calls.
 
-The C2.1-E implementation and deterministic suite are complete in the local worktree. The controlled real PostgreSQL verifier passed independently on ephemeral Development child branches `br-damp-poetry-awrh7604` and `br-wild-recipe-awnapjbv`. Each run connected over pooled TLS as `foodseyo_runtime`, verified exactly one owner and one provider call, duplicate snapshot reuse, active-owner 409 behavior, strict owner persistence, expired-lease recovery, and zero OpenAI calls. Both exact child branches were deleted by the guarded cleanup path. C2.1-F remains a separate required integrity and concurrency gate before any rollout.
+The C2.1-E implementation and deterministic suite are complete in the local worktree. The controlled real PostgreSQL verifier passed independently on ephemeral Development child branches `br-damp-poetry-awrh7604` and `br-wild-recipe-awnapjbv`. Each run connected over pooled TLS as `foodseyo_runtime`, verified exactly one owner and one provider call, duplicate snapshot reuse, active-owner 409 behavior, strict owner persistence, expired-lease recovery, and zero OpenAI calls. Both exact child branches were deleted by the guarded cleanup path. C2.1-F remained a separate required integrity and concurrency gate and is completed by the independent validation below.
+
+C2.1-F adds no product capability, schema, migration, or Production behavior. Its independent validator runs four five-caller contention rounds per ephemeral branch and covers one-owner/one-provider election, completed-snapshot reuse, bounded 409 polling, indeterminate 503 behavior, append-only expired-lease recovery, owner failure, strict owner-only persistence, rollback before commit, ambiguous acquisition and persistence outcomes, and corrupt, invalid, expired, fingerprint-corrupt, or identity-mismatched snapshots. It also forces both unconfirmed and failed quarantine outcomes and confirms that neither path returns corrupt data or persists a replacement.
+
+The C2.1-F validator passed with 67 assertions on each of ephemeral Development child branches `br-morning-lake-awicgpoy` and `br-crimson-fire-awezd52r`. Both used pooled TLS as `foodseyo_runtime`, made zero HTTP or OpenAI calls, and were deleted and confirmed absent. Read-only checks before and after the runs confirmed zero application rows on permanent Development. No C2.1-E contract defect required a Production-code, schema, or migration correction.
 
 ## Exact identity and immutable contracts
 
@@ -152,7 +156,7 @@ Future cache telemetry may contain only cache stage, hit/miss/busy/uncached stat
 
 ## C2.1 non-goals
 
-C2.1 does not persist raw images; create restaurant, dish-concept, observation, or logical-menu catalogs; implement dish-level reuse; analyze links; change the canonical schema, provider prompt/schema/model defaults, or source/dish fingerprint semantics; or change UI/session behavior. C2.1-E adds only the already frozen ownership and 409/503 cache policy locally. There is still no Preview/Production migration, push, deployment, or authorization to roll out cache behavior. The D→E→F rollout gate remains mandatory.
+C2.1 does not persist raw images; create restaurant, dish-concept, observation, or logical-menu catalogs; implement dish-level reuse; analyze links; change the canonical schema, provider prompt/schema/model defaults, or source/dish fingerprint semantics; or change UI/session behavior. C2.1-E adds only the already frozen ownership and 409/503 cache policy locally, and C2.1-F validates it without expanding scope. The D→E→F gate is complete locally, but there is still no Preview/Production migration, push, deployment, or authorization to roll out cache behavior. C2.1-G remains a separate reviewed rollout checkpoint.
 
 ## Infrastructure prerequisite status
 

@@ -37,7 +37,7 @@ The Home link field validates HTTP/HTTPS syntax only. It does not fetch or analy
 - controlled vocabularies, deterministic wording, semantic validation, and versioned fingerprints reduce avoidable drift;
 - automated validation is network-free and never makes a paid OpenAI request.
 
-Neon/Vercel Development, Preview, and Production database environments are isolated. The four-table exact-cache schema exists only in Development today. Local C2.1-E adds pre-provider lease ownership, duplicate coordination, bounded polling, expired-lease recovery, strict owner-only persistence, and the frozen 409/503 policy above the C2.1-D exact lookup and quarantine path. Deterministic validation and controlled PostgreSQL concurrency verification passed on isolated ephemeral Development child branches that were deleted afterward. Preview/Production migrations and application deployment of database behavior have not started, and the required C2.1-F gate still blocks rollout.
+Neon/Vercel Development, Preview, and Production database environments are isolated. The four-table exact-cache schema exists only in Development today. Local C2.1-E adds pre-provider lease ownership, duplicate coordination, bounded polling, expired-lease recovery, strict owner-only persistence, and the frozen 409/503 policy above the C2.1-D exact lookup and quarantine path. C2.1-F independently passed deterministic and adversarial real-PostgreSQL validation on disposable Development child branches, including repeated concurrency, rollback, ambiguous outcomes, and corrupt-snapshot quarantine failures. Every child branch was deleted and permanent Development remained empty. Preview/Production migrations and application deployment of database behavior have not started; C2.1-G remains the required reviewed rollout boundary.
 
 ## Run locally
 
@@ -65,6 +65,14 @@ pnpm verify:full        # lint, typecheck, all network-free tests, build, securi
 
 `pnpm test` remains the complete network-free regression suite. It never runs the opt-in paid smoke command.
 
+The C2.1-F real-PostgreSQL gate is an explicit authenticated Development-only operation, separate from the network-free suite:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\run-c2-1-f-development-validation.ps1
+```
+
+The guarded runner checks permanent Development read-only, validates on two one-hour child branches, deletes each exact branch, and verifies that no temporary branch remains. It never calls OpenAI.
+
 ## Codex and GPT-5.6
 
 GPT-5.6 performs the explicitly triggered menu-image interpretation behind a strict structured-output boundary. Application code, not the model, owns IDs, evidence links, canonical validation, deterministic wording, safety rules, and result storage.
@@ -88,7 +96,7 @@ Codex has supported the repository-wide implementation workflow: product-scope c
 - C2.1-C — pooled runtime database client and repositories (completed)
 - C2.1-D — exact snapshot cache integration (completed locally; not deployed)
 - C2.1-E — lease, concurrency, polling, and failure policy (completed locally; not deployed)
-- C2.1-F — real Development database integrity and concurrency validation
+- C2.1-F — real Development database integrity and concurrency validation (completed locally; not deployed)
 - C2.1-G — reviewed Preview and Production rollout
 - C2.2–C2.4 — post-C2.1 planning audit before broader relational expansion
 - T7 — restaurant/menu link analysis after C2

@@ -1,6 +1,6 @@
 # Foodseyo Menu Image Analysis
 
-**Status:** C2.1-D exact-cache integration completed locally; rollout blocked by C2.1-E and C2.1-F
+**Status:** C2.1-F Development validation completed locally; rollout blocked until C2.1-G
 
 **Date:** 2026-07-15
 

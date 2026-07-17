@@ -97,7 +97,7 @@ The canonical reader supports legacy `FoodseyoAnalysis` `1.0.0`, C1.2 `1.1.0`, a
 - restaurant identification before post-T7 reevaluation;
 - map-app share-to-Foodseyo integration;
 - authentication, permanent user history, or shareable result links;
-- deployed application cache behavior before C2.1-E and required C2.1-F validation;
+- deployed application cache behavior before the reviewed C2.1-G rollout checkpoint;
 - Preview or Production database rollout before C2.1-G.
 
 ## Roadmap
@@ -115,7 +115,7 @@ The canonical reader supports legacy `FoodseyoAnalysis` `1.0.0`, C1.2 `1.1.0`, a
 - **C2.1-C:** pooled runtime database client, validated repositories, atomic ready-snapshot persistence, and rollback-only Development verification completed; no live cache behavior added.
 - **C2.1-D:** exact snapshot cache lookup, hit/miss, quarantine, and best-effort post-provider persistence completed locally; no rollout or deployment.
 - **C2.1-E:** pre-provider lease ownership, concurrency, polling, and failure policy completed locally; not deployed.
-- **C2.1-F:** real Development database integrity and concurrency validation.
+- **C2.1-F:** real Development database integrity and concurrency validation completed locally; not deployed.
 - **C2.1-G:** reviewed Preview and Production rollout.
 - **C2.2–C2.4:** planning audit after C2.1-G and before broader relational expansion.
 - **T7.1–T7.4:** restaurant/menu link analysis after C2.

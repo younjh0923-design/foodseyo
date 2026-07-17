@@ -148,7 +148,7 @@ C2.1-D connects the local menu-analysis route to a lazy server-only exact-cache 
 
 The official Vercel CLI injected only the Development environment into the verification process without writing a database credential to a repository file or printing a value. The check connected as `foodseyo_runtime` over pooled TLS, created a synthetic corrupt row inside an outer transaction, confirmed quarantine, persisted and re-read a valid exact snapshot, recorded zero provider calls, rolled everything back, and confirmed zero application rows afterward.
 
-This verification changed no schema or credential, used no migration role, invoked neither OpenAI nor the live analysis POST route, and touched neither Preview nor Production. The code remains local and undeployed. C2.1-E pre-provider ownership, duplicate-request control, polling, and recovery is next; rollout remains prohibited until C2.1-E and the required C2.1-F validation pass.
+This verification changed no schema or credential, used no migration role, invoked neither OpenAI nor the live analysis POST route, and touched neither Preview nor Production. The code remains local and undeployed. C2.1-E later added pre-provider ownership, duplicate-request control, polling, and recovery; C2.1-F subsequently validated those contracts against real Development PostgreSQL behavior.
 
 ## C2.1-E Development ownership verification
 
@@ -159,6 +159,12 @@ The deterministic suite verifies one owner, duplicate snapshot reuse, the 120-se
 The controlled real PostgreSQL verifier is intentionally guarded by `FOODSEYO_EPHEMERAL_DEVELOPMENT_VALIDATION=1`. `scripts/run-c2-1-e-development-validation.ps1` creates a one-hour, empty ephemeral child of Development branch `br-dark-cherry-awci0faj`, resolves a pooled `foodseyo_runtime` connection in process memory, runs the verifier, and deletes the exact child branch in `finally`. The verifier commits synthetic concurrency rows only inside that disposable branch, verifies exactly one provider owner and one ready snapshot, checks strict non-owner rejection, active-owner 409 behavior, and expired-lease recovery.
 
 Two independent controlled runs passed on `br-damp-poetry-awrh7604` and `br-wild-recipe-awnapjbv`. Each reported pooled TLS as `foodseyo_runtime`, one concurrent owner, one synthetic provider call, completed-snapshot reuse, active-owner 409, strict owner persistence, expired-lease recovery, and zero OpenAI calls. Both exact ephemeral branches reported `ephemeralBranchCleanup=deleted`. The permanent Development branch, Preview, and Production were not changed.
+
+## C2.1-F adversarial Development validation
+
+C2.1-F adds a separate guarded validator rather than broadening the C2.1-E implementation. `scripts/run-c2-1-f-development-validation.ps1` reads permanent Development only inside a read-only transaction, then runs the full fault matrix on two sequential one-hour child branches. Each child resolves a pooled `foodseyo_runtime` connection only in process memory, runs four five-caller contention rounds plus rollback, ambiguous-outcome, ownership, lease, snapshot-integrity, and quarantine-failure cases, and is deleted by exact branch ID in `finally`.
+
+Both controlled runs passed with 67 assertions on `br-morning-lake-awicgpoy` and `br-crimson-fire-awezd52r`. The runner confirmed both IDs absent after deletion and confirmed zero application rows on permanent Development before and after. The validator made zero HTTP or OpenAI calls. It changed no credential, role, schema, migration, Preview or Production state, and it did not invoke the live POST route or deploy the application.
 
 ## Authoritative platform references
 
