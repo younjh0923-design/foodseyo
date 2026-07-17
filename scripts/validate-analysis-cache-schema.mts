@@ -443,9 +443,10 @@ const packageJson = JSON.parse(
 verify(
   packageJson.dependencies?.["drizzle-orm"] === "0.45.2" &&
     packageJson.dependencies.pg === "8.22.0" &&
+    packageJson.dependencies["@vercel/functions"] === "3.7.5" &&
     packageJson.devDependencies?.["drizzle-kit"] === "0.31.10" &&
     packageJson.devDependencies["@types/pg"] === "8.20.0",
-  "database dependencies are the four reviewed exact versions",
+  "database and Fluid Compute dependencies are the reviewed exact versions",
 );
 verify(
   packageJson.scripts?.["db:migrate"]?.includes(
@@ -458,7 +459,6 @@ verify(
 );
 verify(
   [
-    "@vercel/functions",
     "@neondatabase/serverless",
     "postgres",
     "prisma",
@@ -472,7 +472,7 @@ verify(
       packageJson.dependencies?.[packageName] === undefined &&
       packageJson.devDependencies?.[packageName] === undefined,
   ),
-  "no out-of-scope database, serverless, cache, or dotenv package was added",
+  "no out-of-scope database, cache, or dotenv package was added",
 );
 
 const fingerprintFiles = [

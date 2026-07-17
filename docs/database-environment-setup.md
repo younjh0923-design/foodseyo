@@ -1,10 +1,10 @@
 # C2.1-A database environment setup
 
-**Status:** C2.1-A verified; C2.1-B Development schema verified
+**Status:** C2.1-A infrastructure, C2.1-B Development schema, and C2.1-C Development runtime repositories verified
 
 **Verified:** 2026-07-17
 
-This document records the non-secret infrastructure boundary completed in C2.1-A. It does not authorize application schema creation, migrations, repository implementation, cache integration, Production migration, or application deployment. `docs/database-cache-contract.md` remains the source of truth for the C2.1 exact-cache contract.
+This document records the non-secret infrastructure boundary completed in C2.1-A and the controlled Development verification performed in C2.1-B and C2.1-C. It does not authorize cache integration, another migration, Production migration, or application deployment. `docs/database-cache-contract.md` remains the source of truth for the C2.1 exact-cache contract.
 
 ## Infrastructure inventory
 
@@ -134,9 +134,15 @@ Drizzle's stock PostgreSQL migrator issues `CREATE SCHEMA IF NOT EXISTS` even wh
 
 The runtime role has no schema `CREATE`, table ownership, administrative role membership, database administration attributes, table-level `UPDATE`, immutable-column `UPDATE`, `DELETE`, or access to the migration ledger. Transaction-scoped capability probes confirmed that schema creation, deletion, and immutable-column updates are rejected. No default privileges were broadened.
 
-## C2.1-C boundary
+## C2.1-C Development runtime verification
 
-C2.1-C has not started. It may introduce the reviewed pooled runtime client and repository layer, using only `DATABASE_URL`, after this schema contract is accepted. It must not obtain migration credentials from Vercel runtime, migrate Preview or Production implicitly, execute the supplied v1.2 SQL reference, or change the live analysis pipeline outside its own approved checkpoint.
+C2.1-C implements a server-only, module-scoped `pg.Pool` using only the pooled `DATABASE_URL` application contract. The pool is capped at five application connections and attached to Vercel Fluid Compute lifecycle handling. Runtime configuration rejects a missing credential, a non-`foodseyo_runtime` role, a direct endpoint, and a connection contract without the required TLS and channel-binding parameters.
+
+The controlled Development check used the official Vercel CLI to inject the Development environment into one process without writing a database value to disk. It directly verified the `foodseyo_runtime` role and encrypted client socket, exercised the four repository modules and atomic ready-snapshot transaction, re-read the canonical object through all validation boundaries, and then rolled back. The four application tables contained zero rows before and after the check.
+
+The application route is not connected to these repositories. C2.1-C did not obtain a migration credential, run DDL, write or apply a migration, execute the supplied v1.2 SQL reference, migrate Preview or Production, call OpenAI, invoke the live analysis POST route, push, deploy, or start cache orchestration.
+
+The next checkpoint is C2.1-D implementation and network-free validation of exact snapshot lookup, hit/miss behavior, and corrupt-snapshot quarantine. It must not be rolled out or deployed before C2.1-E ownership behavior is complete and the required C2.1-F Development validation passes.
 
 ## Authoritative platform references
 

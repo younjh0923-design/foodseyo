@@ -85,9 +85,10 @@ The database/cache work is an enabling trust layer, not the primary product pitc
 - Vercel application infrastructure
 - isolated Neon Development, Preview, and Production branches
 - Drizzle and PostgreSQL four-table exact-cache schema on Development only
+- server-only pooled PostgreSQL runtime client and validated four-table repositories
 - network-free automated validation and production build checks
 
-Runtime database repositories and cache lookup are not live yet. Preview and Production have not received the application schema.
+Runtime database repositories exist and have passed rollback-only Development verification, but cache lookup is not connected to the live analysis route. Preview and Production have not received the application schema.
 
 ## Explicit non-goals for the active MVP
 
@@ -112,8 +113,8 @@ The repository may retain compatibility types or clearly labeled deterministic d
 
 ### C2.1 exact-cache runtime
 
-1. **C2.1-C:** pooled runtime database client, repositories, validated reads/writes, and atomic ready-snapshot persistence.
-2. **C2.1-D:** exact snapshot lookup, cache hit/miss behavior, and corrupt-snapshot quarantine.
+1. **C2.1-C:** pooled runtime database client, repositories, validated reads/writes, and atomic ready-snapshot persistence — completed.
+2. **C2.1-D:** exact snapshot lookup, cache hit/miss behavior, and corrupt-snapshot quarantine — next.
 3. **C2.1-E:** lease ownership, duplicate-request control, bounded polling, and failure recovery.
 4. **C2.1-F:** real Development database integrity and concurrency tests.
 5. **C2.1-G:** explicitly reviewed Preview and Production rollout with recovery checks.

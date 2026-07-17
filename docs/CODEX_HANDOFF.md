@@ -1,19 +1,19 @@
 # Foodseyo Codex Handoff
 
 **Updated:** 2026-07-17
-**Current checkpoint:** C2.1-C ready; implementation not started
+**Current checkpoint:** C2.1-C complete; C2.1-D is next but not started
 
 This file is intentionally operational and may change at every checkpoint. Stable product intent belongs in [PROJECT_OVERVIEW.md](./PROJECT_OVERVIEW.md).
 
 ## Repository position
 
 - Current branch: `c2.1-b-analysis-cache-schema`
-- Current HEAD at the start of this correction: `f34387c386f5c56fa7458f250bfa275aea0c9d8e`
-- Latest implementation commit before the documentation checkpoint: `c11332d1ed3c643257e9dc533c3e4ed118879ac8`
-- Implementation commit message: `feat: add analysis cache database schema`
+- C2.1-C starting HEAD: `bafd916b904a4a8a77fdc7fa56134cabb6a50d32`
+- Latest completed implementation before C2.1-C: `c11332d1ed3c643257e9dc533c3e4ed118879ac8`
+- C2.1-C delivery: the local checkpoint commit containing this handoff; use `git rev-parse HEAD` for its immutable SHA
 - Local `main`: `cfbb93750c0b8f41f470963eddaf203d3b82457f`
 - Local `origin/main` baseline: `d3c255d29b4029589e6f6b562a482134c0e28b99`
-- Ahead/behind at the start of this correction: `4/0`.
+- Ahead/behind before the C2.1-C commit: `5/0`.
 - No local checkpoint commit has been pushed or deployed.
 
 The only untracked and unstaged files are:
@@ -47,44 +47,18 @@ They are reference artifacts only. Do not stage, modify, execute, or treat the s
 - C2.1-A isolated Neon/Vercel database infrastructure
 - C2.1-A.1 removal of migration credentials from Vercel application runtime
 - C2.1-B exact four-table schema, reviewed Development migration, idempotency check, and least-privilege verification
+- C2.1-C pooled runtime client, validated four-table repositories, atomic ready-snapshot persistence, and rollback-only Development verification
 - project context freeze separating stable product intent, current handoff state, and the public README
 
 Development contains four empty application tables and one migration-ledger row. Preview and Production contain no Foodseyo application tables. The live menu-image API does not connect to PostgreSQL and still performs the existing uncached provider flow.
 
-The C2.1-B final validation passed lint, typecheck, all 924 network-free assertions, production build, repository security validation, and `git diff --check`.
+The C2.1-C focused checks passed 21 deterministic repository assertions and the existing 50 schema assertions. The controlled Development check used the scoped Vercel `DATABASE_URL` in process memory only, connected as `foodseyo_runtime` over a pooled TLS socket, exercised all four repositories and the atomic ready transition, rolled back, and confirmed zero application rows afterward. Final validation passed lint, typecheck, all 945 network-free assertions, the Production build, repository security validation, and `git diff --check`. No UI or user-visible application copy changed, so browser visual QA was not required.
 
-The documentation context checkpoint repeated `pnpm verify:full`: lint, typecheck, all 924 network-free assertions, production build, and repository security validation passed. `git diff --check` also passed. No UI or user-visible application copy changed, so browser visual QA was not required.
+## Next checkpoint: C2.1-D
 
-## Next checkpoint: C2.1-C
+C2.1-D may integrate exact snapshot lookup, valid hit/miss behavior, and corrupt-snapshot quarantine into the analysis orchestration with deterministic network-free tests.
 
-C2.1-C may implement:
-
-- one server-only pooled PostgreSQL runtime client using only `DATABASE_URL`;
-- repository modules for the four existing tables;
-- Zod validation at persistence and read boundaries;
-- short transactions and atomic `persistReadyAnalysisSnapshot` behavior;
-- deterministic unit tests and controlled Development database verification.
-
-C2.1-C must not:
-
-- obtain or store `DATABASE_MIGRATION_URL` in application runtime;
-- create or alter tables, write or apply another migration, or execute the supplied SQL;
-- migrate Preview or Production;
-- connect cache lookup to the live analysis route;
-- implement lease polling, duplicate-request waiting, or public cache error behavior;
-- change the provider model, prompt, canonical schema, image intake, session storage, UI, or navigation;
-- make a real OpenAI request, invoke the live analysis POST route, push, or deploy.
-
-Cache integration begins in C2.1-D, ownership/concurrency behavior in C2.1-E, real Development concurrency validation in C2.1-F, and reviewed Preview/Production rollout in C2.1-G. C2.1-D must not be rolled out or deployed before C2.1-E is complete and the required C2.1-F validation passes.
-
-## Start-of-checkpoint checklist
-
-1. Confirm the recorded feature branch and current HEAD.
-2. Confirm no tracked or staged change exists.
-3. Confirm the two reference artifacts are the only untracked files and remain unstaged.
-4. Confirm local/origin divergence without pulling or rewriting the feature branch.
-5. Read `AGENTS.md`, this handoff, the cache contract, environment setup, executable schema, and migration before C2.1-C work.
-6. Preserve the working menu-photo pipeline and use network-free tests by default.
+C2.1-D must preserve the current public behavior until its own contract is accepted. It must not add lease acquisition, duplicate-request polling, or the C2.1-E failure policy; migrate Preview or Production; call OpenAI in tests; push; deploy; or start C2.1-E. C2.1-D must not be rolled out or deployed before C2.1-E is complete and the required C2.1-F Development validation passes.
 
 ## Delivery rules
 

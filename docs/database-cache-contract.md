@@ -2,13 +2,24 @@
 
 This file is the current source of truth for the C2.1 database/cache contract. The supplied `Foodseyo_Database_Architecture_v1.2.docx` and `Foodseyo_PostgreSQL_Schema_v1.2.sql` remain reference artifacts. Where they differ from this file, this file governs C2.1. The executable Drizzle schema and first reviewed Development migration were created in C2.1-B; the formal architecture artifact can be regenerated from the implemented schema afterward.
 
-The contract-freezing checkpoint did not create a database, implement cache lookup or PostgreSQL repositories, acquire a real lease, persist a snapshot, or change the live API response. C2.1-B implements only the physical schema and first Development migration. Runtime database access and cache behavior remain deferred to C2.1-C and later checkpoints.
+The contract-freezing checkpoint did not create a database, implement cache lookup or PostgreSQL repositories, acquire a real lease, persist a snapshot, or change the live API response. C2.1-B implemented only the physical schema and first Development migration. C2.1-C now implements the isolated runtime client and repository primitives, but it does not connect them to the live route or activate cache behavior.
 
 ## Physical implementation status
 
 C2.1-B defines exactly `analysis_contracts`, `menu_evidence_sets`, `analysis_runs`, and `analysis_snapshots` in `src/lib/database/schema/analysis-cache.ts`. The reviewed migration is `0000_c2_1_b_analysis_cache_schema` and its ledger is `public.__drizzle_migrations`.
 
-The migration was applied once to Neon Development (`br-dark-cherry-awci0faj`) and a second run applied zero migrations. All four application tables remain empty. Preview (`br-misty-breeze-awy83urg`) and Production (`br-blue-night-awieb03l`) were verified through read-only transactions and were not migrated. C2.1-C has not started.
+The migration was applied once to Neon Development (`br-dark-cherry-awci0faj`) and a second run applied zero migrations. Preview (`br-misty-breeze-awy83urg`) and Production (`br-blue-night-awieb03l`) were verified through read-only transactions and were not migrated.
+
+C2.1-C adds:
+
+- a server-only module-scoped `pg.Pool` configured from `DATABASE_URL` only;
+- a five-connection application pool attached to Vercel Fluid Compute lifecycle handling;
+- parameterized repositories for all four tables;
+- strict Zod validation for repository inputs and database rows;
+- canonical structural, semantic, exact-contract, and whole-snapshot fingerprint validation;
+- one short atomic transaction that locks the owned, unexpired processing run, inserts the ready snapshot, and transitions that run to `ready`.
+
+The controlled Development verification connected as `foodseyo_runtime` through the pooled TLS contract, exercised all four repositories, re-read the validated canonical snapshot, and rolled the transaction back. All four application tables had zero rows before and after verification. No schema, migration, Preview/Production database, live API route, or provider path changed.
 
 ## Exact identity and immutable contracts
 
@@ -115,7 +126,7 @@ Future cache telemetry may contain only cache stage, hit/miss/busy/uncached stat
 
 ## C2.1 non-goals
 
-C2.1 does not persist raw images; create restaurant, dish-concept, observation, or logical-menu catalogs; implement dish-level reuse; analyze links; change the canonical schema, provider prompt/schema/model defaults, or source/dish fingerprint semantics; or change UI/session behavior. C2.1-0.1 adds no database dependency, connection, schema, migration, SQL execution, cache hit, provider bypass, or new public live error response.
+C2.1 does not persist raw images; create restaurant, dish-concept, observation, or logical-menu catalogs; implement dish-level reuse; analyze links; change the canonical schema, provider prompt/schema/model defaults, or source/dish fingerprint semantics; or change UI/session behavior. Through C2.1-C there is still no cache hit, provider bypass, lease acquisition orchestration, duplicate-request waiting, new public live error response, Preview/Production migration, or deployment.
 
 ## Infrastructure prerequisite status
 

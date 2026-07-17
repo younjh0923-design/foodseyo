@@ -10,6 +10,7 @@
     "db:check": "drizzle-kit check",
     "db:migrate": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/migrate-analysis-cache.mts",
     "db:verify-analysis-cache": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/verify-analysis-cache-database.mts",
+    "db:verify-analysis-cache-runtime": "node --no-warnings --conditions=react-server --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --env-file-if-exists=.env.local scripts/verify-analysis-cache-repositories.mts",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/validate-all.mts",
@@ -20,6 +21,7 @@
     "validate:consistency-integration": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/validate-consistency-integration.mts",
     "validate:cache-contract": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/validate-menu-cache-contract.mts",
     "validate:analysis-cache-schema": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/validate-analysis-cache-schema.mts",
+    "validate:analysis-cache-repositories": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/validate-analysis-cache-repositories.mts",
     "validate:security": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/validate-repository-security.mts",
     "verify:quick": "pnpm lint && pnpm typecheck && pnpm validate:quick",
     "verify:menu": "pnpm validate:menu",
@@ -28,10 +30,12 @@
     "verify:consistency-integration": "pnpm validate:consistency-integration",
     "verify:cache-contract": "pnpm validate:cache-contract",
     "verify:analysis-cache-schema": "pnpm validate:analysis-cache-schema",
+    "verify:analysis-cache-repositories": "pnpm validate:analysis-cache-repositories",
     "verify:full": "pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm validate:security",
     "smoke:menu-analysis": "node --conditions=react-server --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/smoke-menu-analysis.mts"
   },
   "dependencies": {
+    "@vercel/functions": "3.7.5",
     "drizzle-orm": "0.45.2",
     "lucide-react": "latest",
     "next": "latest",

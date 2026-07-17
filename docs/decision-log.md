@@ -558,3 +558,11 @@ This log records accepted product and architecture decisions frozen in T2. Chang
 - **Impact:** The active roadmap now records C2.1-A/A.1/B as complete, C2.1-C–G as staged exact-cache runtime work, and C2.2–C2.4 as a later planning audit. This documentation checkpoint changes no application behavior, database object, credential, environment, OpenAI request path, or deployment, and C2.1-C remains unstarted.
 - **Status:** Accepted
 - **Date:** 2026-07-17
+
+## D-070 — Keep C2.1-C repositories isolated from live cache behavior
+
+- **Decision:** C2.1-C uses one server-only, module-scoped `pg.Pool` configured only from the pooled `DATABASE_URL`, capped at five application connections, and attached to Vercel Fluid Compute lifecycle handling. Four parameterized repository modules validate inputs and rows with Zod. Canonical snapshots additionally require structural, semantic, exact-contract, and whole-result-fingerprint agreement. `persistReadyAnalysisSnapshot` locks the owned, unexpired processing run and performs snapshot insertion plus the `ready` transition in one short transaction.
+- **Reason:** The storage boundary and atomic invariants must be independently testable before cache lookup or concurrency policy changes the proven live provider path. A narrow runtime credential, bounded pool, and validated repository boundary reduce the chance of connection amplification, DDL access, or corrupt canonical reuse.
+- **Impact:** Deterministic tests cover the four repositories, integrity rejection, commit, and rollback behavior. A controlled Development run connects as `foodseyo_runtime`, exercises the same primitives inside one outer transaction, and rolls back to four empty tables. No migration credential, DDL, schema change, Preview/Production operation, live route integration, lease polling, provider bypass, OpenAI request, deployment, or public error behavior is introduced. Cache lookup begins in C2.1-D, but rollout remains blocked until C2.1-E and the required C2.1-F validation are complete.
+- **Status:** Accepted
+- **Date:** 2026-07-17
