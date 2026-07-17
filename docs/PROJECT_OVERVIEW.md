@@ -104,11 +104,11 @@ The repository may retain compatibility types or clearly labeled deterministic d
 
 ## Roadmap
 
-### Before C2.1-C
+### Context maintenance
 
 - keep this stable overview separate from the volatile handoff;
-- align README, product rules, and roadmap with the implemented C2.1-B state;
-- preserve the existing live analysis behavior and Production baseline.
+- keep README, product rules, roadmap, and handoff state aligned with completed checkpoints;
+- preserve the existing live analysis behavior and Production baseline unless a reviewed checkpoint explicitly changes them.
 
 ### C2.1 exact-cache runtime
 
@@ -117,6 +117,8 @@ The repository may retain compatibility types or clearly labeled deterministic d
 3. **C2.1-E:** lease ownership, duplicate-request control, bounded polling, and failure recovery.
 4. **C2.1-F:** real Development database integrity and concurrency tests.
 5. **C2.1-G:** explicitly reviewed Preview and Production rollout with recovery checks.
+
+C2.1-D may implement and validate cache integration, but it must not be rolled out or deployed before C2.1-E is complete and the required C2.1-F validation passes.
 
 ### After the exact-cache rollout
 

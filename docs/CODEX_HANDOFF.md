@@ -7,15 +7,16 @@ This file is intentionally operational and may change at every checkpoint. Stabl
 
 ## Repository position
 
-- Expected branch after this documentation checkpoint: `c2.1-b-analysis-cache-schema`
+- Current branch: `c2.1-b-analysis-cache-schema`
+- Current HEAD at the start of this correction: `f34387c386f5c56fa7458f250bfa275aea0c9d8e`
 - Latest implementation commit before the documentation checkpoint: `c11332d1ed3c643257e9dc533c3e4ed118879ac8`
 - Implementation commit message: `feat: add analysis cache database schema`
 - Local `main`: `cfbb93750c0b8f41f470963eddaf203d3b82457f`
 - Local `origin/main` baseline: `d3c255d29b4029589e6f6b562a482134c0e28b99`
-- The feature branch was three commits ahead of `origin/main` before this documentation commit and should be four commits ahead after it.
+- Ahead/behind at the start of this correction: `4/0`.
 - No local checkpoint commit has been pushed or deployed.
 
-The only expected untracked and unstaged files are:
+The only untracked and unstaged files are:
 
 - `database/Foodseyo_Database_Architecture_v1.2.docx`
 - `database/Foodseyo_PostgreSQL_Schema_v1.2.sql`
@@ -74,11 +75,11 @@ C2.1-C must not:
 - change the provider model, prompt, canonical schema, image intake, session storage, UI, or navigation;
 - make a real OpenAI request, invoke the live analysis POST route, push, or deploy.
 
-Cache integration begins in C2.1-D, ownership/concurrency behavior in C2.1-E, real Development concurrency validation in C2.1-F, and reviewed Preview/Production rollout in C2.1-G.
+Cache integration begins in C2.1-D, ownership/concurrency behavior in C2.1-E, real Development concurrency validation in C2.1-F, and reviewed Preview/Production rollout in C2.1-G. C2.1-D must not be rolled out or deployed before C2.1-E is complete and the required C2.1-F validation passes.
 
 ## Start-of-checkpoint checklist
 
-1. Confirm the expected feature branch and current HEAD.
+1. Confirm the recorded feature branch and current HEAD.
 2. Confirm no tracked or staged change exists.
 3. Confirm the two reference artifacts are the only untracked files and remain unstaged.
 4. Confirm local/origin divergence without pulling or rewriting the feature branch.

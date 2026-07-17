@@ -30,7 +30,7 @@ The Home link field validates HTTP/HTTPS syntax only. It does not fetch or analy
 
 ## Trust, privacy, and consistency
 
-- raw Files move from Home to Menu Scan through React memory only;
+- raw files move from Home to Menu Scan through React memory only;
 - the current canonical result is stored only in `sessionStorage` for the current tab;
 - raw images, Base64, filenames, menu content, provider output, and canonical payloads are excluded from logs;
 - source evidence, general food knowledge, restaurant evidence, and uncertainty remain distinct;
@@ -86,7 +86,7 @@ Codex has supported the repository-wide implementation workflow: product-scope c
 - C2.1-A / C2.1-A.1 — isolated managed infrastructure and credential correction (completed)
 - C2.1-B — four-table schema and Development migration (completed)
 - C2.1-C — pooled runtime database client and repositories (next)
-- C2.1-D — exact snapshot cache integration
+- C2.1-D — exact snapshot cache integration; no rollout before C2.1-E and required C2.1-F validation
 - C2.1-E — lease, concurrency, polling, and failure policy
 - C2.1-F — real Development database integrity and concurrency validation
 - C2.1-G — reviewed Preview and Production rollout

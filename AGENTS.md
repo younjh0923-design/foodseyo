@@ -33,6 +33,13 @@ Foodseyo is a source-honest, mobile-first food copilot that turns unfamiliar men
 - Never log image or file contents, filenames, menu text, dish or restaurant names, raw provider responses, full canonical analyses, API keys, database URLs, or environment values.
 - Observability may contain only safe correlation IDs, numeric durations and byte counts, HTTP status, safe stage codes, cache state, provider call count, and structural or semantic issue counts.
 
+## Operational autonomy
+
+- Perform routine in-scope repository, CLI, API, platform configuration, cleanup, and verification work autonomously.
+- Ask the user to intervene only for login or re-authentication, MFA or CAPTCHA, account registration, legal terms acceptance, billing or paid-plan approval, or an irreversible Production action that has not already been approved.
+- If a browser integration fails, make one reasonable recovery attempt and then use an official CLI or API fallback when available.
+- Autonomy does not broaden the requested checkpoint, authorize a paid service change, or bypass an explicit Production rollout gate.
+
 ## Checkpoint workflow
 
 - Confirm the branch required by the requested checkpoint, the local HEAD, tracked/staged cleanliness, and local/origin divergence before work. Do not switch to `main` when an approved feature branch is the intended checkpoint branch.
