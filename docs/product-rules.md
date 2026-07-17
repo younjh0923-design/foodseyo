@@ -1,8 +1,8 @@
 # Foodseyo Product Rules
 
-**Status:** Normative MVP definition through local C2.1-D
+**Status:** Normative MVP definition through local C2.1-G review
 
-**Date:** 2026-07-16
+**Date:** 2026-07-17
 
 This document defines the active MVP scope, information boundaries, safety rules, and roadmap. Detailed mechanics live in [input-architecture.md](./input-architecture.md), [analysis-flow.md](./analysis-flow.md), [data-contract.md](./data-contract.md), and [image-policy.md](./image-policy.md). Historical decisions remain in [decision-log.md](./decision-log.md).
 
@@ -97,8 +97,8 @@ The canonical reader supports legacy `FoodseyoAnalysis` `1.0.0`, C1.2 `1.1.0`, a
 - restaurant identification before post-T7 reevaluation;
 - map-app share-to-Foodseyo integration;
 - authentication, permanent user history, or shareable result links;
-- deployed application cache behavior before the reviewed C2.1-G rollout checkpoint;
-- Preview or Production database rollout before C2.1-G.
+- deployed application cache behavior without a Preview-proven release and explicit Production go/no-go approval;
+- Preview or Production database mutation without a separately authorized rollout step.
 
 ## Roadmap
 
@@ -116,7 +116,7 @@ The canonical reader supports legacy `FoodseyoAnalysis` `1.0.0`, C1.2 `1.1.0`, a
 - **C2.1-D:** exact snapshot cache lookup, hit/miss, quarantine, and best-effort post-provider persistence completed locally; no rollout or deployment.
 - **C2.1-E:** pre-provider lease ownership, concurrency, polling, and failure policy completed locally; not deployed.
 - **C2.1-F:** real Development database integrity and concurrency validation completed locally; not deployed.
-- **C2.1-G:** reviewed Preview and Production rollout.
+- **C2.1-G:** rollout-readiness review completed locally; staged plan documented and Production rollout deferred.
 - **C2.2–C2.4:** planning audit after C2.1-G and before broader relational expansion.
 - **T7.1–T7.4:** restaurant/menu link analysis after C2.
 - **T8:** restaurant identification, reconsider after T7.

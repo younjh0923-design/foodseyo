@@ -37,7 +37,7 @@ The Home link field validates HTTP/HTTPS syntax only. It does not fetch or analy
 - controlled vocabularies, deterministic wording, semantic validation, and versioned fingerprints reduce avoidable drift;
 - automated validation is network-free and never makes a paid OpenAI request.
 
-Neon/Vercel Development, Preview, and Production database environments are isolated. The four-table exact-cache schema exists only in Development today. Local C2.1-E adds pre-provider lease ownership, duplicate coordination, bounded polling, expired-lease recovery, strict owner-only persistence, and the frozen 409/503 policy above the C2.1-D exact lookup and quarantine path. C2.1-F independently passed deterministic and adversarial real-PostgreSQL validation on disposable Development child branches, including repeated concurrency, rollback, ambiguous outcomes, and corrupt-snapshot quarantine failures. Every child branch was deleted and permanent Development remained empty. Preview/Production migrations and application deployment of database behavior have not started; C2.1-G remains the required reviewed rollout boundary.
+Neon/Vercel Development, Preview, and Production database environments are isolated. The four-table exact-cache schema exists only in Development today. Local C2.1-E adds pre-provider lease ownership, duplicate coordination, bounded polling, expired-lease recovery, strict owner-only persistence, and the frozen 409/503 policy above the C2.1-D exact lookup and quarantine path. C2.1-F independently passed deterministic and adversarial real-PostgreSQL validation on disposable Development child branches, including repeated concurrency, rollback, ambiguous outcomes, and corrupt-snapshot quarantine failures. Every child branch was deleted and permanent Development remained empty. The C2.1-G rollout review is complete locally and recommends keeping the current uncached Production flow through the competition deadline. Preview/Production migrations and application deployment of database behavior have not started.
 
 ## Run locally
 
@@ -97,7 +97,7 @@ Codex has supported the repository-wide implementation workflow: product-scope c
 - C2.1-D — exact snapshot cache integration (completed locally; not deployed)
 - C2.1-E — lease, concurrency, polling, and failure policy (completed locally; not deployed)
 - C2.1-F — real Development database integrity and concurrency validation (completed locally; not deployed)
-- C2.1-G — reviewed Preview and Production rollout
+- C2.1-G — rollout-readiness review completed locally; Production rollout deferred
 - C2.2–C2.4 — post-C2.1 planning audit before broader relational expansion
 - T7 — restaurant/menu link analysis after C2
 - T8 — restaurant identification, to be reconsidered after T7

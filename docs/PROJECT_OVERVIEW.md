@@ -85,10 +85,10 @@ The database/cache work is an enabling trust layer, not the primary product pitc
 - Vercel application infrastructure
 - isolated Neon Development, Preview, and Production branches
 - Drizzle and PostgreSQL four-table exact-cache schema on Development only
-- server-only pooled PostgreSQL runtime client, validated repositories, and local exact-cache integration
+- server-only pooled PostgreSQL runtime client, validated repositories, and locally completed exact-cache ownership integration
 - network-free automated validation and production build checks
 
-The local C2.1-D branch connects exact lookup, quarantine, provider bypass on a valid hit, and best-effort ready-snapshot persistence to the menu analysis route. The flow has passed rollback-only Development verification but has not been pushed or deployed. Preview and Production have not received the application schema.
+The local C2.1-D/E/F history connects exact lookup, quarantine, ownership, duplicate coordination, bounded polling, and strict ready-snapshot persistence to the menu analysis route. It passed deterministic and repeated adversarial real-PostgreSQL Development verification but has not been pushed or deployed. Preview and Production have not received the application schema. The C2.1-G review recommends preserving the current uncached Production flow through the competition deadline.
 
 ## Explicit non-goals for the active MVP
 
@@ -117,9 +117,9 @@ The repository may retain compatibility types or clearly labeled deterministic d
 2. **C2.1-D:** exact snapshot lookup, cache hit/miss behavior, corrupt/expired-snapshot quarantine, and safe post-provider persistence — completed locally, not deployed.
 3. **C2.1-E:** pre-provider lease ownership, duplicate-request control, bounded polling, and failure recovery — completed locally, not deployed.
 4. **C2.1-F:** real Development database integrity and concurrency tests — completed locally.
-5. **C2.1-G:** explicitly reviewed Preview and Production rollout with recovery checks.
+5. **C2.1-G:** rollout-readiness review, staged Preview plan, recovery design, and Production go/no-go gate — completed locally; Production rollout not approved.
 
-C2.1-F is complete locally, including repeated adversarial PostgreSQL verification on disposable Development child branches and confirmed cleanup. No cache code, schema, or migration has been rolled out beyond Development. Preview, Production, push, and deployment remain blocked until the explicitly reviewed C2.1-G checkpoint.
+C2.1-F is complete locally, including repeated adversarial PostgreSQL verification on disposable Development child branches and confirmed cleanup. C2.1-G then found the implementation sound but the release path incomplete: there is no Preview deployment, no target-aware full Preview/Production migration verifier, no current Production snapshot, and no Git SHA provenance for the active Vercel deployment. No cache code, schema, or migration has been rolled out beyond Development. The current uncached Production flow remains the submission baseline; a separately authorized Preview rehearsal must precede any new Production decision.
 
 ### After the exact-cache rollout
 

@@ -98,7 +98,7 @@ Environment changes apply only to new Vercel deployments. C2.1-A did not deploy 
 - Neon Console monitoring provides compute, database, query, and pooler metrics. The project consumption-history API is not included on Free and returned the expected plan restriction.
 - Neon manages the Postgres service, storage, high availability, and platform updates. Application owners remain responsible for query behavior, connection usage, schema changes, credentials, restore decisions, and testing recovery procedures.
 
-The Free recovery window and lack of branch protection are acceptable for C2.1-B development, where no Production schema or data exists. They are not yet an adequate final Production recovery policy. Reassess protected branches, scheduled backups, retention, and recovery testing before the C2.1-G/Production rollout boundary.
+The Free recovery window and lack of branch protection are acceptable for isolated Development work, where no Production schema or cache data exists. The C2.1-G review found them inadequate as the only Production recovery controls: there is currently no snapshot, no automatic snapshot schedule, and no protected branch. A verified manual recovery point, exact rollback target, target-aware post-migration verification, and Preview rehearsal are mandatory before a new Production go/no-go decision. See [database-rollout-plan.md](./database-rollout-plan.md).
 
 ## Secret-handling requirements
 
