@@ -37,7 +37,7 @@ The Home link field validates HTTP/HTTPS syntax only. It does not fetch or analy
 - controlled vocabularies, deterministic wording, semantic validation, and versioned fingerprints reduce avoidable drift;
 - automated validation is network-free and never makes a paid OpenAI request.
 
-Neon/Vercel Development, Preview, and Production database environments are isolated. The four-table exact-cache schema exists only in Development today. Local C2.1-E adds pre-provider lease ownership, duplicate coordination, bounded polling, expired-lease recovery, strict owner-only persistence, and the frozen 409/503 policy above the C2.1-D exact lookup and quarantine path. C2.1-F independently passed deterministic and adversarial real-PostgreSQL validation on disposable Development child branches, including repeated concurrency, rollback, ambiguous outcomes, and corrupt-snapshot quarantine failures. Every child branch was deleted and permanent Development remained empty. The exact C2.1-G commit is preserved on a GitHub feature branch and produced an automatic Git-sourced Preview build, but no Preview/Production database migration or validated cache rollout occurred. Production remains on the uncached flow. C2.2-A now scopes the future logical database model without adding a physical schema.
+Neon/Vercel Development, Preview, and Production database environments are isolated. The four-table exact-cache schema exists only in Development today. Local C2.1-E adds pre-provider lease ownership, duplicate coordination, bounded polling, expired-lease recovery, strict owner-only persistence, and the frozen 409/503 policy above the C2.1-D exact lookup and quarantine path. C2.1-F independently passed deterministic and adversarial real-PostgreSQL validation on disposable Development child branches, including repeated concurrency, rollback, ambiguous outcomes, and corrupt-snapshot quarantine failures. Every child branch was deleted and permanent Development remained empty. The exact C2.1-G commit is preserved on a GitHub feature branch and produced an automatic Git-sourced Preview build, but no Preview/Production database migration or validated cache rollout occurred. Production remains on the uncached flow. C2.2-A through C2.2-C now define the bounded logical model, physical integrity contract, and first-slice retention and price decisions without adding a schema or migration.
 
 ## Run locally
 
@@ -100,7 +100,8 @@ Codex has supported the repository-wide implementation workflow: product-scope c
 - C2.1-G — rollout-readiness review completed locally; Production rollout deferred
 - C2.2-A — logical ERD v3 and future-domain scope audit (completed locally; no schema)
 - C2.2-B — physical integrity contract completed locally; no schema or migration
-- C2.2-C–D — scoped product decisions and an unexecuted schema draft
+- C2.2-C — scoped retention, invalidation, and price decisions completed locally; no schema or migration
+- C2.2-D — next unexecuted Drizzle/SQL schema draft
 - C2.3 candidate — Development-only structured menu projection after the C2.2 gates
 - T7 — restaurant/menu link analysis after C2
 - T8 — restaurant identification, to be reconsidered after T7
@@ -110,3 +111,4 @@ Stable product context is in [`docs/PROJECT_OVERVIEW.md`](./docs/PROJECT_OVERVIE
 
 The scoped future relational model is in [`docs/database-logical-model-v3.md`](./docs/database-logical-model-v3.md).
 The next-slice PostgreSQL integrity contract is in [`docs/database-physical-integrity-contract.md`](./docs/database-physical-integrity-contract.md).
+The accepted structured-menu product and security decisions are in [`docs/database-structured-menu-decisions.md`](./docs/database-structured-menu-decisions.md).

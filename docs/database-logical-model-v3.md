@@ -358,18 +358,18 @@ A future audit system must use allowlisted safe event fields. Generic `before_js
 12. Append-only and immutable are permission and transaction rules, not documentation adjectives.
 13. Foreign-key existence and foreign-key lookup indexing are separate physical-design checks.
 
-## Unresolved product decisions
+## Scoped product decisions
 
-These decisions are recorded for C2.2-C. Each blocks only the affected domain.
+Each decision blocks only the affected domain. C2.2-C resolves P-04 and P-06 for the bounded Development slice in [database-structured-menu-decisions.md](./database-structured-menu-decisions.md); the other decisions remain unresolved.
 
 | ID | Decision | Safe default until decided | Blocks |
 | --- | --- | --- | --- |
 | P-01 | Permanently store uploaded menu artifacts? | No; transient only | Evidence artifacts and object references |
 | P-02 | If stored, retention, consent, access, copyright, and deletion policy? | Store nothing | Evidence artifacts |
 | P-03 | May restaurant identity ever auto-confirm? | No; preserve candidates and canonical evidence rules | Restaurant candidate selection |
-| P-04 | How long are structured menu projections retained and when does source invalidation disable them? | Development-only, not a public read source | Menu projection rollout |
+| P-04 | How long are structured menu projections retained and when does source invalidation disable them? | Resolved for first slice: no TTL/deletion; source ineligibility immediately blocks reads | Preview/Production retention rollout |
 | P-05 | Are nested menu sections required? | Flat sections only | Nested section hierarchy |
-| P-06 | Which price kinds, currencies, ranges, and option deltas are supported? | Source amount/currency only; no conversion | Price and option physical contract |
+| P-06 | Which price kinds, currencies, ranges, and option deltas are supported? | Resolved for first slice: eligible base plus canonical price options; no conversion/deltas | Later option-group model |
 | P-07 | May AI propose culinary knowledge? | Proposal or review queue only; never auto-publish | Knowledge ingestion |
 | P-08 | Who may review and publish a knowledge profile? | No published profile without an authority model | Knowledge publication |
 | P-09 | What source excerpts may be retained? | Identifiers and safe citations only; no copied excerpt | Knowledge evidence |
@@ -402,7 +402,7 @@ Deferred domains do not receive speculative physical contracts yet.
 
 ### C2.2-C — scoped product and security decisions
 
-Resolve only decisions needed by the next slice first. Community or authentication decisions must not block unrelated structured-menu work; image-retention decisions must block artifact storage.
+Completed in [database-structured-menu-decisions.md](./database-structured-menu-decisions.md). P-04 and P-06 are fixed for the bounded Development slice. Community, authentication, image-retention, restaurant, and knowledge decisions remain scoped to their deferred domains.
 
 ### C2.2-D — unexecuted schema draft
 
@@ -432,13 +432,13 @@ Development migration and adversarial validation
 → separate Production go/no-go
 ```
 
-## C2.2-C entry gate
+## C2.2-D entry gate
 
-C2.2-C begins from the completed logical and physical contracts. It is limited to the retained structured-menu product decisions, especially P-04 retention/invalidation behavior and P-06 first-slice price-option scope. It must not:
+C2.2-D begins from the completed logical, physical, and [structured-menu decision](./database-structured-menu-decisions.md) contracts. It is limited to an unexecuted Drizzle and SQL draft for the four candidate tables. It must not:
 
 - redefine the four C2.1 tables;
 - include evidence artifacts, restaurant identity, knowledge, user, or community tables;
-- create Drizzle schema code or SQL;
+- expand the accepted price or retention scope;
 - create or run a migration;
 - access Neon, Vercel, Preview, or Production;
 - change the live analysis route or canonical contract.

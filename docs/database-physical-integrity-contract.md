@@ -315,6 +315,8 @@ Checks:
 
 The first slice does not store ranges, market-price markers, inferred prices, conversions, option-group values, or add-on deltas. A canonical price option with a null `Money` value creates no price row; its non-price option metadata remains deferred.
 
+Per the accepted [C2.2-C decisions](./database-structured-menu-decisions.md), the projector builds a contiguous zero-based eligible-price sequence with an eligible base price first and eligible canonical price options in their original array order. `dish.options[].additionalPrice` remains excluded.
+
 All columns are immutable.
 
 ## Projection transaction contract
@@ -352,7 +354,8 @@ A menu projection never becomes an independently trusted analysis:
 - an invalidated or expired source snapshot makes the projection ineligible for public use;
 - current time and canonical semantic validity remain application read guards because volatile time and JSON semantics are not stable row `CHECK` expressions;
 - no projection row is mutated or deleted when the source is invalidated;
-- retention and eventual deletion remain blocked by P-04.
+- C2.2-C approves no projection TTL or automatic row deletion for the Development-only slice;
+- a separate retention and deletion decision remains mandatory before Preview or Production rollout.
 
 ## Failure observability
 
@@ -379,10 +382,10 @@ No `menu_projection_attempts` table is part of C2.2-B. Durable retry or attempt 
 | Stable unique ordering | Nonnegative checks and parent-position uniqueness | Preserve source array order | Integer/order validation | None |
 | Same-snapshot section membership | Composite foreign key | Resolve category map within transaction | Reject missing category references | None |
 | Distinct original/display text | Separate columns | No field merging | Blank-to-null only | None |
-| Direct source-backed prices only | Typed rows and price checks | Filter by evidence contract | Validate availability, basis, source IDs, finite amount | P-06 before schema draft |
+| Direct source-backed prices only | Typed rows and price checks | Filter and order by the accepted price contract | Validate availability, basis, source IDs, finite amount | P-06 resolved for the first slice |
 | Unknown is not zero | Nullable absence means no row | Never synthesize price | Canonical evidence validation | None |
-| Immutable projection | Runtime has no update/delete | No mutation repository | Read-only aggregate API after commit | P-04 before deletion policy |
-| Source invalidation blocks reuse | Source FK retains history | None | Active/unexpired source read guard | P-04 before rollout |
+| Immutable projection | Runtime has no update/delete | No mutation repository | No public read path in the first slice | P-04 resolved for Development only |
+| Source invalidation blocks reuse | Source FK retains history | None | Active/unexpired source read guard | Separate rollout decision before Preview |
 | Safe failure observability | No partial/failure rows | Rollback outcome only | Allowlisted structural telemetry | Durable-attempt decision if ever needed |
 | Least privilege | Grants and ownership | Controlled transaction | Server-only pooled runtime | Separate rollout approval |
 
@@ -418,23 +421,18 @@ C2.2-D may draft, but not apply, objects in this dependency order:
 
 No C2.1 table alteration is required by this order.
 
-## C2.2-C decisions carried forward
+## C2.2-C decisions resolved
 
-C2.2-B does not resolve:
+[C2.2-C](./database-structured-menu-decisions.md) confirms:
 
-- P-04 retention, deletion, and source-invalidation rollout behavior;
-- P-06 whether the first implemented slice should include canonical price options in addition to one base price.
+- a Development-only projection with no public read path, projection TTL, row deletion, soft deletion, or runtime mutation;
+- immediate read ineligibility when the source snapshot is invalidated, expired, or otherwise fails exact validation, without mutating the projection;
+- isolated rollback or disposable-child-branch validation that leaves no application rows or temporary branches;
+- one eligible base price plus eligible non-null canonical price options in source order;
+- exact source amount, nullable currency, and display text with no conversion or inference;
+- no ranges, market-price markers, option groups, `additionalPrice` deltas, or row for unknown prices.
 
-Safe defaults remain:
-
-- Development-only projection;
-- no public read path;
-- no deletion;
-- no currency conversion;
-- no range, market-price, option-group, or add-on-delta storage;
-- no price row without a source-backed numeric `Money` value.
-
-These decisions must be confirmed before C2.2-D creates an unexecuted schema draft.
+These decisions authorize only the unexecuted C2.2-D draft. Retention and deletion for Preview or Production remain a separate rollout gate.
 
 ## C2.2-B exit classification
 
@@ -444,5 +442,5 @@ The contract is complete when:
 - all four candidate tables have explicit types, nullability, defaults, keys, foreign-key actions, checks, indexes, mutability, deletion, and grant rules;
 - every cross-row invariant has an enforcement owner;
 - the candidate dependency graph has no cycle;
-- C2.2-C blockers are explicit;
+- C2.2-C first-slice decisions are explicit;
 - no executable schema, SQL, migration, repository, database action, or rollout exists.

@@ -1,6 +1,6 @@
 # Foodseyo Product Rules
 
-**Status:** Normative MVP definition through local C2.2-B physical integrity contract
+**Status:** Normative MVP definition through local C2.2-C structured-menu decisions
 
 **Date:** 2026-07-17
 
@@ -69,6 +69,8 @@ A user-entered restaurant name is a declaration, not independent verification. W
 
 Price, currency, ingredients, preparation, dietary status, review claims, popularity, and freshness must retain their actual evidence basis. Missing evidence stays missing.
 
+The first structured-menu projection may retain only an eligible source-backed base price and eligible canonical price options. It does not retain option-group add-on deltas, ranges, market-price markers, inferred prices, or converted amounts. A missing price creates no row and never becomes zero.
+
 ## Allergy and dietary safety
 
 Menu-derived ingredient and dietary clues are informational and conservative. Foodseyo must never claim that a dish is allergy-safe. Every canonical result retains the notice that recipes and preparation may change and that ingredients and cross-contact must be confirmed with restaurant staff.
@@ -122,7 +124,8 @@ The canonical reader supports legacy `FoodseyoAnalysis` `1.0.0`, C1.2 `1.1.0`, a
 - **C2.2-A:** scoped logical ERD v3 and future-domain audit completed locally; no schema or migration.
 - **C2.2-A1:** C1 culinary and sensory contract preservation audit completed locally; no schema or migration.
 - **C2.2-B:** physical integrity contract completed locally for the existing C2.1 boundary and minimal structured-menu candidate; no schema or migration.
-- **C2.2-C / C2.2-D:** next scoped product decisions followed by unexecuted schema drafting.
+- **C2.2-C:** scoped projection retention, invalidation, and price decisions completed locally; no schema, migration, or database access.
+- **C2.2-D:** next unexecuted Drizzle/SQL draft; no migration or database execution.
 - **C2.3 candidate:** Development-only structured menu projection after the C2.2 gates.
 - **T7.1–T7.4:** restaurant/menu link analysis after C2.
 - **T8:** restaurant identification, reconsider after T7.
