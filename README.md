@@ -1,6 +1,24 @@
 # Foodseyo
 
-Foodseyo is a mobile-first Next.js food copilot that starts from a restaurant/menu link or menu photos and presents structured guidance for deciding what to order.
+Foodseyo is a source-honest, mobile-first food copilot that turns unfamiliar menu photos into structured food guidance so people can decide what to order, not merely translate what the menu says.
+
+Foodseyo is being built for the OpenAI Build Week **Apps for Your Life** track with Codex and GPT-5.6.
+
+## The problem
+
+A translated dish name often does not explain what the food will taste or feel like, how spicy or rich it may be, which ingredients are stated or only typical, or what a diner should confirm before ordering. Foodseyo converts visible menu evidence and carefully labeled food knowledge into one canonical analysis that keeps evidence, inference, and uncertainty separate.
+
+## What works today
+
+1. Select one to ten ordered JPEG, PNG, or WEBP menu photos.
+2. Review and preprocess the images in the browser without permanently uploading them.
+3. Explicitly start one server-side GPT-5.6 Responses API analysis.
+4. Validate and normalize the structured result into the versioned `FoodseyoAnalysis` contract.
+5. Read a menu overview and source-grounded Dish Detail pages.
+
+Results include taste, texture, heat, richness, ingredients with evidence basis, dietary clues, ordering considerations, limitations, and the required allergy-safety notice. Foodseyo never guarantees allergy safety and directs users to confirm ingredients and cross-contact with restaurant staff.
+
+The Home link field validates HTTP/HTTPS syntax only. It does not fetch or analyze the URL, navigate to a fabricated result, or claim that link analysis is complete. Restaurant/menu link analysis remains T7 work after the database/cache checkpoints.
 
 ## MVP routes
 
@@ -10,41 +28,48 @@ Foodseyo is a mobile-first Next.js food copilot that starts from a restaurant/me
 - `/analysis/dishes/[dishId]` — canonical live dish detail
 - `/nearby` and `/restaurant/pai-northern-thai-kitchen` — clearly labeled deterministic demo flows
 
-The menu-image vertical slice uses the server-only OpenAI integration when explicitly triggered by a user. Automated validation and visual QA do not make paid analysis requests.
+## Trust, privacy, and consistency
 
-The Home link field currently validates HTTP/HTTPS syntax only. It does not fetch, analyze, navigate to a demo result, or claim completion. C1.2 connects the consistency contract to live menu-image results; link analysis remains deferred until after C2.
+- raw Files move from Home to Menu Scan through React memory only;
+- the current canonical result is stored only in `sessionStorage` for the current tab;
+- raw images, Base64, filenames, menu content, provider output, and canonical payloads are excluded from logs;
+- source evidence, general food knowledge, restaurant evidence, and uncertainty remain distinct;
+- controlled vocabularies, deterministic wording, semantic validation, and versioned fingerprints reduce avoidable drift;
+- automated validation is network-free and never makes a paid OpenAI request.
 
-## Menu-photo behavior
-
-- JPEG, PNG, and WEBP only
-- one to ten files, preserving picker order
-- native browser/operating-system picker with no `capture` hint
-- memory-only handoff from Home to `/menu-scan`
-- adaptive preprocessing with the existing readability floor and total-byte limits
-- canonical result stored only in `sessionStorage` for the current tab
-
-Menu-derived ingredient, dietary, uncertainty, and allergy-caution information remains visible. Foodseyo never guarantees allergy safety and directs users to confirm ingredients and cross-contact with restaurant staff.
+Neon/Vercel Development, Preview, and Production database environments are isolated. The four-table exact-cache schema exists only in Development today. Runtime repositories, cache lookup, Preview/Production migrations, and application deployment of database behavior have not started.
 
 ## Run locally
+
+Requirements:
+
+- Node.js and pnpm
+- an OpenAI API key only when intentionally testing the live menu-photo analysis
 
 ```bash
 pnpm install
 pnpm dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:3000](http://localhost:3000). For an intentional live analysis, create an untracked `.env.local` and set the server-only `OPENAI_API_KEY`. `OPENAI_MODEL` is optional and defaults to `gpt-5.6`. Never commit either value.
 
-Development checks:
+## Verification
 
 ```bash
-pnpm verify:quick    # lint, typecheck, and fast contract/scope regressions
-pnpm verify:menu     # intake, preprocessing, API boundary, completion, storage
-pnpm verify:results  # Overview, Dish Detail, session loading, result navigation
-pnpm verify:consistency # C1 vocabulary, normalization, wording, fingerprints, validation
-pnpm verify:full     # final lint, typecheck, all tests, build, and security checks
+pnpm verify:quick       # lint, typecheck, and fast contract/scope regressions
+pnpm verify:menu        # intake, preprocessing, API boundary, completion, storage
+pnpm verify:results     # Overview, Dish Detail, session loading, result navigation
+pnpm verify:consistency # C1 vocabulary, normalization, wording, fingerprints
+pnpm verify:full        # lint, typecheck, all network-free tests, build, security
 ```
 
-`pnpm test` remains the complete network-free regression suite for compatibility. It never runs the opt-in paid smoke command.
+`pnpm test` remains the complete network-free regression suite. It never runs the opt-in paid smoke command.
+
+## Codex and GPT-5.6
+
+GPT-5.6 performs the explicitly triggered menu-image interpretation behind a strict structured-output boundary. Application code, not the model, owns IDs, evidence links, canonical validation, deterministic wording, safety rules, and result storage.
+
+Codex has supported the repository-wide implementation workflow: product-scope cleanup, canonical contracts, provider and response hardening, consistency and fingerprint design, network-free regression suites, database contract audits, least-privilege infrastructure verification, and the reviewed Development schema migration. The decision log records the significant implementation and scope decisions.
 
 ## MVP roadmap
 
@@ -56,13 +81,18 @@ pnpm verify:full     # final lint, typecheck, all tests, build, and security che
 - T5.5 — MVP scope alignment cleanup (completed)
 - T6 — cancelled from the MVP
 - R1 — codebase and development workflow optimization (completed)
-- C1.1 / C1.1.1 — consistency and fingerprint foundations (completed)
-- C1.2 — live menu-image consistency integration (completed)
-- C1.2.1 — restaurant-resolution provenance correction (completed)
+- C1.1–C1.2.1 — consistency, fingerprints, and live provenance integration (completed)
 - C2.1-0 / C2.1-0.1 — database audit and exact-cache contracts (completed)
-- C2.1-A — managed database infrastructure setup (next)
-- C2.1-B — schema, migrations, repositories, and cache implementation
-- C2.2–C2.4 — relational model and cache-safety checkpoints (next)
+- C2.1-A / C2.1-A.1 — isolated managed infrastructure and credential correction (completed)
+- C2.1-B — four-table schema and Development migration (completed)
+- C2.1-C — pooled runtime database client and repositories (next)
+- C2.1-D — exact snapshot cache integration
+- C2.1-E — lease, concurrency, polling, and failure policy
+- C2.1-F — real Development database integrity and concurrency validation
+- C2.1-G — reviewed Preview and Production rollout
+- C2.2–C2.4 — post-C2.1 planning audit before broader relational expansion
 - T7 — restaurant/menu link analysis after C2
 - T8 — restaurant identification, to be reconsidered after T7
-- Later — map-app share-to-Foodseyo integration
+- Later — personalization, Food Passport, community, and map-app sharing
+
+Stable product context is in [`docs/PROJECT_OVERVIEW.md`](./docs/PROJECT_OVERVIEW.md). The current implementation handoff is in [`docs/CODEX_HANDOFF.md`](./docs/CODEX_HANDOFF.md).

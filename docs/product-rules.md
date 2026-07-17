@@ -1,6 +1,6 @@
 # Foodseyo Product Rules
 
-**Status:** Normative MVP definition through C1.2.1
+**Status:** Normative MVP definition through C2.1-B
 
 **Date:** 2026-07-16
 
@@ -8,7 +8,7 @@ This document defines the active MVP scope, information boundaries, safety rules
 
 ## Product definition
 
-> Foodseyo starts from menu photos or a restaurant/menu link and turns supported evidence into structured guidance for deciding what to order.
+> Foodseyo turns unfamiliar menu photos into source-honest, structured guidance for deciding what to order. The restaurant/menu link remains a validated future entry point.
 
 The active convergence is:
 
@@ -96,7 +96,9 @@ The canonical reader supports legacy `FoodseyoAnalysis` `1.0.0`, C1.2 `1.1.0`, a
 - live link analysis before T7;
 - restaurant identification before post-T7 reevaluation;
 - map-app share-to-Foodseyo integration;
-- database, authentication, permanent history, or shareable result links.
+- authentication, permanent user history, or shareable result links;
+- live application cache behavior before C2.1-D;
+- Preview or Production database rollout before C2.1-G.
 
 ## Roadmap
 
@@ -111,9 +113,11 @@ The canonical reader supports legacy `FoodseyoAnalysis` `1.0.0`, C1.2 `1.1.0`, a
 - **C2.1-A:** managed database and environment setup completed.
 - **C2.1-B:** four-table physical exact-cache schema and first Development migration completed; no runtime client or cache behavior added.
 - **C2.1-C:** pooled runtime database client and repository checkpoint; not started.
-- **C2.2:** exact menu snapshot cache.
-- **C2.3:** dish-level reuse.
-- **C2.4:** cache safety.
+- **C2.1-D:** exact snapshot cache lookup, hit/miss, and quarantine integration.
+- **C2.1-E:** lease ownership, concurrency, polling, and failure policy.
+- **C2.1-F:** real Development database integrity and concurrency validation.
+- **C2.1-G:** reviewed Preview and Production rollout.
+- **C2.2–C2.4:** planning audit after C2.1-G and before broader relational expansion.
 - **T7.1–T7.4:** restaurant/menu link analysis after C2.
 - **T8:** restaurant identification, reconsider after T7.
 - **Later:** map-app share-to-Foodseyo integration.

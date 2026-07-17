@@ -550,3 +550,11 @@ This log records accepted product and architecture decisions frozen in T2. Chang
 - **Impact:** The checked-in least-privilege runner uses Drizzle's versioned migration reader and hash metadata, creates only the ledger table in the already authorized schema, serializes execution with a transaction-scoped advisory lock, and applies reviewed SQL transactionally. Development contains four empty application tables and one ledger entry; a second run is a no-op. Preview and Production remain unmigrated. No runtime client, repository, cache lookup, provider bypass, API change, OpenAI call, or deployment is part of C2.1-B; C2.1-C has not started.
 - **Status:** Accepted
 - **Date:** 2026-07-17
+
+## D-069 — Separate stable project context from volatile checkpoint state
+
+- **Decision:** `docs/PROJECT_OVERVIEW.md` owns the stable product definition, target audience, differentiators, active MVP boundary, and long-term direction. `docs/CODEX_HANDOFF.md` owns the volatile branch, checkpoint, validation, and next-action state. `README.md` is the public runnable entry point, while the existing normative product, database, infrastructure, and technical contracts retain authority in their own domains.
+- **Reason:** The long-form vision, public GitHub `main`, and newer local checkpoint commits described different moments in the project. Mixing vision, public state, and current implementation caused stale roadmap claims and made a fresh development session likely to expand scope or repeat completed work.
+- **Impact:** The active roadmap now records C2.1-A/A.1/B as complete, C2.1-C–G as staged exact-cache runtime work, and C2.2–C2.4 as a later planning audit. This documentation checkpoint changes no application behavior, database object, credential, environment, OpenAI request path, or deployment, and C2.1-C remains unstarted.
+- **Status:** Accepted
+- **Date:** 2026-07-17

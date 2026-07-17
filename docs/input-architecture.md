@@ -59,7 +59,9 @@ Validated analysis is stored under `foodseyo.currentAnalysis` in `sessionStorage
 - C1.1 / C1.1.1 — consistency foundations (completed)
 - C1.2 — live menu-image consistency integration (completed)
 - C1.2.1 — restaurant-resolution provenance correction (current)
-- C2.1–C2.4 — relational model and cache safety (next)
+- C2.1-A/B — isolated database infrastructure and Development schema (completed)
+- C2.1-C–C2.1-G — runtime repositories, exact cache, concurrency validation, and reviewed rollout (next)
+- C2.2–C2.4 — planning audit before broader relational expansion
 - T7.1–T7.4 — restaurant/menu link analysis after C2
 - T8 — restaurant identification, reconsider after T7
 - Later — map-app share-to-Foodseyo integration
