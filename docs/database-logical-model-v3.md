@@ -1,9 +1,9 @@
 # Foodseyo Database Logical Model v3
 
-**Status:** C2.2-B physical integrity contract linked locally; no physical schema or migration
+**Status:** C2.2-E core database program charter linked locally; no new physical schema or migration
 **Reviewed:** 2026-07-17
 
-This document is the C2.2-A and C2.2-A1 source of truth for the future relational model. It audits the external `Foodseyo Complete ERD v2` proposal against the implemented C2.1 cache, the canonical `FoodseyoAnalysis` contract, the frozen C1 consistency profile, the active MVP, and the T7/T8 ordering.
+This document is the C2.2-A and C2.2-A1 source of truth for relational entity responsibilities under the [Core Consistency Database Program Charter](./database-program-charter.md). It audits the external `Foodseyo Complete ERD v2` proposal against the implemented C2.1 cache, the canonical `FoodseyoAnalysis` contract, the frozen C1 consistency profile, the active MVP, and the T7/T8 ordering.
 
 It defines responsibilities, relationships, exclusions, and unresolved decisions. It does not define PostgreSQL types, nullability, keys, triggers, grants, Drizzle tables, SQL, or migrations. Those belong to later approved checkpoints. Nothing in this document authorizes a database mutation, application integration, Preview or Production rollout, image retention, account system, or new product capability.
 
@@ -13,9 +13,9 @@ The v2 proposal is useful as a long-term domain inventory but is not an implemen
 
 1. preserve the implemented four-table C2.1 cache without repurposing it;
 2. make structured menu projection the smallest next database candidate;
-3. defer restaurant identity until T7 supplies evidence and T8 reopens identity;
+3. sequence core restaurant identity behind T7 evidence acquisition and T8 reevaluation;
 4. replace ambiguous truth links and polymorphic evidence with versioned claims and real parent relations;
-5. exclude storage, accounts, personalization, and community from the active model until their own product and security decisions exist.
+5. exclude permanent source storage, accounts, personalization, and community from the core implementation until their own product and security decisions exist.
 
 The status labels in this document are normative:
 
@@ -23,8 +23,9 @@ The status labels in this document are normative:
 | --- | --- |
 | Implemented | Existing physical C2.1 source of truth; v3 cannot redefine it |
 | Candidate | Eligible for the next physical-contract audit, not yet approved for implementation |
-| Deferred | Logical direction only; prerequisite product or contract work is missing |
-| Excluded | Outside the active MVP and current database program |
+| Core gated | Required by the core program but sequenced behind explicit evidence, decision, physical-contract, and validation gates |
+| Deferred | Outside the current core program or awaiting a separate product program |
+| Excluded | Intentionally absent from the current logical implementation scope |
 
 The simplified domain map is in [database-erd-master-map-v3.mmd](./database-erd-master-map-v3.mmd).
 
@@ -40,9 +41,21 @@ The simplified domain map is in [database-erd-master-map-v3.mmd](./database-erd-
 - Deferred user and community tables do not become active merely because they appear in a future diagram.
 - Every implementation slice receives its own Development validation and Preview/Production gate. There is no final all-at-once C2.9 rollout.
 
+## C2.2-E program scope correction
+
+C2.2-A correctly prevented a speculative all-at-once schema, but its broad use of “deferred” made the intended database objective appear to end with structured-menu projection. C2.2-E corrects only that forward-looking scope and timing implication:
+
+- structured menu remains the first bounded relational implementation slice;
+- restaurant and branch identity candidates remain gated by T7 evidence and T8 reevaluation, but are current core program work;
+- dish concepts, aliases, reviewed culinary profiles, separate sensory knowledge, ingredient roles, typed menu claims, deterministic effective profiles, and GPT-aware contextual reuse are current core program work;
+- every core domain still requires its own product/security decision, physical contract, isolated draft, Development validation, and rollout approval;
+- accounts, Food Passport, personalization, community, permanent raw-image storage, and generic audit payloads remain deferred or excluded.
+
+The three non-interchangeable reuse paths are exact whole-analysis reuse, semantic dish/culinary reuse, and restaurant/branch-scoped reuse. Their authority, GPT boundary, evaluation matrix, completion definition, and rollout rules are normative in the program charter. This reclassification creates no table and activates no draft.
+
 ## C2.2-A1 culinary and sensory preservation audit
 
-C2.2-A1 found that the C1 runtime contract was intact, but the first v3 wording was too generic to guarantee that a future relational design would preserve it. The following matrix closes that logical gap without changing the canonical schema or activating the deferred knowledge domain.
+C2.2-A1 found that the C1 runtime contract was intact, but the first v3 wording was too generic to guarantee that a future relational design would preserve it. The following matrix closes that logical gap without changing the canonical schema or authorizing the gated core knowledge domain.
 
 | Required contract | Verification after C2.2-A1 |
 | --- | --- |
@@ -138,7 +151,7 @@ Representing success directly through `menu_snapshots` remains accepted, subject
 
 The first synchronous slice may satisfy failure observability through allowlisted application telemetry. If durable retries or historical attempt audit become an operational requirement, a separately approved append-only `menu_projection_attempts` entity may be introduced. It must remain outside the menu structure, must not count as a successful projection, and must never authorize partial child rows. This preserves failure evidence without reviving the omitted `analysis_snapshot_materializations` status table.
 
-## Restaurant and location identity: deferred until T7/T8
+## Restaurant and location identity: core, gated by T7/T8
 
 ```mermaid
 erDiagram
@@ -153,12 +166,12 @@ erDiagram
 
 | Entity | Responsibility | Status |
 | --- | --- | --- |
-| `restaurants` | Canonical restaurant-level identity after an identity contract exists | Deferred |
-| `restaurant_aliases` | Source-aware alternate names, language, and normalization | Deferred |
-| `restaurant_locations` | Physical branch identity belonging to one restaurant | Deferred |
-| `restaurant_external_refs` | Provider identifier whose scope is restaurant-level | Deferred |
-| `restaurant_location_external_refs` | Provider identifier whose scope is branch-level | Deferred |
-| `menu_snapshot_restaurant_candidates` | Preserved candidate result using canonical status, basis, scope, conflict, method, and evidence | Deferred; replaces v2 `menu_snapshot_restaurant_links` |
+| `restaurants` | Canonical restaurant-level identity after an identity contract exists | Core gated |
+| `restaurant_aliases` | Source-aware alternate names, language, and normalization | Core gated |
+| `restaurant_locations` | Physical branch identity belonging to one restaurant | Core gated |
+| `restaurant_external_refs` | Provider identifier whose scope is restaurant-level | Core gated |
+| `restaurant_location_external_refs` | Provider identifier whose scope is branch-level | Core gated |
+| `menu_snapshot_restaurant_candidates` | Preserved candidate result using canonical status, basis, scope, conflict, method, and evidence | Core gated; replaces v2 `menu_snapshot_restaurant_links` |
 
 The word `owns` is removed: a candidate relationship does not establish ownership. A location candidate must belong to the same restaurant candidate through a composite relationship. A branch association is allowed only when canonical status is `confirmed`, scope is `branch`, and branch-specific evidence remains available.
 
@@ -180,9 +193,9 @@ They may return only after a product decision approves permanent source retentio
 
 Until then, `menu_evidence_sets` stores only the already approved exact fingerprint identity and safe metadata. The current transient image pipeline remains unchanged.
 
-## Culinary knowledge: deferred reviewed-claim model
+## Culinary knowledge: core reviewed-claim model
 
-The culinary domain remains a long-term candidate, but v2's direct truth links are narrowed.
+The culinary domain is current core program work, sequenced behind governance and physical-contract gates. The v2 direct truth links remain narrowed.
 
 ```mermaid
 erDiagram
@@ -199,7 +212,7 @@ erDiagram
   KNOWLEDGE_SOURCES ||--o{ KNOWLEDGE_CLAIM_EVIDENCE : supports
 ```
 
-### Retained deferred vocabularies
+### Retained core vocabularies
 
 - `dish_concepts`, `dish_concept_aliases`, `dish_concept_relationships`
 - `cuisines`, `geographic_regions`, `dish_concept_cuisines`, `dish_concept_regions`
@@ -265,7 +278,7 @@ A dish-concept profile is a reviewed culinary baseline, not a recipe guarantee. 
 
 Ingredient role and evidence basis are different dimensions. `core`, `typical`, `optional`, `regional_variant`, and `preparation_dependent` describe the baseline relationship between an ingredient and a dish concept. C1 `stated`, `typical`, and `uncertain` describe how a menu-specific ingredient claim was obtained. Neither dimension may silently promote the other.
 
-### Deferred knowledge invariants
+### Core knowledge invariants
 
 - profile corrections append a new version;
 - at most one published profile version is active for one concept and policy;
@@ -280,9 +293,9 @@ Ingredient role and evidence basis are different dimensions. `core`, `typical`, 
 - no model-created knowledge becomes published solely because it was generated;
 - source-stated menu claims remain separate from culinary baseline claims.
 
-## Menu-item analysis and merge: deferred
+## Menu-item analysis and merge: core, sequenced
 
-The normalized menu-claim model is not required to materialize sections, items, and prices. It follows only after the structured menu slice and reviewed knowledge model are justified.
+The normalized menu-claim model is not required to materialize sections, items, and prices. It follows only after the structured-menu slice and reviewed knowledge model pass their gates.
 
 Version 3 changes:
 
@@ -329,16 +342,16 @@ A future audit system must use allowlisted safe event fields. Generic `before_js
 
 ## Complete v2 disposition
 
-| v2 area | Retain | Replace, merge, or narrow | Defer or exclude |
+| v2 area | Retain | Replace, merge, or narrow | Sequencing or exclusion |
 | --- | --- | --- | --- |
 | Exact cache | `analysis_contracts`, `menu_evidence_sets`, `analysis_runs`, `analysis_snapshots` | None; implemented schema governs | None |
 | Structured menu | `menu_snapshots`, `menu_sections`, `menu_items`, `menu_item_prices` | Flat sections first; direct snapshot identity; no separate synchronous materialization table | Option groups and values deferred |
-| Restaurant | Restaurants, aliases, locations, two scope-specific external-ref tables | `menu_snapshot_restaurant_links` → candidates; remove ownership semantics and numeric-confidence truth | Entire area after T7/T8 |
+| Restaurant | Restaurants, aliases, locations, two scope-specific external-ref tables | `menu_snapshot_restaurant_links` → candidates; remove ownership semantics and numeric-confidence truth | Core gated after T7/T8 evidence |
 | Persisted evidence | None in active model | Existing evidence set remains fingerprint identity only | Artifacts and members blocked by retention decision |
-| Dish concepts | Concepts, aliases, relationships, cuisine/region mappings, profile versions | Relationship semantics and active-version policy must be explicit | Entire area deferred |
-| Vocabularies | Separate C1 basic-taste, flavor-note, texture vocabularies; scale-bound heat/richness values; ingredients, preparation, dietary traits, allergens, sources | No generic `taste`; heat/richness scale identity remains part of every value reference | Entire area deferred |
+| Dish concepts | Concepts, aliases, relationships, cuisine/region mappings, profile versions | Relationship semantics and active-version policy must be explicit | Core gated behind governance and physical contract |
+| Vocabularies | Separate C1 basic-taste, flavor-note, texture vocabularies; scale-bound heat/richness values; ingredients, preparation, dietary traits, allergens, sources | No generic `taste`; heat/richness scale identity remains part of every value reference | Core gated behind version and review policy |
 | Knowledge facts | None as standalone v2 fact rows | Common `knowledge_claims`, exactly one relational typed detail, and `knowledge_claim_evidence` | EAV/opaque JSON and ingredient truth links rejected |
-| Menu analysis | Menu item analyses and typed query intent | Candidate naming, common claim parent, composite identity, versioned effective profiles | Entire area deferred |
+| Menu analysis | Menu item analyses and typed query intent | Candidate naming, common claim parent, composite identity, versioned effective profiles | Core sequenced after knowledge governance |
 | User/community | None in active model | Future bounded-context redesign | All v2 user/community tables excluded |
 | Audit | Safe structural events only in future | Remove generic entity pointer and before/after payload | Generic `audit_events` excluded |
 
@@ -360,7 +373,7 @@ A future audit system must use allowlisted safe event fields. Generic `before_js
 
 ## Scoped product decisions
 
-Each decision blocks only the affected domain. C2.2-C resolves P-04 and P-06 for the bounded Development slice in [database-structured-menu-decisions.md](./database-structured-menu-decisions.md); the other decisions remain unresolved.
+Each decision blocks only the affected domain. C2.2-C resolves P-04 and P-06 for the bounded Development slice in [database-structured-menu-decisions.md](./database-structured-menu-decisions.md); the other decisions remain unresolved and continue to gate their core or deferred domains.
 
 | ID | Decision | Safe default until decided | Blocks |
 | --- | --- | --- | --- |
@@ -398,15 +411,19 @@ Completed in [database-physical-integrity-contract.md](./database-physical-integ
 - the implemented four-table C2.1 foundation as a compatibility boundary;
 - only the four candidate structured-menu tables.
 
-Deferred domains do not receive speculative physical contracts yet.
+No later core or deferred domain receives a speculative physical contract in this checkpoint.
 
 ### C2.2-C — scoped product and security decisions
 
-Completed in [database-structured-menu-decisions.md](./database-structured-menu-decisions.md). P-04 and P-06 are fixed for the bounded Development slice. Community, authentication, image-retention, restaurant, and knowledge decisions remain scoped to their deferred domains.
+Completed in [database-structured-menu-decisions.md](./database-structured-menu-decisions.md). P-04 and P-06 are fixed for the bounded Development slice. Community, authentication, image-retention, restaurant, and knowledge decisions remain scoped to their gated domains.
 
 ### C2.2-D — unexecuted schema draft
 
 Prepare reviewed Drizzle and SQL drafts for the approved next slice, validate dependency order and static integrity, but do not connect to a database or generate a migration until separately authorized.
+
+### C2.2-E — core database program charter
+
+Completed by [database-program-charter.md](./database-program-charter.md). It corrects the program objective, defines the three reuse paths and GPT/application boundary, reclassifies restaurant identity and culinary knowledge as gated core work, preserves deferred product scope, and keeps the C2.2-D draft inactive.
 
 ### C2.3 — Development-only structured menu implementation
 
@@ -416,11 +433,16 @@ If C2.2-B/C/D pass, implement the approved minimal projection in Development wit
 
 T7 source acquisition must define normalized URLs, SSRF defense, source classification, and preserved evidence. T8 then reopens restaurant and branch identity. Restaurant tables are not a prerequisite for T7.
 
-### Later bounded contexts
+### Sequenced core bounded contexts
 
-- reviewed culinary knowledge only after a concrete search, comparison, or merge use case;
+- restaurant and branch candidates after T7 evidence and their own identity contract;
+- dish concepts, aliases, reviewed culinary knowledge, and typed claims after governance and physical-contract gates;
 - menu-specific normalized claims and effective profiles after knowledge governance;
-- users, Passport, and community only after authentication and privacy design.
+- GPT-aware contextual retrieval only after identity, provenance, and deterministic merge contracts pass.
+
+### Deferred product contexts
+
+- users, Passport, personalization, and community only after authentication, authorization, privacy, retention, and deletion design.
 
 Every implemented slice uses the C2.1-G rollout protocol independently:
 

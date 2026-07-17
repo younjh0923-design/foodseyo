@@ -6,6 +6,7 @@ await import("./validate-mvp-scope.mts");
 await import("./validate-menu-cache-contract.mts");
 await import("./validate-analysis-cache-schema.mts");
 await import("./validate-structured-menu-schema-draft.mts");
+await import("./validate-database-program-charter.mts");
 await import("./validate-analysis-cache-repositories.mts");
 await import("./validate-analysis-cache-integration.mts");
 

@@ -7,8 +7,9 @@ Foodseyo is a source-honest, mobile-first food copilot that turns unfamiliar men
 - Read [docs/PROJECT_OVERVIEW.md](./docs/PROJECT_OVERVIEW.md) for the stable product definition, audience, differentiators, MVP boundary, and long-term direction.
 - Read [docs/CODEX_HANDOFF.md](./docs/CODEX_HANDOFF.md) for the current branch, completed checkpoints, next checkpoint, and operational stop conditions.
 - [docs/product-rules.md](./docs/product-rules.md) is normative for active product scope and safety.
+- [docs/database-program-charter.md](./docs/database-program-charter.md) owns the objective, three reuse paths, current core data scope, GPT/application authority, semantic invariants, phased roadmap, and per-slice rollout boundary. For any database, analysis-reuse, restaurant, dish, taste, texture, ingredient, culinary-knowledge, semantic-merge, or GPT-consistency task, agents must read the charter first.
 - [docs/database-cache-contract.md](./docs/database-cache-contract.md) is normative for C2.1 exact-cache behavior; the executable Drizzle schema and reviewed migrations govern the physical database shape.
-- [docs/database-logical-model-v3.md](./docs/database-logical-model-v3.md) owns the future relational scope, entity responsibilities, deferrals, and unresolved product decisions. It is not a physical schema or migration source.
+- [docs/database-logical-model-v3.md](./docs/database-logical-model-v3.md) owns relational entity responsibilities, sequencing states, and unresolved product decisions under the program charter. It is not a physical schema or migration source.
 - [docs/database-physical-integrity-contract.md](./docs/database-physical-integrity-contract.md) owns the non-executable C2.2-B PostgreSQL contract for the existing compatibility boundary and four structured-menu candidates.
 - [docs/database-structured-menu-decisions.md](./docs/database-structured-menu-decisions.md) owns the C2.2-C retention, invalidation, and first-slice price-scope decisions.
 - [docs/database-schema-draft.md](./docs/database-schema-draft.md) owns the C2.2-D unexecuted Drizzle/SQL draft review and C2.3 entry gate. The draft must remain outside active schema exports and migrations until separately authorized.
@@ -19,6 +20,7 @@ Foodseyo is a source-honest, mobile-first food copilot that turns unfamiliar men
 
 - Preserve user-visible behavior, copy, API contracts, canonical schemas, image limits, preprocessing, storage, and navigation unless the requested checkpoint explicitly changes them.
 - Food Passport, restaurant-photo/sign/screenshot analysis, personalization, and community features are outside the active MVP. T7 link analysis and map-app sharing have not started; T8 restaurant identification also remains inactive until post-T7 reevaluation.
+- Restaurant/branch candidates, dish concepts, reviewed culinary knowledge, typed menu claims, deterministic merging, and GPT-aware reuse are current core database-program work, but each remains gated until its explicitly authorized checkpoint. Core-program inclusion does not make a capability live.
 - Do not add a new product capability before its requested checkpoint or simulate an unavailable capability with demo data.
 - The current live flow is menu photos to one provider-backed canonical analysis, then `sessionStorage` to Overview and Dish Detail.
 - Never run a real OpenAI request or paid menu analysis unless the user explicitly requests that exact action. Network-free synthetic tests are the default.

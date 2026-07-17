@@ -4,7 +4,7 @@
 
 **Reviewed:** 2026-07-17
 
-This document is the product and security decision source of truth for the next structured-menu slice. It closes only P-04 and P-06 from the logical model. Decisions for evidence artifacts, restaurant identity, culinary knowledge, users, and community remain deferred and do not block this slice.
+This document is the product and security decision source of truth for the next structured-menu slice. It closes only P-04 and P-06 from the logical model. Under the [Core Consistency Database Program Charter](./database-program-charter.md), restaurant identity and culinary knowledge are sequenced core work, while users and community remain deferred product scope. None blocks this first slice, and each retains its own decision gate.
 
 The decisions below authorize C2.2-D to prepare an unexecuted Drizzle and SQL draft for the four candidate projection tables. They do not authorize a migration, a database connection, a repository, live-route integration, a public read path, Preview or Production changes, or deployment.
 

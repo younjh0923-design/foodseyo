@@ -1,13 +1,13 @@
 # Foodseyo Codex Handoff
 
 **Updated:** 2026-07-17
-**Current checkpoint:** C2.2-D unexecuted structured-menu schema draft complete locally; C2.3 is next but not started
+**Current checkpoint:** C2.2-E core consistency database program charter complete locally; C2.3 is the exact next checkpoint and has not started
 
 This file is intentionally operational and may change at every checkpoint. Stable product intent belongs in [PROJECT_OVERVIEW.md](./PROJECT_OVERVIEW.md).
 
 ## Repository position
 
-- Current branch: `c2.2-d-unexecuted-schema-draft`
+- Current branch: `c2.2-e-database-program-charter`
 - C2.2-A starting HEAD and preserved C2.1-G commit: `e08249182241d30a21aeebd17a0cd75e110591af`
 - C2.2-A delivery: `6c11da84325373eedce5d6e5cf551912e9c8205a`
 - C2.2-A1 starting HEAD: `6c11da84325373eedce5d6e5cf551912e9c8205a`
@@ -17,13 +17,15 @@ This file is intentionally operational and may change at every checkpoint. Stabl
 - C2.2-C starting HEAD: `b0bcae6ae7a2210ea58c7fbdd4e774ba42c9af1a`
 - C2.2-C delivery: `8e4cce4ae23826146bca3e1b7bba058c64dff41c`
 - C2.2-D starting HEAD: `8e4cce4ae23826146bca3e1b7bba058c64dff41c`
-- C2.2-D delivery: the current committed branch tip containing this handoff
+- C2.2-D delivery: `9bafb1f78a6bf0988bdd759644f5aafeec7d88be`
+- C2.2-E starting HEAD: `9bafb1f78a6bf0988bdd759644f5aafeec7d88be`
+- C2.2-E delivery: the current committed branch tip containing this handoff
 - Local `main`: `cfbb93750c0b8f41f470963eddaf203d3b82457f`
 - Local `origin/main` baseline: `d3c255d29b4029589e6f6b562a482134c0e28b99`
-- Ahead/behind at the committed C2.2-D checkpoint: `15/0`.
+- Ahead/behind at the committed C2.2-E checkpoint: `16/0`.
 - GitHub branch `c2.1-g-rollout-review` points to exact preserved commit `e08249182241d30a21aeebd17a0cd75e110591af`; no pull request or `main` change occurred.
 - That branch push created automatic Ready Preview deployment `dpl_3xMW3EWK5PWYpAEDPPhsnSk4akSZ` from the exact Git SHA. It was not promoted, tested through the live POST route, or accompanied by a Preview database migration.
-- The C2.2-A, C2.2-A1, C2.2-B, C2.2-C, and C2.2-D branches and checkpoint commits have not been pushed or deployed.
+- The C2.2-A, C2.2-A1, C2.2-B, C2.2-C, C2.2-D, and C2.2-E branches and checkpoint commits have not been pushed or deployed.
 
 The only untracked and unstaged files are:
 
@@ -39,6 +41,7 @@ They are reference artifacts only. Do not stage, modify, execute, or treat the s
 | Stable product definition and long-term direction | `docs/PROJECT_OVERVIEW.md` |
 | Active MVP scope and safety | `docs/product-rules.md` |
 | Current checkpoint and next action | `docs/CODEX_HANDOFF.md` |
+| Core database objective, three reuse paths, GPT boundary, and phased program | `docs/database-program-charter.md` |
 | C2.1 exact-cache behavior | `docs/database-cache-contract.md` |
 | Non-secret environment and role setup | `docs/database-environment-setup.md` |
 | Preview/Production rollout and recovery plan | `docs/database-rollout-plan.md` |
@@ -72,6 +75,7 @@ They are reference artifacts only. Do not stage, modify, execute, or treat the s
 - C2.2-B exact C2.1 compatibility mirror and bounded structured-menu PostgreSQL integrity contract
 - C2.2-C Development-only retention/source-invalidation and canonical price-option scope decisions
 - C2.2-D isolated Drizzle/SQL schema draft and network-free static integrity validation
+- C2.2-E core database objective, three reuse paths, GPT/application authority, current/deferred scope, versions, evaluation, completion, and phased rollout charter
 - project context freeze separating stable product intent, current handoff state, and the public README
 
 Development contains four empty application tables and one migration-ledger row. Preview and Production contain no Foodseyo application tables. The exact-cache route exists in the preserved automatic Preview build, but the absent Preview schema means that build is not a validated database rollout and its analysis POST route was not invoked. The deployed Production application remains on its existing uncached provider flow.
@@ -80,7 +84,7 @@ No UI or user-visible copy changed, so browser visual QA was not required.
 
 ## Completed C2.2-A
 
-C2.2-A audits the external Complete ERD v2 without accepting it as an implementation plan. The v3 logical source of truth preserves the implemented C2.1 cache, narrows the next candidate to four structured-menu projection tables, defers restaurant identity until T7/T8, replaces ambiguous fact/evidence links with a future claim-parent model, and excludes persisted images, users, Passport, community, and generic audit payloads until their own decisions exist.
+C2.2-A audits the external Complete ERD v2 without accepting it as an implementation plan. The v3 logical source of truth preserves the implemented C2.1 cache, narrows the next candidate to four structured-menu projection tables, sequences restaurant identity behind T7/T8 evidence, replaces ambiguous fact/evidence links with a future claim-parent model, and excludes persisted images, users, Passport, community, and generic audit payloads until their own decisions exist. C2.2-E later classifies restaurant identity and culinary knowledge as gated core work without removing those prerequisites.
 
 The audit defines entity responsibilities, v2 retain/replace/defer/exclude dispositions, ten relationship corrections, fourteen scoped product decisions, and an implementation order that treats rollout as a per-slice protocol rather than a final all-at-once phase. It creates no physical column contract, Drizzle schema, SQL, migration, repository, runtime integration, platform resource, or new capability.
 
@@ -126,9 +130,21 @@ No migration was generated or executed. No repository, transaction service, data
 
 The durable draft review and application-level invariants still required are in [database-schema-draft.md](./database-schema-draft.md).
 
+## Completed C2.2-E
+
+C2.2-E corrects the forward-looking database-program scope without changing the live MVP or activating a schema. The primary objective is now faster, semantically consistent, evidence-aware, versioned, safely reusable analysis with less unnecessary repeated full-provider reasoning.
+
+The charter defines three non-interchangeable paths: exact canonical snapshot reuse, semantic dish and reviewed culinary-knowledge reuse, and restaurant/branch-scoped reuse. Structured-menu projection remains the first bounded implementation slice. Restaurant/branch candidates, dish concepts and aliases, reviewed culinary profiles, separate sensory knowledge, ingredient roles, typed menu claims, deterministic effective merging, and GPT-aware context retrieval are current core program work, but remain sequenced behind their own evidence, decision, physical-contract, Development-validation, and rollout gates.
+
+The charter preserves `source_stated > inferred_from_source > reviewed culinary_baseline > unknown`, strict unknown safety, separate C1 axes, scale-bound heat/richness, ingredient-role separation, exactly one relational typed detail per claim, orthogonal generation/review/lifecycle, and full version/provenance capture. Accounts, Food Passport, personalization, community, and permanent raw-image storage remain deferred.
+
+The isolated C2.2-D Drizzle/SQL draft remains outside the active schema export and migration directory. The active migration set remains only `0000_c2_1_b_analysis_cache_schema.sql`. No product implementation, schema activation, migration, repository, database/platform access, OpenAI call, push, or deployment occurred.
+
+The new 18-check network-free charter validator, `pnpm verify:quick` with 318 assertions, `pnpm verify:full` with 1,025 assertions, `git diff --check`, and repository security validation pass at the completed worktree. No UI or user-visible copy changed, so browser visual QA was not required. The supplied DOCX and SQL references remain untracked and unstaged.
+
 ## Next checkpoint: C2.3
 
-C2.3 requires a separate explicit instruction. It may promote the reviewed draft into the active schema, prepare and apply a reviewed Development-only migration, implement the atomic structured-menu projection transaction, and perform deterministic plus real PostgreSQL adversarial validation. Validation must leave no application rows or temporary Development branches.
+C2.3 is the one exact next checkpoint and requires a separate explicit instruction. It may promote only the reviewed four-table draft into the active schema, prepare and apply a reviewed Development-only migration, implement the atomic structured-menu projection transaction, and perform deterministic plus real PostgreSQL adversarial validation. Validation must leave no application rows or temporary Development branches.
 
 Do not alter C2.1 tables, add a public or live-route read path, expand entity or price scope, retain source images, migrate Preview or Production, push, deploy, merge `main`, invoke the live POST route, or call OpenAI without a separate instruction.
 

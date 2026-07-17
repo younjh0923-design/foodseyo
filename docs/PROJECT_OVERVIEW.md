@@ -72,7 +72,7 @@ unfamiliar menu
 
 GPT-5.6 supplies structured menu interpretation. Codex has accelerated the product-scope cleanup, canonical contracts, provider hardening, consistency system, network-free regression coverage, database design audit, infrastructure verification, and staged exact-cache implementation.
 
-The database/cache work is an enabling trust layer, not the primary product pitch. It should make repeated analysis consistent, efficient, and safe without obscuring the user outcome.
+The database/cache work is an enabling trust layer, not the primary product pitch. Its objective is to make analysis faster, semantically consistent, evidence-aware, versioned, and safely reusable without obscuring the user outcome or repeating full provider reasoning when trusted context already exists.
 
 ## Current technical shape
 
@@ -89,6 +89,18 @@ The database/cache work is an enabling trust layer, not the primary product pitc
 - network-free automated validation and production build checks
 
 The C2.1-D/E/F history connects exact lookup, quarantine, ownership, duplicate coordination, bounded polling, and strict ready-snapshot persistence to the menu analysis route. It passed deterministic and repeated adversarial real-PostgreSQL Development verification. The exact C2.1-G commit is preserved on a GitHub feature branch and has an automatic Git-sourced Vercel Preview, but Preview and Production have not received the application schema and the Preview is not a validated database rollout. The C2.1-G review recommends preserving the current uncached Production flow through the competition deadline.
+
+## Core consistency database program
+
+The durable program charter is [database-program-charter.md](./database-program-charter.md). It distinguishes three reuse paths:
+
+1. exact whole-analysis reuse under the complete C2.1 source and analysis contract;
+2. semantic dish and reviewed culinary-knowledge reuse;
+3. restaurant- and branch-scoped reuse under preserved identity evidence.
+
+Structured-menu projection is the first bounded relational implementation slice, not the final database objective. Restaurant and branch candidates, dish concepts and aliases, versioned culinary profiles, separate sensory axes, ingredient roles, typed menu claims, deterministic effective merging, and GPT-aware pre/post-provider orchestration are current core backend work. They remain sequenced behind their own evidence, product/security, physical-contract, Development-validation, and rollout gates; none is live merely because it belongs to the program.
+
+Accounts, Food Passport, personalization, personal food history, community, and permanent raw-image storage remain deferred product scope.
 
 ## Explicit non-goals for the active MVP
 
@@ -127,10 +139,14 @@ C2.1-F is complete locally, including repeated adversarial PostgreSQL verificati
 - **C2.2-B:** physical integrity contract for the existing cache boundary and the minimal structured-menu candidate — completed locally without schema or migration;
 - **C2.2-C:** bounded retention, invalidation, and first-slice price decisions — completed locally without schema, migration, or database access;
 - **C2.2-D:** isolated Drizzle/SQL draft and static integrity validation — completed locally without an active schema, migration, or database access;
-- **C2.3 candidate:** Development-only structured menu projection, separate from live-route integration and rollout;
-- implement T7 restaurant/menu link acquisition with URL normalization, SSRF defense, source classification, evidence extraction, and identity rules;
-- reconsider T8 restaurant and branch identification only after T7 evidence is available;
-- evaluate culinary knowledge, personalization, Food Passport, nearby discovery, community, multilingual expansion, PWA/native distribution, and map sharing only after their own product and safety gates.
+- **C2.2-E:** Core Consistency Database Program Charter — completed locally as a documentation-only scope and sequencing correction;
+- **C2.3:** Development-only structured menu projection, separate from live-route integration and rollout; this is the exact next checkpoint;
+- implement T7 restaurant/menu link acquisition with URL normalization, SSRF defense, source classification, and preserved evidence before restaurant/branch identity;
+- define and implement restaurant/branch candidates through separate decision, physical-contract, Development-validation, and rollout checkpoints;
+- define and implement dish concepts, aliases, reviewed culinary profiles, separate sensory knowledge, ingredient roles, typed claims, and provenance through bounded checkpoints;
+- define deterministic menu-specific merge and GPT-aware contextual reuse only after the supporting identity and knowledge contracts pass;
+- evaluate the exact, semantic-dish, and restaurant-scoped paths adversarially before any rollout;
+- keep personalization, Food Passport, nearby discovery, community, PWA/native distribution, and map sharing behind their own product and safety gates.
 
 ## Submission critical path
 

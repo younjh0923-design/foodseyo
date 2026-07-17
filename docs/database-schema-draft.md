@@ -4,7 +4,7 @@
 
 **Reviewed:** 2026-07-17
 
-This document records the C2.2-D realization of the accepted [physical integrity contract](./database-physical-integrity-contract.md) and [structured-menu decisions](./database-structured-menu-decisions.md). It is a design checkpoint only.
+This document records the C2.2-D realization of the accepted [physical integrity contract](./database-physical-integrity-contract.md) and [structured-menu decisions](./database-structured-menu-decisions.md). Under the [Core Consistency Database Program Charter](./database-program-charter.md), it is the isolated design for the first implementation slice, not the full database objective. It remains a design checkpoint only.
 
 ## Draft artifacts
 
@@ -106,7 +106,7 @@ No repository or transaction service is part of C2.2-D.
 
 ## C2.3 entry gate
 
-C2.3 requires a separate explicit instruction. It may promote the reviewed draft into the active schema and prepare a reviewed Development migration, then implement the bounded aggregate transaction and adversarial PostgreSQL validation.
+C2.3 is the exact next checkpoint and requires a separate explicit instruction. It may promote only this reviewed draft into the active schema and prepare a reviewed Development migration, then implement the bounded aggregate transaction and adversarial PostgreSQL validation.
 
 C2.3 must remain Development-only and must not:
 
@@ -118,3 +118,5 @@ C2.3 must remain Development-only and must not:
 - leave validation rows or disposable child branches behind;
 - migrate Preview or Production;
 - push, deploy, invoke the live analysis route, or call OpenAI.
+
+Restaurant/branch candidates, dish concepts, reviewed culinary knowledge, typed claims, semantic merging, and GPT-aware reuse are current core program work, but they are not part of C2.3. Each requires its own decision and physical-contract gate before any schema draft or migration.

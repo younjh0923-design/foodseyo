@@ -1,10 +1,10 @@
 # Foodseyo Product Rules
 
-**Status:** Normative MVP definition through local C2.2-D structured-menu schema draft
+**Status:** Normative MVP definition through local C2.2-E database program charter
 
 **Date:** 2026-07-17
 
-This document defines the active MVP scope, information boundaries, safety rules, and roadmap. Detailed mechanics live in [input-architecture.md](./input-architecture.md), [analysis-flow.md](./analysis-flow.md), [data-contract.md](./data-contract.md), and [image-policy.md](./image-policy.md). Historical decisions remain in [decision-log.md](./decision-log.md).
+This document defines the active MVP scope, information boundaries, safety rules, and roadmap. The broader core consistency data objective and its three reuse paths are governed by [database-program-charter.md](./database-program-charter.md). Detailed mechanics live in [input-architecture.md](./input-architecture.md), [analysis-flow.md](./analysis-flow.md), [data-contract.md](./data-contract.md), and [image-policy.md](./image-policy.md). Historical decisions remain in [decision-log.md](./decision-log.md).
 
 ## Product definition
 
@@ -63,13 +63,19 @@ Foodseyo distinguishes:
 
 General knowledge must never be presented as restaurant-confirmed. Restaurant match signals create candidates, not automatic confirmation. A `likely` match is not a numeric confidence score and should be communicated as uncertain.
 
-Any future culinary baseline remains variable by region and preparation, versioned, reviewed, and explicitly labeled. It may fill missing menu context but cannot override contradictory source evidence. Basic tastes, flavor notes, textures, heat, and richness remain separate; heat adjustability is not the same claim as observed or typical heat. Unknown culinary, dietary, or allergen information never becomes absence or safety.
+A culinary baseline remains variable by region and preparation, versioned, reviewed, and explicitly labeled. It may fill missing menu context but cannot override contradictory source evidence. Resolution preserves `source_stated > inferred_from_source > reviewed culinary_baseline > unknown`. Basic tastes, flavor notes, textures, heat, and richness remain separate; heat adjustability is not the same claim as observed or typical heat. Unknown culinary, dietary, or allergen information never becomes absence, false, confirmation, compatibility, or safety.
 
 A user-entered restaurant name is a declaration, not independent verification. Without compatible source-stated identity it remains `likely` at restaurant scope. Source-stated names may confirm restaurant-level identity; branch scope requires preserved branch-specific evidence. Conflicting user and source names remain unconfirmed and neither identity is silently selected or combined. Location alone never confirms a restaurant or branch.
 
 Price, currency, ingredients, preparation, dietary status, review claims, popularity, and freshness must retain their actual evidence basis. Missing evidence stays missing.
 
 The first structured-menu projection may retain only an eligible source-backed base price and eligible canonical price options. It does not retain option-group add-on deltas, ranges, market-price markers, inferred prices, or converted amounts. A missing price creates no row and never becomes zero.
+
+## Core database program
+
+The active MVP and the core backend program have different boundaries. The live MVP remains menu-photo analysis plus local link validation. The core backend program also includes exact reuse, structured menu, restaurant/branch candidates, dish concepts and aliases, reviewed culinary profiles, separate sensory knowledge, ingredient roles, provenance and lifecycle, typed menu claims, deterministic effective merging, and GPT-aware contextual reuse.
+
+Core-program inclusion does not authorize immediate implementation. Each new area requires its own product/security decisions, physical integrity contract, isolated draft, Development validation, and separate Preview/Production gate. Accounts, Food Passport, personalization, personal history, community, and permanent raw-image storage remain deferred.
 
 ## Allergy and dietary safety
 
@@ -126,10 +132,14 @@ The canonical reader supports legacy `FoodseyoAnalysis` `1.0.0`, C1.2 `1.1.0`, a
 - **C2.2-B:** physical integrity contract completed locally for the existing C2.1 boundary and minimal structured-menu candidate; no schema or migration.
 - **C2.2-C:** scoped projection retention, invalidation, and price decisions completed locally; no schema, migration, or database access.
 - **C2.2-D:** isolated Drizzle/SQL draft and static integrity validation completed locally; no active schema, migration, or database execution.
-- **C2.3 candidate:** Development-only structured menu projection after the C2.2 gates.
-- **T7.1–T7.4:** restaurant/menu link analysis after C2.
-- **T8:** restaurant identification, reconsider after T7.
-- **Later:** culinary knowledge, personalization, personal food history, and community after their own gates.
+- **C2.2-E:** Core Consistency Database Program Charter completed locally; documentation and sequencing only.
+- **C2.3:** Development-only structured menu projection; exact next checkpoint and first implementation slice.
+- **T7.1–T7.4:** restaurant/menu link analysis after C2, beginning with safe acquisition and preserved evidence.
+- **T8:** restaurant identification, reconsidered as gated core candidate work after T7 evidence.
+- **Restaurant/branch core:** identity decisions, physical contract, Development implementation, and validation after T7/T8 evidence.
+- **Culinary core:** dish concepts, aliases, reviewed profiles, separate sensory knowledge, ingredient roles, typed claims, and provenance through bounded gates.
+- **Semantic reuse core:** menu-specific claims, deterministic effective merging, and GPT-aware context only after supporting contracts pass.
+- **Later:** personalization, Food Passport, personal food history, and community after their own gates.
 - **Later:** map-app share-to-Foodseyo integration.
 
 The Later item is documentation only. No share extension or inbound map-app share flow exists today.

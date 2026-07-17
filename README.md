@@ -37,7 +37,7 @@ The Home link field validates HTTP/HTTPS syntax only. It does not fetch or analy
 - controlled vocabularies, deterministic wording, semantic validation, and versioned fingerprints reduce avoidable drift;
 - automated validation is network-free and never makes a paid OpenAI request.
 
-Neon/Vercel Development, Preview, and Production database environments are isolated. The four-table exact-cache schema exists only in Development today. Local C2.1-E adds pre-provider lease ownership, duplicate coordination, bounded polling, expired-lease recovery, strict owner-only persistence, and the frozen 409/503 policy above the C2.1-D exact lookup and quarantine path. C2.1-F independently passed deterministic and adversarial real-PostgreSQL validation on disposable Development child branches, including repeated concurrency, rollback, ambiguous outcomes, and corrupt-snapshot quarantine failures. Every child branch was deleted and permanent Development remained empty. The exact C2.1-G commit is preserved on a GitHub feature branch and produced an automatic Git-sourced Preview build, but no Preview/Production database migration or validated cache rollout occurred. Production remains on the uncached flow. C2.2-A through C2.2-D now define the bounded logical model, physical integrity contract, first-slice decisions, and isolated static schema draft. The active schema and migration set remain unchanged.
+Neon/Vercel Development, Preview, and Production database environments are isolated. The four-table exact-cache schema exists only in Development today. Local C2.1-E adds pre-provider lease ownership, duplicate coordination, bounded polling, expired-lease recovery, strict owner-only persistence, and the frozen 409/503 policy above the C2.1-D exact lookup and quarantine path. C2.1-F independently passed deterministic and adversarial real-PostgreSQL validation on disposable Development child branches, including repeated concurrency, rollback, ambiguous outcomes, and corrupt-snapshot quarantine failures. Every child branch was deleted and permanent Development remained empty. The exact C2.1-G commit is preserved on a GitHub feature branch and produced an automatic Git-sourced Preview build, but no Preview/Production database migration or validated cache rollout occurred. Production remains on the uncached flow. C2.2-A through C2.2-E now define the bounded logical model, physical integrity contract, first-slice decisions, isolated static schema draft, and broader core consistency database charter. The active schema and migration set remain unchanged.
 
 ## Run locally
 
@@ -102,14 +102,16 @@ Codex has supported the repository-wide implementation workflow: product-scope c
 - C2.2-B — physical integrity contract completed locally; no schema or migration
 - C2.2-C — scoped retention, invalidation, and price decisions completed locally; no schema or migration
 - C2.2-D — isolated Drizzle/SQL schema draft and static validation completed locally; not active or migrated
-- C2.3 candidate — Development-only structured menu projection after the C2.2 gates
+- C2.2-E — core consistency database program charter completed locally; documentation only
+- C2.3 — Development-only structured menu projection; exact next checkpoint and first implementation slice
 - T7 — restaurant/menu link analysis after C2
-- T8 — restaurant identification, to be reconsidered after T7
-- Later — culinary knowledge, personalization, Food Passport, community, and map-app sharing
+- Core data program after T7 evidence — restaurant/branch candidates, dish concepts, reviewed culinary knowledge, typed claims, deterministic merge, and GPT-aware reuse through bounded gates
+- Later product scope — personalization, Food Passport, community, and map-app sharing
 
 Stable product context is in [`docs/PROJECT_OVERVIEW.md`](./docs/PROJECT_OVERVIEW.md). The current implementation handoff is in [`docs/CODEX_HANDOFF.md`](./docs/CODEX_HANDOFF.md).
 
 The scoped future relational model is in [`docs/database-logical-model-v3.md`](./docs/database-logical-model-v3.md).
+The primary database objective, three reuse paths, GPT boundary, and phased program are in [`docs/database-program-charter.md`](./docs/database-program-charter.md).
 The next-slice PostgreSQL integrity contract is in [`docs/database-physical-integrity-contract.md`](./docs/database-physical-integrity-contract.md).
 The accepted structured-menu product and security decisions are in [`docs/database-structured-menu-decisions.md`](./docs/database-structured-menu-decisions.md).
 The isolated, unexecuted schema draft review is in [`docs/database-schema-draft.md`](./docs/database-schema-draft.md).
