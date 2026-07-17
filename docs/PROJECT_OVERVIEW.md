@@ -124,7 +124,7 @@ C2.1-F is complete locally, including repeated adversarial PostgreSQL verificati
 ### Relational planning after C2.1
 
 - **C2.2-A:** logical ERD audit and scoped v3 model — completed locally with no physical schema or migration;
-- **C2.2-B:** physical integrity contract for the existing cache boundary and the minimal structured-menu candidate;
+- **C2.2-B:** physical integrity contract for the existing cache boundary and the minimal structured-menu candidate — completed locally without schema or migration;
 - **C2.2-C:** domain-scoped product and security decisions;
 - **C2.2-D:** unexecuted Drizzle/SQL draft after contract approval;
 - **C2.3 candidate:** Development-only structured menu projection, separate from live-route integration and rollout;

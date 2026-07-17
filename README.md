@@ -99,7 +99,8 @@ Codex has supported the repository-wide implementation workflow: product-scope c
 - C2.1-F — real Development database integrity and concurrency validation (completed locally; not deployed)
 - C2.1-G — rollout-readiness review completed locally; Production rollout deferred
 - C2.2-A — logical ERD v3 and future-domain scope audit (completed locally; no schema)
-- C2.2-B–D — physical integrity contract, scoped product decisions, and unexecuted schema draft
+- C2.2-B — physical integrity contract completed locally; no schema or migration
+- C2.2-C–D — scoped product decisions and an unexecuted schema draft
 - C2.3 candidate — Development-only structured menu projection after the C2.2 gates
 - T7 — restaurant/menu link analysis after C2
 - T8 — restaurant identification, to be reconsidered after T7
@@ -108,3 +109,4 @@ Codex has supported the repository-wide implementation workflow: product-scope c
 Stable product context is in [`docs/PROJECT_OVERVIEW.md`](./docs/PROJECT_OVERVIEW.md). The current implementation handoff is in [`docs/CODEX_HANDOFF.md`](./docs/CODEX_HANDOFF.md).
 
 The scoped future relational model is in [`docs/database-logical-model-v3.md`](./docs/database-logical-model-v3.md).
+The next-slice PostgreSQL integrity contract is in [`docs/database-physical-integrity-contract.md`](./docs/database-physical-integrity-contract.md).

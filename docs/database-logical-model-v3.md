@@ -1,6 +1,6 @@
 # Foodseyo Database Logical Model v3
 
-**Status:** C2.2-A1 culinary-contract gap audit accepted locally; no physical schema or migration
+**Status:** C2.2-B physical integrity contract linked locally; no physical schema or migration
 **Reviewed:** 2026-07-17
 
 This document is the C2.2-A and C2.2-A1 source of truth for the future relational model. It audits the external `Foodseyo Complete ERD v2` proposal against the implemented C2.1 cache, the canonical `FoodseyoAnalysis` contract, the frozen C1 consistency profile, the active MVP, and the T7/T8 ordering.
@@ -86,8 +86,6 @@ The first future relational slice is deliberately small.
 ```mermaid
 erDiagram
   ANALYSIS_SNAPSHOTS ||--o{ MENU_SNAPSHOTS : projects
-  MENU_EVIDENCE_SETS ||--o{ MENU_SNAPSHOTS : preserves_identity
-  ANALYSIS_CONTRACTS ||--o{ MENU_SNAPSHOTS : preserves_contract
   MENU_SNAPSHOTS ||--o{ MENU_SECTIONS : contains
   MENU_SNAPSHOTS ||--o{ MENU_ITEMS : contains
   MENU_SECTIONS o|--o{ MENU_ITEMS : optionally_groups
@@ -114,7 +112,7 @@ erDiagram
 
 ### Candidate logical invariants
 
-C2.2-B must translate these into an enforcement matrix:
+C2.2-B translates these into the enforcement matrix in [database-physical-integrity-contract.md](./database-physical-integrity-contract.md):
 
 - at most one menu snapshot per `(analysis_snapshot, projector_version)`;
 - the menu snapshot's evidence set and analysis contract are identical to its source analysis snapshot;
@@ -395,7 +393,7 @@ Completed by the preservation matrix and typed-claim clarifications above. The C
 
 ### C2.2-B — physical integrity contract
 
-Define columns, PostgreSQL types, nullability, defaults, keys, deletion behavior, uniqueness, checks, indexes, immutability, grants, and enforcement ownership for:
+Completed in [database-physical-integrity-contract.md](./database-physical-integrity-contract.md) without schema code, SQL, migration, or database access. It defines columns, PostgreSQL types, nullability, defaults, keys, deletion behavior, uniqueness, checks, indexes, immutability, grants, and enforcement ownership for:
 
 - the implemented four-table C2.1 foundation as a compatibility boundary;
 - only the four candidate structured-menu tables.
@@ -434,9 +432,9 @@ Development migration and adversarial validation
 → separate Production go/no-go
 ```
 
-## C2.2-B entry gate
+## C2.2-C entry gate
 
-C2.2-B may begin only from this v3 plus C2.2-A1 scope and must not:
+C2.2-C begins from the completed logical and physical contracts. It is limited to the retained structured-menu product decisions, especially P-04 retention/invalidation behavior and P-06 first-slice price-option scope. It must not:
 
 - redefine the four C2.1 tables;
 - include evidence artifacts, restaurant identity, knowledge, user, or community tables;

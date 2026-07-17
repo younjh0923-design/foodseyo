@@ -1,6 +1,6 @@
 # Foodseyo Product Rules
 
-**Status:** Normative MVP definition through local C2.2-A1 contract gap audit
+**Status:** Normative MVP definition through local C2.2-B physical integrity contract
 
 **Date:** 2026-07-17
 
@@ -121,8 +121,8 @@ The canonical reader supports legacy `FoodseyoAnalysis` `1.0.0`, C1.2 `1.1.0`, a
 - **C2.1-G:** rollout-readiness review completed locally; staged plan documented and Production rollout deferred.
 - **C2.2-A:** scoped logical ERD v3 and future-domain audit completed locally; no schema or migration.
 - **C2.2-A1:** C1 culinary and sensory contract preservation audit completed locally; no schema or migration.
-- **C2.2-B:** next physical integrity contract, limited to the existing C2.1 boundary and minimal structured-menu candidate.
-- **C2.2-C / C2.2-D:** scoped product decisions followed by unexecuted schema drafting.
+- **C2.2-B:** physical integrity contract completed locally for the existing C2.1 boundary and minimal structured-menu candidate; no schema or migration.
+- **C2.2-C / C2.2-D:** next scoped product decisions followed by unexecuted schema drafting.
 - **C2.3 candidate:** Development-only structured menu projection after the C2.2 gates.
 - **T7.1–T7.4:** restaurant/menu link analysis after C2.
 - **T8:** restaurant identification, reconsider after T7.
