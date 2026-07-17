@@ -14,6 +14,7 @@ import {
 import { MenuAnalysisError } from "./menu-analysis-errors.ts";
 import { createMenuImagesAnalyzer } from "./menu-images-analyzer.ts";
 import type { MenuVisionProvider } from "./menu-vision-provider.ts";
+import type { MenuAnalysisModel } from "./openai-menu-request.ts";
 import {
   MenuUploadValidationError,
   toTransientImageInputs,
@@ -46,7 +47,8 @@ export interface MenuAnalysisObservation {
 }
 
 export interface MenuAnalysisPostHandlerDependencies {
-  createProvider(): MenuVisionProvider;
+  createProvider(modelVersion: MenuAnalysisModel): MenuVisionProvider;
+  environment?: Readonly<Record<string, string | undefined>>;
   createCorrelationId?(): string;
   now?(): number;
   logObservation?(observation: MenuAnalysisObservation): void;
@@ -200,24 +202,31 @@ export function createMenuAnalysisPostHandler(
 
       const validatedImages = await validateUploadedMenuImages(imageEntries as File[]);
       const restaurantName = validateRestaurantName(formData.get("restaurantName"));
-      const provider = dependencies.createProvider();
-      const measuredProvider: MenuVisionProvider = {
-        modelVersion: provider.modelVersion,
-        async analyzeMenuImages(input) {
-          const providerStartedAt = now();
-          try {
-            return await provider.analyzeMenuImages(input);
-          } finally {
-            providerCompletedAt = now();
-            openAiDurationMs = Math.max(
-              0,
-              Math.round(providerCompletedAt - providerStartedAt),
-            );
-          }
-        },
+      const createMeasuredProvider = (
+        modelVersion: MenuAnalysisModel,
+      ): MenuVisionProvider => {
+        const provider = dependencies.createProvider(modelVersion);
+        return {
+          modelVersion: provider.modelVersion,
+          async analyzeMenuImages(input) {
+            const providerStartedAt = now();
+            try {
+              return await provider.analyzeMenuImages(input);
+            } finally {
+              providerCompletedAt = now();
+              openAiDurationMs = Math.max(
+                0,
+                Math.round(providerCompletedAt - providerStartedAt),
+              );
+            }
+          },
+        };
       };
       const registry = createAnalyzerRegistry({
-        menu_images: createMenuImagesAnalyzer({ provider: measuredProvider }),
+        menu_images: createMenuImagesAnalyzer({
+          createProvider: createMeasuredProvider,
+          environment: dependencies.environment,
+        }),
       });
       const analysis = await analyzeFoodseyoInput(
         {

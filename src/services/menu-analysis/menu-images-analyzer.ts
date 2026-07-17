@@ -1,8 +1,4 @@
 import { FOODSEYO_ANALYSIS_SCHEMA_VERSION } from "../../domain/foodseyo-analysis.ts";
-import {
-  createImageContentHash,
-  createSourceFingerprint,
-} from "../../lib/analysis-consistency/index.ts";
 import { AnalysisAbortedError } from "../analysis/analysis-errors.ts";
 import type {
   AnalysisAnalyzer,
@@ -13,18 +9,17 @@ import type {
 import { adaptMenuImageModelOutput } from "./menu-image-adapter.ts";
 import { MenuAnalysisError } from "./menu-analysis-errors.ts";
 import {
-  MAX_MENU_IMAGE_COUNT,
-  SERVER_MENU_IMAGE_MAX_BYTES,
-  isSupportedMenuImageType,
-} from "./menu-image-limits.ts";
+  prepareMenuImagesAnalysis,
+  type MenuAnalysisPreparationDependencies,
+} from "./menu-analysis-preparation.ts";
 import { MenuImageModelOutputSchema } from "./menu-image-model-schema.ts";
 import type { MenuVisionProvider } from "./menu-vision-provider.ts";
-import { createMenuAnalysisVersionMetadata } from "./menu-analysis-versions.ts";
+import type { MenuAnalysisModel } from "./openai-menu-request.ts";
 
-export interface MenuImagesAnalyzerDependencies {
-  readonly provider: MenuVisionProvider;
-  readonly createImageHash?: (bytes: Uint8Array) => Promise<string>;
-  readonly createSourceIdentity?: typeof createSourceFingerprint;
+export interface MenuImagesAnalyzerDependencies
+  extends Omit<MenuAnalysisPreparationDependencies, "environment"> {
+  readonly createProvider: (modelVersion: MenuAnalysisModel) => MenuVisionProvider;
+  readonly environment?: Readonly<Record<string, string | undefined>>;
 }
 
 export function createMenuImagesAnalyzer(
@@ -36,98 +31,28 @@ export function createMenuImagesAnalyzer(
       request: MenuImagesAnalyzeRequest,
       context: AnalyzerExecutionContext,
     ): Promise<AnalysisDraft> {
-      if (context.signal?.aborted) throw new AnalysisAbortedError();
-      if (request.images.length === 0) {
-        throw new MenuAnalysisError(
-          "INVALID_MENU_IMAGE_INPUT",
-          "Menu analysis requires at least one image.",
-        );
-      }
-      if (request.images.length > MAX_MENU_IMAGE_COUNT) {
-        throw new MenuAnalysisError(
-          "TOO_MANY_MENU_IMAGES",
-          `Menu analysis accepts no more than ${MAX_MENU_IMAGE_COUNT} images.`,
-        );
-      }
-
-      const images = [];
-      let actualTotalBytes = 0;
-      for (const [index, image] of request.images.entries()) {
-        if (context.signal?.aborted) throw new AnalysisAbortedError();
-        if (!image.mediaType || !isSupportedMenuImageType(image.mediaType)) {
-          throw new MenuAnalysisError(
-            "INVALID_MENU_IMAGE_INPUT",
-            "Menu analyzer received an unsupported transient image type.",
-          );
-        }
-        let bytes: Uint8Array;
-        try {
-          bytes = await image.read();
-        } catch {
-          if (context.signal?.aborted) throw new AnalysisAbortedError();
-          throw new MenuAnalysisError(
-            "INVALID_MENU_IMAGE_INPUT",
-            "A transient menu image could not be read.",
-          );
-        }
-        if (context.signal?.aborted) throw new AnalysisAbortedError();
-        if (bytes.byteLength === 0) {
-          throw new MenuAnalysisError(
-            "INVALID_MENU_IMAGE_INPUT",
-            "Menu analyzer received an empty transient image.",
-          );
-        }
-        if (image.byteLength !== null && image.byteLength !== bytes.byteLength) {
-          throw new MenuAnalysisError(
-            "INVALID_MENU_IMAGE_INPUT",
-            "Transient image metadata does not match the actual bytes.",
-          );
-        }
-        actualTotalBytes += bytes.byteLength;
-        if (actualTotalBytes > SERVER_MENU_IMAGE_MAX_BYTES) {
-          throw new MenuAnalysisError(
-            "MENU_IMAGE_BYTES_EXCEEDED",
-            "Transient menu image bytes exceed the server analysis limit.",
-          );
-        }
-        images.push({
-          index,
-          mediaType: image.mediaType,
-          bytes,
-        });
-      }
-
-      let sourceFingerprint: string;
-      try {
-        const imageHashes = await Promise.all(
-          images.map((image) =>
-            (dependencies.createImageHash ?? createImageContentHash)(image.bytes),
-          ),
-        );
-        sourceFingerprint = await (
-          dependencies.createSourceIdentity ?? createSourceFingerprint
-        )({
-          sourceType: "menu_images",
-          sourceIdentifier: null,
-          imageCount: images.length,
-          orderedImageContentHashes: imageHashes,
-          restaurantIdentifier: request.userEnteredRestaurantName,
-          branchIdentifier: null,
-          sourceRevision: null,
-        });
-      } catch {
-        throw new MenuAnalysisError(
-          "CANONICAL_ADAPTER_FAILED",
-          "The menu source identity could not be created safely.",
-          true,
-        );
-      }
-      const versions = createMenuAnalysisVersionMetadata(
-        dependencies.provider.modelVersion,
+      const prepared = await prepareMenuImagesAnalysis(
+        request,
+        {
+          environment: dependencies.environment ?? process.env,
+          createImageHash: dependencies.createImageHash,
+          createSourceIdentity: dependencies.createSourceIdentity,
+        },
+        context.signal,
       );
 
-      const providerOutput = await dependencies.provider.analyzeMenuImages({
-        images,
+      // Future exact-cache lookup and lease ownership belong at this boundary.
+      // Provider credentials and the provider instance are intentionally created after it.
+      const provider = dependencies.createProvider(prepared.modelVersion);
+      if (provider.modelVersion !== prepared.modelVersion) {
+        throw new MenuAnalysisError(
+          "OPENAI_MODEL_UNSUPPORTED",
+          "The menu provider model does not match the prepared analysis contract.",
+        );
+      }
+
+      const providerOutput = await provider.analyzeMenuImages({
+        images: prepared.images,
         userEnteredRestaurantName: request.userEnteredRestaurantName,
         signal: context.signal,
       });
@@ -145,10 +70,10 @@ export function createMenuImagesAnalyzer(
       try {
         payload = await adaptMenuImageModelOutput({
           modelOutput: parsedOutput.data,
-          imageCount: request.images.length,
+          imageCount: prepared.imageCount,
           userEnteredRestaurantName: request.userEnteredRestaurantName,
-          sourceFingerprint,
-          versions,
+          sourceFingerprint: prepared.cacheIdentity.sourceFingerprint,
+          versions: prepared.versions,
         });
       } catch (error) {
         if (error instanceof MenuAnalysisError) throw error;
@@ -162,10 +87,13 @@ export function createMenuImagesAnalyzer(
 
       return {
         schemaVersion: FOODSEYO_ANALYSIS_SCHEMA_VERSION,
-        analysisMetadata: { sourceFingerprint, versions },
+        analysisMetadata: {
+          sourceFingerprint: prepared.cacheIdentity.sourceFingerprint,
+          versions: prepared.versions,
+        },
         inputContext: {
           type: "menu_images",
-          imageCount: request.images.length,
+          imageCount: prepared.imageCount,
           userEnteredRestaurantName: request.userEnteredRestaurantName,
           locationUsed: false,
           storageScope: "session_only",

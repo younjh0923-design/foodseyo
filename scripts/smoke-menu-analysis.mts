@@ -53,7 +53,8 @@ const analysis = await analyzeFoodseyoInput(
   {
     analyzerRegistry: createAnalyzerRegistry({
       menu_images: createMenuImagesAnalyzer({
-        provider: createOpenAIMenuVisionProvider(),
+        createProvider: (modelVersion) =>
+          createOpenAIMenuVisionProvider(process.env, modelVersion),
       }),
     }),
   },

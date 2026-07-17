@@ -1,6 +1,29 @@
 export { adaptMenuImageModelOutput } from "./menu-image-adapter.ts";
-export { readMenuAnalysisServerConfig, resolveMenuAnalysisModel } from "./menu-analysis-config.ts";
+export {
+  createMenuAnalysisServerConfig,
+  readMenuAnalysisApiKey,
+  readMenuAnalysisServerConfig,
+  resolveMenuAnalysisModel,
+} from "./menu-analysis-config.ts";
+export {
+  ANALYSIS_CACHE_BUSY_PUBLIC_RESULT,
+  ANALYSIS_CACHE_BUSY_WAIT_MAX_MS,
+  ANALYSIS_CACHE_INDETERMINATE_PUBLIC_RESULT,
+  ANALYSIS_CACHE_POLL_INTERVAL_MAX_MS,
+  ANALYSIS_CACHE_POLL_INTERVAL_MIN_MS,
+  ANALYSIS_RUN_LEASE_DURATION_MS,
+  APPLICATION_MENU_IMAGE_INPUT_KIND,
+  DATABASE_UPLOADED_MENU_IMAGE_INPUT_KIND,
+  SNAPSHOT_RESULT_FINGERPRINT_PATTERN,
+  SNAPSHOT_RESULT_FINGERPRINT_PREFIX,
+  SNAPSHOT_RESULT_FINGERPRINT_VERSION,
+  SOURCE_FINGERPRINT_VERSION,
+  createAnalysisCacheContractIdentity,
+  createSnapshotResultFingerprint,
+  toDatabaseEvidenceInputKind,
+} from "./menu-cache-contract.ts";
 export { MenuAnalysisError } from "./menu-analysis-errors.ts";
+export { prepareMenuImagesAnalysis } from "./menu-analysis-preparation.ts";
 export { createMenuImagesAnalyzer } from "./menu-images-analyzer.ts";
 export {
   MenuImageModelOutputSchema,
@@ -24,6 +47,15 @@ export type {
   MenuImageModelOutput,
   MenuAnalysisQuality,
 } from "./menu-image-model-schema.ts";
+export type {
+  AnalysisCacheContractIdentity,
+  ExactAnalysisCacheIdentity,
+  FutureAnalysisCachePublicResult,
+} from "./menu-cache-contract.ts";
+export type {
+  MenuAnalysisPreparationDependencies,
+  PreparedMenuImagesAnalysis,
+} from "./menu-analysis-preparation.ts";
 export type {
   MenuVisionImageInput,
   MenuVisionProvider,

@@ -46,6 +46,7 @@ export {
   createDishFingerprint,
   createImageContentHash,
   createSourceFingerprint,
+  normalizeSourceFingerprintIdentifier,
 } from "./fingerprint.ts";
 export type {
   AnalysisResultFingerprintInput,

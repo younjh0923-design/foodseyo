@@ -5,5 +5,6 @@ export const runtime = "nodejs";
 export const maxDuration = 90;
 
 export const POST = createMenuAnalysisPostHandler({
-  createProvider: createOpenAIMenuVisionProvider,
+  createProvider: (modelVersion) =>
+    createOpenAIMenuVisionProvider(process.env, modelVersion),
 });

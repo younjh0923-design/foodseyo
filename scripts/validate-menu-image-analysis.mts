@@ -57,7 +57,7 @@ const { verify, report } = createValidationSuite(
 );
 const syntheticSourceFingerprint = `source_${"a".repeat(64)}`;
 const syntheticVersions = createMenuAnalysisVersionMetadata(
-  "synthetic-menu-model-v1",
+  "gpt-5.6",
 );
 const adaptFixture = (
   input: Omit<
@@ -203,7 +203,7 @@ const validModelFixture: MenuImageModelOutput = {
 };
 
 class FakeMenuVisionProvider implements MenuVisionProvider {
-  readonly modelVersion = "synthetic-menu-model-v1";
+  readonly modelVersion = "gpt-5.6";
   readonly calls: MenuVisionProviderInput[] = [];
   output: MenuImageModelOutput;
 
@@ -252,7 +252,7 @@ const analyzeWithProvider = async (
 ): Promise<FoodseyoAnalysis> =>
   analyzeFoodseyoInput(request, {
     analyzerRegistry: createAnalyzerRegistry({
-      menu_images: createMenuImagesAnalyzer({ provider }),
+      menu_images: createMenuImagesAnalyzer({ createProvider: () => provider }),
     }),
     now: () => new Date("2026-07-15T12:00:00.000Z"),
     createAnalysisId: () => "menu-analysis-test-id",
@@ -283,7 +283,9 @@ verify(provider.calls.length === 1 && menu.dishes.length === 2, "1 fake provider
 const defaultError = await captureError(() => analyzeFoodseyoInput(requestFor()));
 verify(defaultError instanceof AnalysisCapabilityUnavailableError, "2 default registry has no demo fallback");
 const injectedRegistry = createAnalyzerRegistry({
-  menu_images: createMenuImagesAnalyzer({ provider: new FakeMenuVisionProvider() }),
+  menu_images: createMenuImagesAnalyzer({
+    createProvider: () => new FakeMenuVisionProvider(),
+  }),
 });
 verify(injectedRegistry.menu_images.inputType === "menu_images", "3 live analyzer injection is menu-only");
 const unavailableTypes: AnalyzeFoodseyoRequest[] = [

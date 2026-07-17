@@ -78,7 +78,7 @@ const safeMessage = (error: unknown, signalAborted = false): string | null =>
 const clone = <T>(value: T): T => structuredClone(value);
 const syntheticSourceFingerprint = `source_${"b".repeat(64)}`;
 const syntheticVersions = createMenuAnalysisVersionMetadata(
-  "synthetic-menu-model-v1",
+  "gpt-5.6",
 );
 const adaptFixture = (
   input: Omit<
@@ -167,7 +167,7 @@ const modelFixture: MenuImageModelOutput = {
 };
 
 class FakeProvider implements MenuVisionProvider {
-  readonly modelVersion = "synthetic-menu-model-v1";
+  readonly modelVersion = "gpt-5.6";
   readonly calls: MenuVisionProviderInput[] = [];
   readonly output: MenuImageModelOutput;
   readonly thrownError: unknown;
@@ -221,7 +221,7 @@ const analyze = (
 ): Promise<FoodseyoAnalysis> =>
   analyzeFoodseyoInput(request, {
     analyzerRegistry: createAnalyzerRegistry({
-      menu_images: createMenuImagesAnalyzer({ provider }),
+      menu_images: createMenuImagesAnalyzer({ createProvider: () => provider }),
     }),
     now: () => new Date("2026-07-15T12:00:00.000Z"),
     createAnalysisId: () => "hardening-analysis-id",
@@ -320,7 +320,9 @@ verify(
 
 // Analyzer defense in depth.
 const invalidProvider = new FakeProvider();
-const analyzer = createMenuImagesAnalyzer({ provider: invalidProvider });
+const analyzer = createMenuImagesAnalyzer({
+  createProvider: () => invalidProvider,
+});
 const zeroError = await captureError(() => analyzer.analyze(menuRequest([]), { signal: null }));
 verify(
   zeroError instanceof MenuAnalysisError && zeroError.code === "INVALID_MENU_IMAGE_INPUT",
@@ -380,7 +382,9 @@ verify(
 );
 verify(invalidProvider.calls.length === 0, "invalid analyzer inputs never call the provider");
 const orderedProvider = new FakeProvider();
-const orderedAnalyzer = createMenuImagesAnalyzer({ provider: orderedProvider });
+const orderedAnalyzer = createMenuImagesAnalyzer({
+  createProvider: () => orderedProvider,
+});
 await orderedAnalyzer.analyze(
   menuRequest(),
   { signal: null },

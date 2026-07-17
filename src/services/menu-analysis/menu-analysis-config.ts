@@ -21,9 +21,9 @@ export function resolveMenuAnalysisModel(value: string | undefined): MenuAnalysi
   return model;
 }
 
-export function readMenuAnalysisServerConfig(
+export function readMenuAnalysisApiKey(
   environment: Readonly<Record<string, string | undefined>>,
-): MenuAnalysisServerConfig {
+): string {
   const apiKey = environment.OPENAI_API_KEY?.trim();
   if (!apiKey) {
     throw new MenuAnalysisError(
@@ -31,6 +31,23 @@ export function readMenuAnalysisServerConfig(
       "Menu analysis is not configured on this server.",
     );
   }
+  return apiKey;
+}
+
+export function createMenuAnalysisServerConfig(
+  environment: Readonly<Record<string, string | undefined>>,
+  resolvedModel: MenuAnalysisModel,
+): MenuAnalysisServerConfig {
+  return {
+    apiKey: readMenuAnalysisApiKey(environment),
+    model: resolvedModel,
+  };
+}
+
+export function readMenuAnalysisServerConfig(
+  environment: Readonly<Record<string, string | undefined>>,
+): MenuAnalysisServerConfig {
+  const apiKey = readMenuAnalysisApiKey(environment);
 
   return {
     apiKey,

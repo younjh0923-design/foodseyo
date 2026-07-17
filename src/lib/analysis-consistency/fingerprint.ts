@@ -86,6 +86,10 @@ const normalizeNullableFingerprintText = (value: string | null): string | null =
   return normalized || null;
 };
 
+export const normalizeSourceFingerprintIdentifier = (
+  value: string | null,
+): string | null => normalizeNullableFingerprintText(value);
+
 const normalizeVersions = (
   versions: AnalysisConsistencyVersionMetadata,
 ): AnalysisConsistencyVersionMetadata => {
@@ -153,7 +157,9 @@ export async function createSourceFingerprint(
     branchIdentifier: normalizeNullableFingerprintText(input.branchIdentifier),
     imageCount: input.imageCount,
     orderedImageContentHashes,
-    restaurantIdentifier: normalizeNullableFingerprintText(input.restaurantIdentifier),
+    restaurantIdentifier: normalizeNullableFingerprintText(
+      input.restaurantIdentifier,
+    ),
     sourceIdentifier: normalizeNullableFingerprintText(input.sourceIdentifier),
     sourceRevision: normalizeNullableFingerprintText(input.sourceRevision),
     sourceType,
@@ -192,7 +198,9 @@ export async function createDishFingerprint(
     sourceStatedPrice: {
       amount: input.sourceStatedPrice.amount,
       currency: normalizeNullableFingerprintText(input.sourceStatedPrice.currency),
-      displayText: normalizeNullableFingerprintText(input.sourceStatedPrice.displayText),
+      displayText: normalizeNullableFingerprintText(
+        input.sourceStatedPrice.displayText,
+      ),
     },
   };
   return `dish_${await sha256Hex(canonicalSerialize(canonicalInput))}`;

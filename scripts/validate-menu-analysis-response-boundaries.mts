@@ -302,7 +302,7 @@ const modelOutput: MenuImageModelOutput = {
   warnings: [],
 };
 const provider: MenuVisionProvider = {
-  modelVersion: "synthetic-menu-model-v1",
+  modelVersion: "gpt-5.6",
   async analyzeMenuImages() {
     return modelOutput;
   },

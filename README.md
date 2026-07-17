@@ -54,8 +54,10 @@ pnpm verify:full     # final lint, typecheck, all tests, build, and security che
 - R1 — non-functional codebase and development workflow optimization
 - C1.1 / C1.1.1 — consistency and fingerprint foundations (completed)
 - C1.2 — live menu-image consistency integration (completed)
-- C1.2.1 — restaurant-resolution provenance correction (current)
-- C2.1–C2.4 — relational model and cache-safety checkpoints (next)
+- C1.2.1 — restaurant-resolution provenance correction (completed)
+- C2.1-0.1 — exact-cache contracts and pre-provider boundary frozen (current)
+- C2.1-A / C2.1-B — manual infrastructure, then reviewed database implementation (next)
+- C2.2–C2.4 — later relational and cache-safety checkpoints
 - T7 — restaurant/menu link analysis after C2
 - T8 — restaurant identification, to be reconsidered after T7
 - Later — map-app share-to-Foodseyo integration

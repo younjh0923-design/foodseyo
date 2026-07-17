@@ -2,7 +2,10 @@ import "server-only";
 
 import OpenAI from "openai";
 import { AnalysisAbortedError } from "../analysis/analysis-errors.ts";
-import { readMenuAnalysisServerConfig } from "./menu-analysis-config.ts";
+import {
+  createMenuAnalysisServerConfig,
+  readMenuAnalysisServerConfig,
+} from "./menu-analysis-config.ts";
 import { MenuAnalysisError } from "./menu-analysis-errors.ts";
 import { MenuImageModelOutputSchema } from "./menu-image-model-schema.ts";
 import { normalizeOpenAIMenuProviderError } from "./openai-menu-error-mapper.ts";
@@ -11,6 +14,7 @@ import {
   MENU_ANALYSIS_MAX_RETRIES,
   MENU_ANALYSIS_TIMEOUT_MS,
   buildOpenAIMenuResponseRequest,
+  type MenuAnalysisModel,
 } from "./openai-menu-request.ts";
 
 const responseRefusal = (response: Awaited<ReturnType<OpenAI["responses"]["parse"]>>) => {
@@ -25,8 +29,11 @@ const responseRefusal = (response: Awaited<ReturnType<OpenAI["responses"]["parse
 
 export function createOpenAIMenuVisionProvider(
   environment: Readonly<Record<string, string | undefined>> = process.env,
+  resolvedModel?: MenuAnalysisModel,
 ): MenuVisionProvider {
-  const config = readMenuAnalysisServerConfig(environment);
+  const config = resolvedModel
+    ? createMenuAnalysisServerConfig(environment, resolvedModel)
+    : readMenuAnalysisServerConfig(environment);
   let client: OpenAI | null = null;
 
   const getClient = () => {

@@ -66,7 +66,7 @@ const network = installNetworkGuard(
   "Live consistency integration must remain network-free.",
 );
 
-const modelVersion = "synthetic-menu-model-v1";
+const modelVersion = "gpt-5.6";
 const modelOutput: MenuImageModelOutput = {
   analysisQuality: "good",
   menuTitle: "Synthetic menu",
@@ -199,7 +199,7 @@ const provider: MenuVisionProvider = {
 const orderedHashes = ["1".repeat(64), "2".repeat(64)];
 let hashIndex = 0;
 const analyzer = createMenuImagesAnalyzer({
-  provider,
+  createProvider: () => provider,
   async createImageHash() {
     events.push(`hash-${hashIndex}`);
     return orderedHashes[hashIndex++];
@@ -474,7 +474,7 @@ const blockedProvider: MenuVisionProvider = {
   },
 };
 const blockedAnalyzer = createMenuImagesAnalyzer({
-  provider: blockedProvider,
+  createProvider: () => blockedProvider,
   async createImageHash() {
     throw new Error("synthetic hash failure");
   },
