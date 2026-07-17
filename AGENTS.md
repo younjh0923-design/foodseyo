@@ -8,6 +8,7 @@ Foodseyo is a source-honest, mobile-first food copilot that turns unfamiliar men
 - Read [docs/CODEX_HANDOFF.md](./docs/CODEX_HANDOFF.md) for the current branch, completed checkpoints, next checkpoint, and operational stop conditions.
 - [docs/product-rules.md](./docs/product-rules.md) is normative for active product scope and safety.
 - [docs/database-cache-contract.md](./docs/database-cache-contract.md) is normative for C2.1 exact-cache behavior; the executable Drizzle schema and reviewed migrations govern the physical database shape.
+- [docs/database-logical-model-v3.md](./docs/database-logical-model-v3.md) owns the future relational scope, entity responsibilities, deferrals, and unresolved product decisions. It is not a physical schema or migration source.
 - [docs/decision-log.md](./docs/decision-log.md) preserves accepted and superseded decisions. Do not rewrite history to describe a newer state.
 - The supplied DOCX and SQL database files are untracked reference artifacts, not executable sources of truth. Never execute the supplied SQL.
 

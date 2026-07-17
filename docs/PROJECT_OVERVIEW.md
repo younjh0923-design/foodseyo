@@ -88,7 +88,7 @@ The database/cache work is an enabling trust layer, not the primary product pitc
 - server-only pooled PostgreSQL runtime client, validated repositories, and locally completed exact-cache ownership integration
 - network-free automated validation and production build checks
 
-The local C2.1-D/E/F history connects exact lookup, quarantine, ownership, duplicate coordination, bounded polling, and strict ready-snapshot persistence to the menu analysis route. It passed deterministic and repeated adversarial real-PostgreSQL Development verification but has not been pushed or deployed. Preview and Production have not received the application schema. The C2.1-G review recommends preserving the current uncached Production flow through the competition deadline.
+The C2.1-D/E/F history connects exact lookup, quarantine, ownership, duplicate coordination, bounded polling, and strict ready-snapshot persistence to the menu analysis route. It passed deterministic and repeated adversarial real-PostgreSQL Development verification. The exact C2.1-G commit is preserved on a GitHub feature branch and has an automatic Git-sourced Vercel Preview, but Preview and Production have not received the application schema and the Preview is not a validated database rollout. The C2.1-G review recommends preserving the current uncached Production flow through the competition deadline.
 
 ## Explicit non-goals for the active MVP
 
@@ -119,14 +119,18 @@ The repository may retain compatibility types or clearly labeled deterministic d
 4. **C2.1-F:** real Development database integrity and concurrency tests — completed locally.
 5. **C2.1-G:** rollout-readiness review, staged Preview plan, recovery design, and Production go/no-go gate — completed locally; Production rollout not approved.
 
-C2.1-F is complete locally, including repeated adversarial PostgreSQL verification on disposable Development child branches and confirmed cleanup. C2.1-G then found the implementation sound but the release path incomplete: there is no Preview deployment, no target-aware full Preview/Production migration verifier, no current Production snapshot, and no Git SHA provenance for the active Vercel deployment. No cache code, schema, or migration has been rolled out beyond Development. The current uncached Production flow remains the submission baseline; a separately authorized Preview rehearsal must precede any new Production decision.
+C2.1-F is complete locally, including repeated adversarial PostgreSQL verification on disposable Development child branches and confirmed cleanup. C2.1-G then found the implementation sound but the release path incomplete. Preserving its exact commit created a traceable automatic Preview build, but there is still no target-aware full Preview/Production migration verifier, no Preview database migration or validation, no current Production snapshot, and no Git SHA provenance for the active Production deployment. No schema or database behavior has been rolled out beyond Development. The current uncached Production flow remains the submission baseline; a separately authorized Preview database rehearsal must precede any new Production decision.
 
-### After the exact-cache rollout
+### Relational planning after C2.1
 
-- audit C2.2–C2.4 before broader relational modeling or dish-level reuse;
+- **C2.2-A:** logical ERD audit and scoped v3 model — completed locally with no physical schema or migration;
+- **C2.2-B:** physical integrity contract for the existing cache boundary and the minimal structured-menu candidate;
+- **C2.2-C:** domain-scoped product and security decisions;
+- **C2.2-D:** unexecuted Drizzle/SQL draft after contract approval;
+- **C2.3 candidate:** Development-only structured menu projection, separate from live-route integration and rollout;
 - implement T7 restaurant/menu link acquisition with URL normalization, SSRF defense, source classification, evidence extraction, and identity rules;
 - reconsider T8 restaurant and branch identification only after T7 evidence is available;
-- evaluate personalization, Food Passport, nearby discovery, community, multilingual expansion, PWA/native distribution, and map sharing after the competition MVP.
+- evaluate culinary knowledge, personalization, Food Passport, nearby discovery, community, multilingual expansion, PWA/native distribution, and map sharing only after their own product and safety gates.
 
 ## Submission critical path
 

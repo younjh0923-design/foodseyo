@@ -1,6 +1,6 @@
 # Foodseyo Product Rules
 
-**Status:** Normative MVP definition through local C2.1-G review
+**Status:** Normative MVP definition through local C2.2-A logical audit
 
 **Date:** 2026-07-17
 
@@ -117,9 +117,13 @@ The canonical reader supports legacy `FoodseyoAnalysis` `1.0.0`, C1.2 `1.1.0`, a
 - **C2.1-E:** pre-provider lease ownership, concurrency, polling, and failure policy completed locally; not deployed.
 - **C2.1-F:** real Development database integrity and concurrency validation completed locally; not deployed.
 - **C2.1-G:** rollout-readiness review completed locally; staged plan documented and Production rollout deferred.
-- **C2.2–C2.4:** planning audit after C2.1-G and before broader relational expansion.
+- **C2.2-A:** scoped logical ERD v3 and future-domain audit completed locally; no schema or migration.
+- **C2.2-B:** next physical integrity contract, limited to the existing C2.1 boundary and minimal structured-menu candidate.
+- **C2.2-C / C2.2-D:** scoped product decisions followed by unexecuted schema drafting.
+- **C2.3 candidate:** Development-only structured menu projection after the C2.2 gates.
 - **T7.1–T7.4:** restaurant/menu link analysis after C2.
 - **T8:** restaurant identification, reconsider after T7.
+- **Later:** culinary knowledge, personalization, personal food history, and community after their own gates.
 - **Later:** map-app share-to-Foodseyo integration.
 
 The Later item is documentation only. No share extension or inbound map-app share flow exists today.

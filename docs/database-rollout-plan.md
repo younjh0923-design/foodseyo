@@ -9,7 +9,7 @@ This document is the durable release plan for moving the completed C2.1-D/E/F ex
 
 **Current decision: NO-GO for Production. Preserve the existing uncached Production analysis flow through the OpenAI Build Week submission deadline.**
 
-D→E→F passed deterministic and adversarial real-PostgreSQL validation, but Production approval requires more than implementation correctness. Foodseyo currently has no Preview deployment, Preview and Production have no application schema, the checked-in database verifier has no target-aware full verification mode for those environments, the active Production deployment cannot be tied to a Git commit through its deployment metadata, and the Free/Hobby recovery paths are narrow.
+D→E→F passed deterministic and adversarial real-PostgreSQL validation, but Production approval requires more than implementation correctness. Preserving the C2.1-G feature branch created an automatic Git-sourced Preview build for exact commit `e08249182241d30a21aeebd17a0cd75e110591af`; it did not migrate or validate the Preview database and is not a rollout approval. Preview and Production still have no application schema, the checked-in database verifier has no target-aware full verification mode for those environments, the active Production deployment cannot be tied to a Git commit through its deployment metadata, and the Free/Hobby recovery paths are narrow.
 
 The competition submission deadline is July 21, 2026 at 5:00 PM PDT / 8:00 PM EDT. The database/cache layer is an enabling trust feature rather than the primary product demonstration. With four calendar days remaining at review time, protecting the proven menu-photo flow, completing mobile Production QA, recording the demo, and preparing the public repository and submission are safer than introducing a new Production dependency.
 
@@ -24,8 +24,8 @@ A separately authorized Preview-only rehearsal remains useful, but it must not c
 - GitHub default branch: `main`
 - Local `origin/main` and live GitHub `main`: `d3c255d29b4029589e6f6b562a482134c0e28b99`
 - Local checkpoint history is nine commits ahead of GitHub `main` before the C2.1-G review commit and has no remote divergence.
-- GitHub has no C2.1 feature branches, open pull requests, or checked-in GitHub Actions workflows.
-- No C2.1-D/E/F/G commit has been pushed.
+- GitHub feature branch `c2.1-g-rollout-review` points to exact commit `e08249182241d30a21aeebd17a0cd75e110591af`; no pull request was opened and `main` was not changed.
+- GitHub has no checked-in GitHub Actions workflows.
 
 The Vercel project is linked to GitHub `main`, and automatic Production domain assignment is enabled. A push or merge to `main` must therefore be treated as a Production release action, not as repository housekeeping.
 
@@ -38,7 +38,7 @@ The Vercel project is linked to GitHub `main`, and automatic Production domain a
 - Fluid Compute: enabled, directly verified through the authenticated Project API
 - GitHub link: `younjh0923-design/foodseyo`, Production branch `main`
 - Git fork protection: enabled
-- Preview deployments at review time: zero
+- Automatic C2.1-G Preview deployment after branch preservation: `dpl_3xMW3EWK5PWYpAEDPPhsnSk4akSZ`, Ready, Git-sourced from exact commit `e08249182241d30a21aeebd17a0cd75e110591af`
 - Active Production deployment: `dpl_CgX2V4jcqRKWMpePhZuqn2qRe81d`, Ready
 - Active deployment source: Vercel CLI; deployment metadata exposes no Git ref or commit SHA
 - Previous explicit rollback target: none recorded by the Project API
@@ -82,7 +82,7 @@ The Free Neon plan does not provide protected branches or automated snapshot sch
 
 Production remains blocked until all of the following are resolved:
 
-1. A Git-sourced Preview deployment exists and exposes its exact commit SHA.
+1. Treat the existing automatic Git-sourced Preview as build provenance only; a database-aware Preview candidate must use the exact approved rollout commit after target tooling is complete.
 2. A target-aware migration wrapper resolves and verifies the exact Neon branch ID before supplying a direct migrator credential in process memory.
 3. A target-aware full post-migration verifier exists for Preview and Production. The current full verifier is Development-labelled; its Preview/Production mode checks only that the schema is absent.
 4. Preview passes the complete matrix below without an OpenAI request unless a separately authorized live smoke is deliberately scheduled.

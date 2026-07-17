@@ -1,0 +1,34 @@
+flowchart LR
+  subgraph NOW[Implemented and frozen locally]
+    A[Transient menu input]
+    B[C2.1 exact cache and ownership]
+    A --> B
+  end
+
+  subgraph NEXT[Next bounded database slice]
+    C[C2.3 candidate structured menu projection]
+    B --> C
+  end
+
+  subgraph EVIDENCE[Evidence and identity after acquisition contracts]
+    D[T7 acquired link evidence]
+    E[T8 restaurant and branch candidates]
+    D --> E
+    C --> E
+  end
+
+  subgraph KNOWLEDGE[Deferred reviewed knowledge]
+    F[Culinary concepts and versioned claims]
+    G[Menu item claim projection]
+    H[Versioned effective guidance]
+    C --> G
+    F --> H
+    G --> H
+  end
+
+  subgraph FUTURE[Outside the active MVP]
+    I[Authenticated user context]
+    J[Food Passport and community]
+    I --> H
+    H --> J
+  end

@@ -37,7 +37,7 @@ The Home link field validates HTTP/HTTPS syntax only. It does not fetch or analy
 - controlled vocabularies, deterministic wording, semantic validation, and versioned fingerprints reduce avoidable drift;
 - automated validation is network-free and never makes a paid OpenAI request.
 
-Neon/Vercel Development, Preview, and Production database environments are isolated. The four-table exact-cache schema exists only in Development today. Local C2.1-E adds pre-provider lease ownership, duplicate coordination, bounded polling, expired-lease recovery, strict owner-only persistence, and the frozen 409/503 policy above the C2.1-D exact lookup and quarantine path. C2.1-F independently passed deterministic and adversarial real-PostgreSQL validation on disposable Development child branches, including repeated concurrency, rollback, ambiguous outcomes, and corrupt-snapshot quarantine failures. Every child branch was deleted and permanent Development remained empty. The C2.1-G rollout review is complete locally and recommends keeping the current uncached Production flow through the competition deadline. Preview/Production migrations and application deployment of database behavior have not started.
+Neon/Vercel Development, Preview, and Production database environments are isolated. The four-table exact-cache schema exists only in Development today. Local C2.1-E adds pre-provider lease ownership, duplicate coordination, bounded polling, expired-lease recovery, strict owner-only persistence, and the frozen 409/503 policy above the C2.1-D exact lookup and quarantine path. C2.1-F independently passed deterministic and adversarial real-PostgreSQL validation on disposable Development child branches, including repeated concurrency, rollback, ambiguous outcomes, and corrupt-snapshot quarantine failures. Every child branch was deleted and permanent Development remained empty. The exact C2.1-G commit is preserved on a GitHub feature branch and produced an automatic Git-sourced Preview build, but no Preview/Production database migration or validated cache rollout occurred. Production remains on the uncached flow. C2.2-A now scopes the future logical database model without adding a physical schema.
 
 ## Run locally
 
@@ -98,9 +98,13 @@ Codex has supported the repository-wide implementation workflow: product-scope c
 - C2.1-E — lease, concurrency, polling, and failure policy (completed locally; not deployed)
 - C2.1-F — real Development database integrity and concurrency validation (completed locally; not deployed)
 - C2.1-G — rollout-readiness review completed locally; Production rollout deferred
-- C2.2–C2.4 — post-C2.1 planning audit before broader relational expansion
+- C2.2-A — logical ERD v3 and future-domain scope audit (completed locally; no schema)
+- C2.2-B–D — physical integrity contract, scoped product decisions, and unexecuted schema draft
+- C2.3 candidate — Development-only structured menu projection after the C2.2 gates
 - T7 — restaurant/menu link analysis after C2
 - T8 — restaurant identification, to be reconsidered after T7
-- Later — personalization, Food Passport, community, and map-app sharing
+- Later — culinary knowledge, personalization, Food Passport, community, and map-app sharing
 
 Stable product context is in [`docs/PROJECT_OVERVIEW.md`](./docs/PROJECT_OVERVIEW.md). The current implementation handoff is in [`docs/CODEX_HANDOFF.md`](./docs/CODEX_HANDOFF.md).
+
+The scoped future relational model is in [`docs/database-logical-model-v3.md`](./docs/database-logical-model-v3.md).

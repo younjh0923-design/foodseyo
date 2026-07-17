@@ -1,19 +1,21 @@
 # Foodseyo Codex Handoff
 
 **Updated:** 2026-07-17
-**Current checkpoint:** C2.1-G rollout-readiness review complete locally; Production rollout is not approved
+**Current checkpoint:** C2.2-A logical ERD audit complete locally; C2.2-B is next but not started
 
 This file is intentionally operational and may change at every checkpoint. Stable product intent belongs in [PROJECT_OVERVIEW.md](./PROJECT_OVERVIEW.md).
 
 ## Repository position
 
-- Current branch: `c2.1-g-rollout-review`
-- C2.1-G starting HEAD and completed C2.1-F commit: `a010ffa5d8e0f0c0b47d17bdea36b0b70ec566cf`
-- C2.1-G delivery: the local checkpoint commit containing this handoff; use `git rev-parse HEAD` for its immutable SHA
+- Current branch: `c2.2-a-erd-logical-audit`
+- C2.2-A starting HEAD and preserved C2.1-G commit: `e08249182241d30a21aeebd17a0cd75e110591af`
+- C2.2-A delivery: the local checkpoint commit containing this handoff; use `git rev-parse HEAD` for its immutable SHA
 - Local `main`: `cfbb93750c0b8f41f470963eddaf203d3b82457f`
 - Local `origin/main` baseline: `d3c255d29b4029589e6f6b562a482134c0e28b99`
-- Ahead/behind at the committed C2.1-G checkpoint: `10/0`.
-- No local checkpoint commit has been pushed or deployed.
+- Ahead/behind at the committed C2.2-A checkpoint: `11/0`.
+- GitHub branch `c2.1-g-rollout-review` points to exact preserved commit `e08249182241d30a21aeebd17a0cd75e110591af`; no pull request or `main` change occurred.
+- That branch push created automatic Ready Preview deployment `dpl_3xMW3EWK5PWYpAEDPPhsnSk4akSZ` from the exact Git SHA. It was not promoted, tested through the live POST route, or accompanied by a Preview database migration.
+- The C2.2-A branch and checkpoint commit have not been pushed or deployed.
 
 The only untracked and unstaged files are:
 
@@ -32,6 +34,7 @@ They are reference artifacts only. Do not stage, modify, execute, or treat the s
 | C2.1 exact-cache behavior | `docs/database-cache-contract.md` |
 | Non-secret environment and role setup | `docs/database-environment-setup.md` |
 | Preview/Production rollout and recovery plan | `docs/database-rollout-plan.md` |
+| Future relational logical scope and ERD v3 | `docs/database-logical-model-v3.md` |
 | Physical database shape | `src/lib/database/schema/analysis-cache.ts` and reviewed migrations |
 | Canonical analysis contract | `src/domain/foodseyo-analysis.ts` and `docs/data-contract.md` |
 | Historical decisions | `docs/decision-log.md` |
@@ -52,27 +55,31 @@ They are reference artifacts only. Do not stage, modify, execute, or treat the s
 - C2.1-E pre-provider lease ownership, duplicate coordination, bounded polling, expired-owner recovery, frozen 409/503 failure policy, strict owner persistence, and controlled PostgreSQL concurrency verification
 - C2.1-F independent adversarial PostgreSQL concurrency, ambiguity, rollback, ownership, integrity, and quarantine-failure validation
 - C2.1-G local rollout-readiness review, staged Preview plan, recovery design, Production go/no-go gate, and competition freeze recommendation
+- C2.1-H exact C2.1-G feature-branch preservation and read-only automatic Preview provenance verification
+- C2.2-A complete v2 logical audit, scoped ERD v3, entity responsibilities, relationship corrections, and unresolved decision register
 - project context freeze separating stable product intent, current handoff state, and the public README
 
-Development contains four empty application tables and one migration-ledger row. Preview and Production contain no Foodseyo application tables. The local route now composes exact-cache behavior above the existing analysis flow, but no checkpoint commit has been pushed or deployed. The deployed Production application therefore remains on its existing uncached provider flow.
+Development contains four empty application tables and one migration-ledger row. Preview and Production contain no Foodseyo application tables. The exact-cache route exists in the preserved automatic Preview build, but the absent Preview schema means that build is not a validated database rollout and its analysis POST route was not invoked. The deployed Production application remains on its existing uncached provider flow.
 
 No UI or user-visible copy changed, so browser visual QA was not required.
 
-## Completed C2.1-G review
+## Completed C2.2-A
 
-The review independently inspected the local D→E→F implementation and evidence, live GitHub `main`, the linked Vercel project and active Production deployment, and all three permanent Neon branches. It performed only read-only platform and database checks. Development still has four empty application tables and one ledger entry; Preview and Production still have no application tables. No temporary Neon validation branch remains.
+C2.2-A audits the external Complete ERD v2 without accepting it as an implementation plan. The v3 logical source of truth preserves the implemented C2.1 cache, narrows the next candidate to four structured-menu projection tables, defers restaurant identity until T7/T8, replaces ambiguous fact/evidence links with a future claim-parent model, and excludes persisted images, users, Passport, community, and generic audit payloads until their own decisions exist.
 
-Vercel Fluid Compute is enabled. The project is on Hobby, has no Preview deployment, and links GitHub `main` to Production with automatic Production domain assignment. The active Ready Production deployment was created through the CLI and exposes no Git commit provenance. Vercel contains the environment-scoped pooled `DATABASE_URL` runtime contract and no `DATABASE_MIGRATION_URL`. Neon has zero snapshots, no automatic snapshot schedule, unprotected branches, and a 21,600-second history window.
+The audit defines entity responsibilities, v2 retain/replace/defer/exclude dispositions, ten relationship corrections, fourteen scoped product decisions, and an implementation order that treats rollout as a per-slice protocol rather than a final all-at-once phase. It creates no physical column contract, Drizzle schema, SQL, migration, repository, runtime integration, platform resource, or new capability.
 
-The D→E→F evidence is necessary but not sufficient. Before Preview DDL, the repository needs an exact-branch migration wrapper and a target-aware full post-migration verifier; the current full verifier is Development-labelled and its Preview/Production mode verifies only schema absence. Before Production, Foodseyo also needs a Preview-proven Git SHA, a verified manual recovery point, and an immediate known-good Vercel rollback target.
+The exact C2.1-G commit is now preserved on GitHub. Its automatic Vercel Preview is Ready and traceable to the exact SHA, but Preview Neon remains unmigrated, so the deployment is build provenance only and not cache rollout evidence. Production remains unchanged and uncached.
 
-The release recommendation is **NO-GO for Production**: preserve the current uncached Production analysis flow through the July 21, 2026 competition deadline. A separate Preview-only rehearsal may be authorized later, but Preview success would still require a new Production go/no-go decision. The exact staged sequence, validation matrix, rollback paths, and criteria are in [database-rollout-plan.md](./database-rollout-plan.md).
+The v3 logical model and master map are [database-logical-model-v3.md](./database-logical-model-v3.md) and [database-erd-master-map-v3.mmd](./database-erd-master-map-v3.mmd).
 
 `pnpm verify:full`, `git diff --check`, and repository security validation pass at the completed worktree. The supplied DOCX and SQL references remain untracked and unstaged. No push, deployment, migration, Preview/Production mutation, live POST invocation, or OpenAI request occurred.
 
-## Next release boundary
+## Next checkpoint: C2.2-B
 
-Do not push, deploy, migrate Preview or Production, merge `main`, invoke the live POST route, or call OpenAI without a new instruction. The next safe database action is a separately authorized Preview-only tooling and rehearsal checkpoint following `docs/database-rollout-plan.md`. Production remains explicitly blocked and must receive a fresh go/no-go review after Preview evidence exists.
+C2.2-B is a documentation-only physical integrity contract. It may specify columns, PostgreSQL types, nullability, defaults, candidate keys, foreign keys, deletion/update actions, uniqueness, checks, partial or exclusion indexes, immutability, grants, and enforcement ownership for the implemented C2.1 compatibility boundary and only `menu_snapshots`, `menu_sections`, `menu_items`, and `menu_item_prices`.
+
+Do not create Drizzle schema code, SQL, migration files, repositories, connections, database rows, platform changes, or live-route behavior in C2.2-B. Do not push, deploy, migrate Preview or Production, merge `main`, invoke the live POST route, or call OpenAI without a separate instruction.
 
 ## Delivery rules
 
