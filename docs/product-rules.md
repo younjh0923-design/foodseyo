@@ -1,6 +1,6 @@
 # Foodseyo Product Rules
 
-**Status:** Normative MVP definition through local C2.2-E database program charter
+**Status:** Normative MVP definition through local C2.3 structured-menu projection
 
 **Date:** 2026-07-17
 
@@ -133,7 +133,7 @@ The canonical reader supports legacy `FoodseyoAnalysis` `1.0.0`, C1.2 `1.1.0`, a
 - **C2.2-C:** scoped projection retention, invalidation, and price decisions completed locally; no schema, migration, or database access.
 - **C2.2-D:** isolated Drizzle/SQL draft and static integrity validation completed locally; no active schema, migration, or database execution.
 - **C2.2-E:** Core Consistency Database Program Charter completed locally; documentation and sequencing only.
-- **C2.3:** Development-only structured menu projection; exact next checkpoint and first implementation slice.
+- **C2.3:** Development-only structured menu projection completed locally with no live read path, Preview/Production migration, push, or deployment.
 - **T7.1–T7.4:** restaurant/menu link analysis after C2, beginning with safe acquisition and preserved evidence.
 - **T8:** restaurant identification, reconsidered as gated core candidate work after T7 evidence.
 - **Restaurant/branch core:** identity decisions, physical contract, Development implementation, and validation after T7/T8 evidence.

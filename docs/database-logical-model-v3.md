@@ -1,6 +1,6 @@
 # Foodseyo Database Logical Model v3
 
-**Status:** C2.2-E core database program charter linked locally; no new physical schema or migration
+**Status:** C2.3 first structured-menu slice implemented in Development; later logical domains remain gated
 **Reviewed:** 2026-07-17
 
 This document is the C2.2-A and C2.2-A1 source of truth for relational entity responsibilities under the [Core Consistency Database Program Charter](./database-program-charter.md). It audits the external `Foodseyo Complete ERD v2` proposal against the implemented C2.1 cache, the canonical `FoodseyoAnalysis` contract, the frozen C1 consistency profile, the active MVP, and the T7/T8 ordering.
@@ -427,7 +427,7 @@ Completed by [database-program-charter.md](./database-program-charter.md). It co
 
 ### C2.3 — Development-only structured menu implementation
 
-If C2.2-B/C/D pass, implement the approved minimal projection in Development with atomic rollback and real PostgreSQL validation. Do not add it to the live read path in the same checkpoint.
+Completed locally after separate authorization: four active projection tables, one atomic materializer, a reviewed Development migration, and deterministic plus real PostgreSQL adversarial validation. No public read path is part of this checkpoint.
 
 ### T7/T8 before restaurant identity implementation
 

@@ -10,3 +10,17 @@ export {
   createAnalysisCachePoolConfig,
 } from "./runtime-config.ts";
 export * from "./repositories/index.ts";
+export {
+  STRUCTURED_MENU_PROJECTOR_VERSION,
+  StructuredMenuProjectionError,
+  StructuredMenuProjectionDtoSchema,
+} from "./structured-menu/contracts.ts";
+export type {
+  EligibleStructuredMenuProjection,
+  MenuSnapshotRecord,
+  StructuredMenuProjectionDto,
+  StructuredMenuProjectionErrorCode,
+  StructuredMenuProjectionItem,
+  StructuredMenuProjectionPrice,
+  StructuredMenuProjectionSection,
+} from "./structured-menu/contracts.ts";

@@ -10,9 +10,10 @@ Foodseyo is a source-honest, mobile-first food copilot that turns unfamiliar men
 - [docs/database-program-charter.md](./docs/database-program-charter.md) owns the objective, three reuse paths, current core data scope, GPT/application authority, semantic invariants, phased roadmap, and per-slice rollout boundary. For any database, analysis-reuse, restaurant, dish, taste, texture, ingredient, culinary-knowledge, semantic-merge, or GPT-consistency task, agents must read the charter first.
 - [docs/database-cache-contract.md](./docs/database-cache-contract.md) is normative for C2.1 exact-cache behavior; the executable Drizzle schema and reviewed migrations govern the physical database shape.
 - [docs/database-logical-model-v3.md](./docs/database-logical-model-v3.md) owns relational entity responsibilities, sequencing states, and unresolved product decisions under the program charter. It is not a physical schema or migration source.
-- [docs/database-physical-integrity-contract.md](./docs/database-physical-integrity-contract.md) owns the non-executable C2.2-B PostgreSQL contract for the existing compatibility boundary and four structured-menu candidates.
+- [docs/database-physical-integrity-contract.md](./docs/database-physical-integrity-contract.md) owns the C2.2-B PostgreSQL contract implemented by C2.3 for the existing compatibility boundary and four structured-menu tables.
 - [docs/database-structured-menu-decisions.md](./docs/database-structured-menu-decisions.md) owns the C2.2-C retention, invalidation, and first-slice price-scope decisions.
-- [docs/database-schema-draft.md](./docs/database-schema-draft.md) owns the C2.2-D unexecuted Drizzle/SQL draft review and C2.3 entry gate. The draft must remain outside active schema exports and migrations until separately authorized.
+- [docs/database-schema-draft.md](./docs/database-schema-draft.md) preserves the historical C2.2-D static review and promotion gate.
+- [docs/database-structured-menu-projection.md](./docs/database-structured-menu-projection.md) owns the implemented C2.3 projection, transaction, Development migration, validation, and current stop boundary.
 - [docs/decision-log.md](./docs/decision-log.md) preserves accepted and superseded decisions. Do not rewrite history to describe a newer state.
 - The supplied DOCX and SQL database files are untracked reference artifacts, not executable sources of truth. Never execute the supplied SQL.
 

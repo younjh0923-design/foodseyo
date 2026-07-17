@@ -1,12 +1,12 @@
 # Foodseyo C2.2-C Structured-Menu Decisions
 
-**Status:** Accepted locally for the bounded structured-menu slice; no schema, migration, database, or runtime change
+**Status:** Accepted decisions implemented by C2.3 in Development
 
 **Reviewed:** 2026-07-17
 
 This document is the product and security decision source of truth for the next structured-menu slice. It closes only P-04 and P-06 from the logical model. Under the [Core Consistency Database Program Charter](./database-program-charter.md), restaurant identity and culinary knowledge are sequenced core work, while users and community remain deferred product scope. None blocks this first slice, and each retains its own decision gate.
 
-The decisions below authorize C2.2-D to prepare an unexecuted Drizzle and SQL draft for the four candidate projection tables. They do not authorize a migration, a database connection, a repository, live-route integration, a public read path, Preview or Production changes, or deployment.
+The decisions below first authorized the C2.2-D review draft and were later implemented by the separately authorized C2.3 Development checkpoint. They still do not authorize live-route integration, a public read path, Preview or Production changes, push, or deployment.
 
 ## Reviewed contract boundary
 
@@ -110,6 +110,8 @@ C2.2-D may draft only the four accepted projection tables and their static valid
 - restrictive foreign-key actions and immutable `SELECT`/`INSERT` runtime access;
 - no public read path, live-route integration, or database execution.
 
-C2.2-D must remain an unexecuted design checkpoint. C2.3, any Development migration, and any Preview or Production action require separate authorization.
+C2.2-D remained an unexecuted design checkpoint. C2.3 was later authorized
+separately and applied only to Development. Preview and Production actions
+remain separately gated and unauthorized by this decision.
 
 The completed static realization is recorded in [database-schema-draft.md](./database-schema-draft.md). It does not broaden these decisions or authorize execution.

@@ -22,7 +22,7 @@ assert(
 );
 
 const pool = new Pool({
-  application_name: "foodseyo-c2.1-b-migration",
+  application_name: "foodseyo-reviewed-migration",
   connectionString,
   max: 1,
 });
@@ -52,7 +52,7 @@ async function applyPendingMigrations(client: PoolClient): Promise<number> {
   await client.query("BEGIN");
   try {
     await client.query(
-      "SELECT pg_advisory_xact_lock(hashtextextended('foodseyo-c2.1-b-migrations', 0))",
+      "SELECT pg_advisory_xact_lock(hashtextextended('foodseyo-reviewed-migrations', 0))",
     );
     await client.query(`
       CREATE TABLE IF NOT EXISTS public.__drizzle_migrations (

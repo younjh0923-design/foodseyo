@@ -140,7 +140,7 @@ C2.1-F is complete locally, including repeated adversarial PostgreSQL verificati
 - **C2.2-C:** bounded retention, invalidation, and first-slice price decisions — completed locally without schema, migration, or database access;
 - **C2.2-D:** isolated Drizzle/SQL draft and static integrity validation — completed locally without an active schema, migration, or database access;
 - **C2.2-E:** Core Consistency Database Program Charter — completed locally as a documentation-only scope and sequencing correction;
-- **C2.3:** Development-only structured menu projection, separate from live-route integration and rollout; this is the exact next checkpoint;
+- **C2.3:** Development-only structured menu projection completed with an active four-table schema, atomic materializer, reviewed migration, and adversarial PostgreSQL validation; no live-route integration or rollout;
 - implement T7 restaurant/menu link acquisition with URL normalization, SSRF defense, source classification, and preserved evidence before restaurant/branch identity;
 - define and implement restaurant/branch candidates through separate decision, physical-contract, Development-validation, and rollout checkpoints;
 - define and implement dish concepts, aliases, reviewed culinary profiles, separate sensory knowledge, ingredient roles, typed claims, and provenance through bounded checkpoints;

@@ -1,6 +1,6 @@
 # Foodseyo Core Consistency Database Program Charter
 
-**Status:** C2.2-E architecture charter; documentation only
+**Status:** Active architecture charter through completed local C2.3
 
 **Reviewed:** 2026-07-17
 
@@ -304,11 +304,11 @@ product/security decisions precede every new database slice.
 
 ### First implementation slice
 
-- **C2.3 — Development-only structured-menu projection:** promote only the
-  reviewed four-table draft, prepare a reviewed Development migration,
-  implement one atomic projector transaction, and run deterministic plus real
-  PostgreSQL adversarial validation. Do not add a live read path in the same
-  checkpoint.
+- **C2.3 — Development-only structured-menu projection (complete locally):**
+  the reviewed four-table draft is active, the reviewed migration is applied
+  only to Development, and deterministic plus real PostgreSQL adversarial
+  validation proves the atomic projector transaction. No live read path was
+  added.
 
 ### Source and scoped identity
 
@@ -403,10 +403,10 @@ community features.
 
 ## Migration and rollout boundaries
 
-- The isolated C2.2-D Drizzle and SQL files remain review drafts, not active
-  schema or migration sources.
-- C2.3 is the only exact next checkpoint authorized by the current handoff, and
-  it still requires a separate user instruction.
+- The C2.2-D files remain historical review evidence; C2.3 promotes their exact
+  four-table boundary through the active schema and reviewed `0001` migration.
+- C2.3 Development completion does not authorize a live read path, Preview or
+  Production migration, push, or deployment.
 - No restaurant, dish-concept, knowledge, claim, or effective-profile table may
   be added before its own decision and physical-contract checkpoint.
 - Development success never authorizes Preview or Production.

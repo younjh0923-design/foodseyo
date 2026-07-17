@@ -68,7 +68,7 @@ Validated analysis is stored under `foodseyo.currentAnalysis` in `sessionStorage
 - C2.1-H — exact feature-branch preservation completed; automatic Preview is build provenance only
 - C2.2-A — scoped logical ERD v3 audit complete; no physical schema
 - C2.2-B–D — bounded physical integrity contract, scoped decisions, and unexecuted schema draft
-- C2.3 candidate — Development-only structured menu projection after the C2.2 gates
+- C2.3 complete locally — Development-only structured menu projection after the C2.2 gates, with no live route integration
 - T7.1–T7.4 — restaurant/menu link analysis after C2
 - T8 — restaurant identification, reconsider after T7
 - Later — map-app share-to-Foodseyo integration

@@ -1,20 +1,26 @@
 # Foodseyo C2.2-D Structured-Menu Schema Draft
 
-**Status:** Static design accepted locally; not an active schema, migration, repository, or database change
+**Status:** Historical C2.2-D static review; exact four-table boundary promoted by C2.3
 
 **Reviewed:** 2026-07-17
 
-This document records the C2.2-D realization of the accepted [physical integrity contract](./database-physical-integrity-contract.md) and [structured-menu decisions](./database-structured-menu-decisions.md). Under the [Core Consistency Database Program Charter](./database-program-charter.md), it is the isolated design for the first implementation slice, not the full database objective. It remains a design checkpoint only.
+This document records the C2.2-D realization of the accepted [physical integrity contract](./database-physical-integrity-contract.md) and [structured-menu decisions](./database-structured-menu-decisions.md). C2.3 later promoted this exact four-table boundary. Current implementation and Development evidence are in [database-structured-menu-projection.md](./database-structured-menu-projection.md); this file remains historical review evidence.
 
 ## Draft artifacts
 
-- Drizzle design: `src/lib/database/schema/structured-menu-draft.ts`
+- Historical Drizzle design: preserved at C2.2-D commit `9bafb1f78a6bf0988bdd759644f5aafeec7d88be`
 - PostgreSQL review draft: `database/drafts/c2_2_d_structured_menu_projection.sql`
-- Network-free validator: `scripts/validate-structured-menu-schema-draft.mts`
+- Promoted Drizzle schema: `src/lib/database/schema/structured-menu.ts`
+- Reviewed migration: `database/migrations/0001_c2_3_structured_menu_projection.sql`
+- Active network-free validator: `scripts/validate-structured-menu-schema.mts`
 
-The Drizzle design is deliberately absent from `src/lib/database/schema/index.ts`. `drizzle.config.ts` continues to select that active index, which exports only the four implemented C2.1 tables. The SQL draft is deliberately outside `database/migrations`; the reviewed migration directory still contains only `0000_c2_1_b_analysis_cache_schema.sql`.
-
-Neither draft is imported by runtime code. No migration was generated, no migration metadata changed, and no database or platform was accessed.
+At the C2.2-D review commit, the Drizzle design was deliberately absent from
+`src/lib/database/schema/index.ts`, the SQL draft remained outside
+`database/migrations`, and no database or platform was accessed. C2.3 later
+promoted the reviewed schema through the active index and generated the reviewed
+`0001_c2_3_structured_menu_projection.sql` migration. The original SQL review
+draft remains outside the migration ledger and is not executable migration
+state.
 
 ## Drafted dependency graph
 
@@ -87,7 +93,7 @@ The C2.2-D validator checks:
 - exclusion of the draft from the active schema export and migration directory;
 - zero network calls.
 
-`pnpm validate:structured-menu-schema-draft` is included in both quick and full network-free regression entry points.
+The promoted equivalent, `pnpm validate:structured-menu-schema`, is included in both quick and full network-free regression entry points.
 
 ## Application-enforced invariants remain deferred
 
@@ -104,9 +110,9 @@ The draft intentionally does not pretend that row constraints prove aggregate co
 
 No repository or transaction service is part of C2.2-D.
 
-## C2.3 entry gate
+## C2.3 promotion result
 
-C2.3 is the exact next checkpoint and requires a separate explicit instruction. It may promote only this reviewed draft into the active schema and prepare a reviewed Development migration, then implement the bounded aggregate transaction and adversarial PostgreSQL validation.
+C2.3 was explicitly authorized and promoted only this reviewed draft into the active schema and reviewed Development migration. It implemented the bounded aggregate transaction and completed deterministic plus real PostgreSQL adversarial validation.
 
 C2.3 must remain Development-only and must not:
 

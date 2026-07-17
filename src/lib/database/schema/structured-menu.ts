@@ -16,15 +16,7 @@ import {
 
 import { analysisSnapshots } from "./analysis-cache.ts";
 
-/**
- * C2.2-D DESIGN DRAFT ONLY.
- *
- * This module is intentionally not exported from schema/index.ts and is not
- * selected by drizzle.config.ts. It must not be used by runtime code or turned
- * into a migration before the separately authorized C2.3 checkpoint.
- */
-
-export const menuSnapshotsDraft = pgTable(
+export const menuSnapshots = pgTable(
   "menu_snapshots",
   {
     id: uuid("id").notNull().defaultRandom(),
@@ -67,7 +59,7 @@ export const menuSnapshotsDraft = pgTable(
   ],
 );
 
-export const menuSectionsDraft = pgTable(
+export const menuSections = pgTable(
   "menu_sections",
   {
     id: uuid("id").notNull().defaultRandom(),
@@ -84,7 +76,7 @@ export const menuSectionsDraft = pgTable(
     foreignKey({
       name: "menu_sections_menu_snapshot_fk",
       columns: [table.menuSnapshotId],
-      foreignColumns: [menuSnapshotsDraft.id],
+      foreignColumns: [menuSnapshots.id],
     })
       .onDelete("restrict")
       .onUpdate("restrict"),
@@ -115,7 +107,7 @@ export const menuSectionsDraft = pgTable(
   ],
 );
 
-export const menuItemsDraft = pgTable(
+export const menuItems = pgTable(
   "menu_items",
   {
     id: uuid("id").notNull().defaultRandom(),
@@ -135,14 +127,14 @@ export const menuItemsDraft = pgTable(
     foreignKey({
       name: "menu_items_menu_snapshot_fk",
       columns: [table.menuSnapshotId],
-      foreignColumns: [menuSnapshotsDraft.id],
+      foreignColumns: [menuSnapshots.id],
     })
       .onDelete("restrict")
       .onUpdate("restrict"),
     foreignKey({
       name: "menu_items_section_snapshot_fk",
       columns: [table.menuSectionId, table.menuSnapshotId],
-      foreignColumns: [menuSectionsDraft.id, menuSectionsDraft.menuSnapshotId],
+      foreignColumns: [menuSections.id, menuSections.menuSnapshotId],
     })
       .onDelete("restrict")
       .onUpdate("restrict"),
@@ -180,7 +172,7 @@ export const menuItemsDraft = pgTable(
   ],
 );
 
-export const menuItemPricesDraft = pgTable(
+export const menuItemPrices = pgTable(
   "menu_item_prices",
   {
     id: uuid("id").notNull().defaultRandom(),
@@ -201,7 +193,7 @@ export const menuItemPricesDraft = pgTable(
     foreignKey({
       name: "menu_item_prices_menu_item_fk",
       columns: [table.menuItemId],
-      foreignColumns: [menuItemsDraft.id],
+      foreignColumns: [menuItems.id],
     })
       .onDelete("restrict")
       .onUpdate("restrict"),
@@ -264,9 +256,9 @@ export const menuItemPricesDraft = pgTable(
   ],
 );
 
-export const structuredMenuDraftTables = [
-  menuSnapshotsDraft,
-  menuSectionsDraft,
-  menuItemsDraft,
-  menuItemPricesDraft,
+export const structuredMenuTables = [
+  menuSnapshots,
+  menuSections,
+  menuItems,
+  menuItemPrices,
 ] as const;

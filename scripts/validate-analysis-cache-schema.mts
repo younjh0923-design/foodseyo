@@ -300,11 +300,14 @@ const migrationFiles = (await readdir(migrationDirectory))
   .filter((path) => path.endsWith(".sql"))
   .sort();
 verify(
-  migrationFiles.join(",") === "0000_c2_1_b_analysis_cache_schema.sql",
-  "exactly one reviewed C2.1-B SQL migration exists",
+  migrationFiles.includes("0000_c2_1_b_analysis_cache_schema.sql"),
+  "the reviewed C2.1-B SQL migration remains present",
 );
 const migrationSql = await readFile(
-  new URL(migrationFiles[0]!, migrationDirectory),
+  new URL(
+    "0000_c2_1_b_analysis_cache_schema.sql",
+    migrationDirectory,
+  ),
   "utf8",
 );
 verify(
@@ -312,7 +315,7 @@ verify(
     .map((match) => match[1])
     .sort()
     .join(",") === expectedTableNames.join(","),
-  "migration creates exactly the four reviewed application tables",
+  "the C2.1 migration still creates exactly the four reviewed cache tables",
 );
 verify(
   !/\b(?:DROP|TRUNCATE|DELETE FROM|INSERT INTO)\b/iu.test(migrationSql),

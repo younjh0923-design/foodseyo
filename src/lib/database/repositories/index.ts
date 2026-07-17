@@ -26,6 +26,13 @@ export {
   persistReadyAnalysisSnapshot,
 } from "./persist-ready-analysis-snapshot.ts";
 export {
+  findStoredStructuredMenuProjection,
+  insertStructuredMenuProjection,
+  isStructuredMenuProjectionUniqueConflict,
+  loadEligibleStructuredMenuProjectionSource,
+  verifyStructuredMenuProjectionCounts,
+} from "./structured-menu.ts";
+export {
   AnalysisCacheRepositoryError,
   AnalysisContractIdentitySchema,
   AnalysisContractRecordSchema,
@@ -60,3 +67,7 @@ export type {
   PersistReadyAnalysisSnapshotInput,
   PersistReadyAnalysisSnapshotResult,
 } from "./persist-ready-analysis-snapshot.ts";
+export type {
+  EligibleStructuredMenuProjectionSource,
+  PreparedStructuredMenuProjectionRows,
+} from "./structured-menu.ts";

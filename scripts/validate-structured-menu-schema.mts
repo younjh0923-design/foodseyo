@@ -3,26 +3,26 @@ import { readdir, readFile } from "node:fs/promises";
 import { getTableConfig, type PgTable } from "drizzle-orm/pg-core";
 
 import {
-  menuItemPricesDraft,
-  menuItemsDraft,
-  menuSectionsDraft,
-  menuSnapshotsDraft,
-  structuredMenuDraftTables,
-} from "../src/lib/database/schema/structured-menu-draft.ts";
+  menuItemPrices,
+  menuItems,
+  menuSections,
+  menuSnapshots,
+  structuredMenuTables,
+} from "../src/lib/database/schema/structured-menu.ts";
 import {
   createValidationSuite,
   installNetworkGuard,
 } from "./test-support/validation.mts";
 
 const { verify, report } = createValidationSuite(
-  "Foodseyo structured menu schema draft validation",
-  "Structured menu schema draft validation failed",
+  "Foodseyo structured menu schema validation",
+  "Structured menu schema validation failed",
 );
 const networkGuard = installNetworkGuard(
-  "Structured menu schema draft validation must not use the network.",
+  "Structured menu schema validation must not use the network.",
 );
 
-const configs = structuredMenuDraftTables.map((table) =>
+const configs = structuredMenuTables.map((table) =>
   getTableConfig(table as PgTable),
 );
 const configByName = new Map(configs.map((config) => [config.name, config]));
@@ -36,7 +36,7 @@ const expectedTableNames = [
 verify(
   configs.length === 4 &&
     [...configByName.keys()].sort().join(",") === expectedTableNames.join(","),
-  "draft declares exactly the four approved structured-menu tables",
+  "active schema declares exactly the four approved structured-menu tables",
 );
 
 const expectedColumns = {
@@ -272,21 +272,21 @@ verify(
 );
 verify(
   configs.every((config) => !config.enableRLS && config.policies.length === 0),
-  "draft declares no RLS policy for the non-user, non-tenant slice",
+  "active schema declares no RLS policy for the non-user, non-tenant slice",
 );
 
 verify(
-  menuSnapshotsDraft.analysisSnapshotId.notNull &&
-    menuSectionsDraft.menuSnapshotId.notNull &&
-    menuItemsDraft.menuSnapshotId.notNull &&
-    !menuItemsDraft.menuSectionId.notNull &&
-    menuItemPricesDraft.amount.getSQLType() === "numeric",
-  "draft preserves source identity, nullable section membership, and exact numeric money",
+  menuSnapshots.analysisSnapshotId.notNull &&
+    menuSections.menuSnapshotId.notNull &&
+    menuItems.menuSnapshotId.notNull &&
+    !menuItems.menuSectionId.notNull &&
+    menuItemPrices.amount.getSQLType() === "numeric",
+  "active schema preserves source identity, nullable section membership, and exact numeric money",
 );
 
-const draftSource = await readFile(
+const activeSource = await readFile(
   new URL(
-    "../src/lib/database/schema/structured-menu-draft.ts",
+    "../src/lib/database/schema/structured-menu.ts",
     import.meta.url,
   ),
   "utf8",
@@ -300,12 +300,12 @@ const drizzleConfig = await readFile(
   "utf8",
 );
 verify(
-  draftSource.includes("C2.2-D DESIGN DRAFT ONLY") &&
-    !activeSchemaIndex.includes("structured-menu-draft") &&
+  !activeSource.includes("DRAFT ONLY") &&
+    activeSchemaIndex.includes('from "./structured-menu.ts"') &&
     drizzleConfig.includes(
       'schema: "./src/lib/database/schema/index.ts"',
     ),
-  "draft is labeled and excluded from the active Drizzle schema export",
+  "the reviewed four-table design is promoted into the active Drizzle export",
 );
 
 const migrationDirectory = new URL("../database/migrations/", import.meta.url);
@@ -313,11 +313,22 @@ const migrationFiles = (await readdir(migrationDirectory))
   .filter((path) => path.endsWith(".sql"))
   .sort();
 verify(
-  migrationFiles.join(",") === "0000_c2_1_b_analysis_cache_schema.sql",
-  "C2.2-D creates no migration and leaves the C2.1 migration set unchanged",
+  migrationFiles.join(",") ===
+    [
+      "0000_c2_1_b_analysis_cache_schema.sql",
+      "0001_c2_3_structured_menu_projection.sql",
+    ].join(","),
+  "C2.3 adds exactly one reviewed migration after the unchanged C2.1 migration",
 );
 
-const draftSql = await readFile(
+const migrationSql = await readFile(
+  new URL(
+    "../database/migrations/0001_c2_3_structured_menu_projection.sql",
+    import.meta.url,
+  ),
+  "utf8",
+);
+const reviewDraftSql = await readFile(
   new URL(
     "../database/drafts/c2_2_d_structured_menu_projection.sql",
     import.meta.url,
@@ -325,22 +336,26 @@ const draftSql = await readFile(
   "utf8",
 );
 verify(
-  draftSql.startsWith("-- C2.2-D REVIEW DRAFT ONLY. DO NOT EXECUTE.") &&
-    draftSql.includes("intentionally outside database/migrations"),
-  "SQL is prominently labeled as a non-executable review draft",
+  migrationSql.startsWith(
+    "-- C2.3 reviewed PostgreSQL and least-privilege preconditions.",
+  ) &&
+    migrationSql.includes(
+      "Compared with the accepted C2.2-D review draft",
+    ),
+  "executable SQL is labeled as the reviewed C2.3 migration",
 );
 verify(
-  [...draftSql.matchAll(/CREATE TABLE "public"\."([^"]+)"/gu)]
+  [...migrationSql.matchAll(/CREATE TABLE "(?:public"\.")?([^"]+)"/gu)]
     .map((match) => match[1])
     .sort()
     .join(",") === expectedTableNames.join(","),
-  "SQL draft creates exactly the four approved table names",
+  "migration creates exactly the four approved table names",
 );
 for (const [tableName, expected] of Object.entries(expectedColumns)) {
   const tableBody =
-    draftSql.match(
+    migrationSql.match(
       new RegExp(
-        `CREATE TABLE "public"\\."${tableName}" \\(([\\s\\S]*?)\\r?\\n\\);`,
+        `CREATE TABLE "(?:public"\\.")?${tableName}" \\(([\\s\\S]*?)\\r?\\n\\);`,
         "u",
       ),
     )?.[1] ?? "";
@@ -349,7 +364,7 @@ for (const [tableName, expected] of Object.entries(expectedColumns)) {
   );
   verify(
     sqlColumns.join(",") === expected.map(([name]) => name).join(","),
-    `${tableName} SQL columns exactly match the Drizzle draft order`,
+    `${tableName} SQL columns exactly match the active Drizzle order`,
   );
 }
 const drizzleConstraintAndIndexNames = configs.flatMap((config) => [
@@ -361,90 +376,100 @@ const drizzleConstraintAndIndexNames = configs.flatMap((config) => [
 ]);
 verify(
   drizzleConstraintAndIndexNames.every(
-    (name) => name !== undefined && draftSql.includes(`"${name}"`),
+    (name) => name !== undefined && migrationSql.includes(`"${name}"`),
   ),
-  "SQL draft contains every named Drizzle key, check, foreign key, and index",
+  "migration contains every named Drizzle key, check, foreign key, and index",
 );
 verify(
   !/\b(?:ALTER|DROP|TRUNCATE|DELETE FROM|INSERT INTO)\s+"public"\."(?:analysis_contracts|menu_evidence_sets|analysis_runs|analysis_snapshots)"/iu.test(
-    draftSql,
+    migrationSql,
   ),
-  "SQL draft does not alter or mutate a C2.1 table",
+  "migration does not alter or mutate a C2.1 table",
 );
 verify(
-  !/\b(?:DROP|TRUNCATE|DELETE FROM|INSERT INTO)\b/iu.test(draftSql),
-  "SQL draft contains no destructive statement or seed data",
+  !/\b(?:DROP|TRUNCATE|DELETE FROM|INSERT INTO)\b/iu.test(migrationSql),
+  "migration contains no destructive statement or seed data",
 );
 verify(
   !/\b(?:CREATE\s+(?:TRIGGER|FUNCTION|PROCEDURE|POLICY)|ENABLE\s+ROW\s+LEVEL\s+SECURITY|EXCLUDE\s+USING|GENERATED\s+ALWAYS)\b/iu.test(
-    draftSql,
+    migrationSql,
   ),
-  "SQL draft adds no trigger, stored routine, RLS, exclusion constraint, or generated column",
+  "migration adds no trigger, stored routine, RLS, exclusion constraint, or generated column",
 );
 verify(
   expectedForeignKeys.every(([name]) =>
-    draftSql.includes(`CONSTRAINT "${name}"`),
+    migrationSql.includes(`CONSTRAINT "${name}"`),
   ) &&
-    (draftSql.match(/ON DELETE RESTRICT/gu)?.length ?? 0) === 5 &&
-    (draftSql.match(/ON UPDATE RESTRICT/gu)?.length ?? 0) === 5,
-  "SQL draft mirrors every restrictive foreign key",
+    (migrationSql.match(/ON DELETE restrict/gu)?.length ?? 0) === 5 &&
+    (migrationSql.match(/ON UPDATE restrict/gu)?.length ?? 0) === 5,
+  "migration mirrors every restrictive foreign key",
 );
 verify(
-  draftSql.includes(
+  migrationSql.includes(
     'CONSTRAINT "menu_items_section_snapshot_fk"',
   ) &&
-    draftSql.includes(
-      'FOREIGN KEY ("menu_section_id", "menu_snapshot_id")',
-    ) &&
-    draftSql.includes(
-      'REFERENCES "public"."menu_sections" ("id", "menu_snapshot_id")',
+    migrationSql.includes(
+      'FOREIGN KEY ("menu_section_id","menu_snapshot_id")',
     ),
-  "SQL draft preserves same-snapshot section membership",
+  "migration preserves same-snapshot section membership",
 );
 verify(
-  draftSql.includes("'NaN'::numeric") &&
-    draftSql.includes("'Infinity'::numeric") &&
-    draftSql.includes("'-Infinity'::numeric") &&
-    draftSql.includes(
+  migrationSql.includes("'NaN'::numeric") &&
+    migrationSql.includes("'Infinity'::numeric") &&
+    migrationSql.includes("'-Infinity'::numeric") &&
+    migrationSql.includes(
       'CREATE UNIQUE INDEX "menu_item_prices_one_base_ux"',
     ),
-  "SQL draft rejects non-finite money and permits at most one base price",
+  "migration rejects non-finite money and permits at most one base price",
 );
 verify(
-  draftSql.includes("REVOKE ALL PRIVILEGES ON TABLE") &&
-    draftSql.includes("FROM PUBLIC") &&
-    draftSql.includes('FROM "foodseyo_runtime"') &&
-    draftSql.includes("GRANT SELECT, INSERT") &&
-    !/GRANT\s+(?:UPDATE|DELETE|TRUNCATE|REFERENCES|TRIGGER)/iu.test(draftSql),
-  "SQL draft grants runtime only SELECT and INSERT after explicit revocation",
+  migrationSql.includes("REVOKE ALL PRIVILEGES ON TABLE") &&
+    migrationSql.includes("FROM PUBLIC") &&
+    migrationSql.includes('FROM "foodseyo_runtime"') &&
+    migrationSql.includes("GRANT SELECT, INSERT") &&
+    !/GRANT\s+(?:UPDATE|DELETE|TRUNCATE|REFERENCES|TRIGGER)/iu.test(
+      migrationSql,
+    ),
+  "migration grants runtime only SELECT and INSERT after explicit revocation",
 );
 verify(
-  draftSql.includes(
-    "Structured-menu DDL must run as foodseyo_migrator",
-  ) &&
-    draftSql.includes(
+  migrationSql.includes("C2.3 migration must run as foodseyo_migrator") &&
+    migrationSql.includes(
       "foodseyo_migrator lacks required public schema privileges",
     ) &&
-    draftSql.includes(
+    migrationSql.includes(
       "foodseyo_runtime must not be a neon_superuser member",
     ),
-  "SQL draft fails clearly when owner and least-privilege role prerequisites are not met",
+  "migration fails clearly when owner and least-privilege role prerequisites are not met",
 );
 verify(
   !/raw_image|base64|file_?name|image_hash|exif|provider_raw|menu_projection_attempts/iu.test(
-    draftSource + draftSql,
+    activeSource + migrationSql,
   ),
-  "draft adds no prohibited source payload or materialization-attempt storage",
+  "active schema adds no prohibited source payload or materialization-attempt storage",
 );
 verify(
   !/DATABASE_URL|DATABASE_MIGRATION_URL|postgres(?:ql)?:\/\//iu.test(
-    draftSource + draftSql,
+    activeSource + migrationSql,
   ),
-  "draft contains no connection variable, URL, or credential material",
+  "active schema and migration contain no connection variable, URL, or credential material",
+);
+verify(
+  drizzleConstraintAndIndexNames.every(
+    (name) =>
+      name !== undefined &&
+      reviewDraftSql.includes(`"${name}"`) &&
+      migrationSql.includes(`"${name}"`),
+  ) &&
+    [...reviewDraftSql.matchAll(/CREATE TABLE "public"\."([^"]+)"/gu)]
+      .map((match) => match[1])
+      .sort()
+      .join(",") === expectedTableNames.join(","),
+  "generated migration retains every accepted C2.2-D table, constraint, and index identity",
 );
 verify(
   networkGuard.callCount === 0,
-  "structured menu schema draft validation makes zero external network calls",
+  "structured menu schema validation makes zero external network calls",
 );
 networkGuard.restore();
 

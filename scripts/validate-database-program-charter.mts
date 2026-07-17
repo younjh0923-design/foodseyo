@@ -20,6 +20,7 @@ const [
   productRules,
   logicalModel,
   schemaDraft,
+  structuredMenuProjection,
   decisionLog,
   handoff,
   readme,
@@ -31,6 +32,7 @@ const [
   readFile("docs/product-rules.md", "utf8"),
   readFile("docs/database-logical-model-v3.md", "utf8"),
   readFile("docs/database-schema-draft.md", "utf8"),
+  readFile("docs/database-structured-menu-projection.md", "utf8"),
   readFile("docs/decision-log.md", "utf8"),
   readFile("docs/CODEX_HANDOFF.md", "utf8"),
   readFile("README.md", "utf8"),
@@ -146,7 +148,11 @@ verify(
   overview.includes("Core consistency database program") &&
     productRules.includes("Core database program") &&
     logicalModel.includes("C2.2-E program scope correction") &&
-    schemaDraft.includes("first implementation slice") &&
+    schemaDraft.includes("Historical C2.2-D static review") &&
+    schemaDraft.includes("exact four-table boundary promoted by C2.3") &&
+    structuredMenuProjection.includes(
+      "C2.3 Structured-Menu Projection",
+    ) &&
     readme.includes("database-program-charter.md"),
   "active durable documentation is aligned with the charter",
 );
@@ -157,24 +163,29 @@ verify(
   "decision history records the narrow scope and timing supersession",
 );
 verify(
-  handoff.includes("Current checkpoint:** C2.2-E") &&
-    handoff.includes("## Next checkpoint: C2.3") &&
-    handoff.includes("exact next checkpoint"),
-  "handoff records C2.2-E and one exact next checkpoint",
+  handoff.includes("Current checkpoint:** C2.3") &&
+    handoff.includes("## Next boundary") &&
+    handoff.includes("T7") &&
+    handoff.includes("source-acquisition contract"),
+  "handoff records completed C2.3 and the separately authorized next boundary",
 );
 verify(
   !activeSchemaIndex.includes("structured-menu-draft") &&
-    !activeSchemaIndex.includes("menuSnapshotsDraft"),
-  "C2.2-D remains outside the active schema export",
+    !activeSchemaIndex.includes("menuSnapshotsDraft") &&
+    activeSchemaIndex.includes('from "./structured-menu.ts"'),
+  "C2.3 promotes only the reviewed structured-menu schema",
 );
 
 const migrationFiles = (await readdir("database/migrations"))
   .filter((name) => name.endsWith(".sql"))
   .sort();
 verify(
-  migrationFiles.length === 1 &&
-    migrationFiles[0] === "0000_c2_1_b_analysis_cache_schema.sql",
-  "active migration set remains the single C2.1-B migration",
+  migrationFiles.join(",") ===
+    [
+      "0000_c2_1_b_analysis_cache_schema.sql",
+      "0001_c2_3_structured_menu_projection.sql",
+    ].join(","),
+  "active migration set contains only the reviewed C2.1 and C2.3 migrations",
 );
 verify(
   networkGuard.callCount === 0,

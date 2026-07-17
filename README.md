@@ -37,7 +37,7 @@ The Home link field validates HTTP/HTTPS syntax only. It does not fetch or analy
 - controlled vocabularies, deterministic wording, semantic validation, and versioned fingerprints reduce avoidable drift;
 - automated validation is network-free and never makes a paid OpenAI request.
 
-Neon/Vercel Development, Preview, and Production database environments are isolated. The four-table exact-cache schema exists only in Development today. Local C2.1-E adds pre-provider lease ownership, duplicate coordination, bounded polling, expired-lease recovery, strict owner-only persistence, and the frozen 409/503 policy above the C2.1-D exact lookup and quarantine path. C2.1-F independently passed deterministic and adversarial real-PostgreSQL validation on disposable Development child branches, including repeated concurrency, rollback, ambiguous outcomes, and corrupt-snapshot quarantine failures. Every child branch was deleted and permanent Development remained empty. The exact C2.1-G commit is preserved on a GitHub feature branch and produced an automatic Git-sourced Preview build, but no Preview/Production database migration or validated cache rollout occurred. Production remains on the uncached flow. C2.2-A through C2.2-E now define the bounded logical model, physical integrity contract, first-slice decisions, isolated static schema draft, and broader core consistency database charter. The active schema and migration set remain unchanged.
+Neon/Vercel Development, Preview, and Production database environments are isolated. Development now contains the four exact-cache tables plus the four C2.3 structured-menu projection tables, with zero application rows and two migration-ledger entries. C2.3 implements deterministic DTO construction, source eligibility checks, one atomic projection transaction, idempotent winner reuse, and real-PostgreSQL constraint, concurrency, rollback, invalidation, and expiry validation. Runtime has only `SELECT` and `INSERT` on the projection tables. No projection read path is connected to the live application. The exact C2.1-G commit is preserved on a GitHub feature branch and produced an automatic Git-sourced Preview build, but Preview and Production received no database migration or validated cache rollout. Production remains on the uncached flow.
 
 ## Run locally
 
@@ -73,6 +73,12 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\run-c2-1-f-dev
 
 The guarded runner checks permanent Development read-only, validates on two one-hour child branches, deletes each exact branch, and verifies that no temporary branch remains. It never calls OpenAI.
 
+The C2.3 migration rehearsal and structured-menu adversarial gate are also explicit Development-only operations. They use a disposable child branch, delete it after validation, and never call OpenAI:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\run-c2-3-development-validation.ps1
+```
+
 ## Codex and GPT-5.6
 
 GPT-5.6 performs the explicitly triggered menu-image interpretation behind a strict structured-output boundary. Application code, not the model, owns IDs, evidence links, canonical validation, deterministic wording, safety rules, and result storage.
@@ -103,7 +109,7 @@ Codex has supported the repository-wide implementation workflow: product-scope c
 - C2.2-C — scoped retention, invalidation, and price decisions completed locally; no schema or migration
 - C2.2-D — isolated Drizzle/SQL schema draft and static validation completed locally; not active or migrated
 - C2.2-E — core consistency database program charter completed locally; documentation only
-- C2.3 — Development-only structured menu projection; exact next checkpoint and first implementation slice
+- C2.3 — Development-only structured menu projection completed locally; no live read path or rollout
 - T7 — restaurant/menu link analysis after C2
 - Core data program after T7 evidence — restaurant/branch candidates, dish concepts, reviewed culinary knowledge, typed claims, deterministic merge, and GPT-aware reuse through bounded gates
 - Later product scope — personalization, Food Passport, community, and map-app sharing
@@ -112,6 +118,6 @@ Stable product context is in [`docs/PROJECT_OVERVIEW.md`](./docs/PROJECT_OVERVIE
 
 The scoped future relational model is in [`docs/database-logical-model-v3.md`](./docs/database-logical-model-v3.md).
 The primary database objective, three reuse paths, GPT boundary, and phased program are in [`docs/database-program-charter.md`](./docs/database-program-charter.md).
-The next-slice PostgreSQL integrity contract is in [`docs/database-physical-integrity-contract.md`](./docs/database-physical-integrity-contract.md).
+The implemented first-slice PostgreSQL integrity contract is in [`docs/database-physical-integrity-contract.md`](./docs/database-physical-integrity-contract.md).
 The accepted structured-menu product and security decisions are in [`docs/database-structured-menu-decisions.md`](./docs/database-structured-menu-decisions.md).
-The isolated, unexecuted schema draft review is in [`docs/database-schema-draft.md`](./docs/database-schema-draft.md).
+The historical schema draft review is in [`docs/database-schema-draft.md`](./docs/database-schema-draft.md), and the implemented C2.3 boundary is in [`docs/database-structured-menu-projection.md`](./docs/database-structured-menu-projection.md).

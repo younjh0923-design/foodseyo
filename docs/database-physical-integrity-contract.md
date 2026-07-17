@@ -1,12 +1,12 @@
 # Foodseyo C2.2-B Physical Integrity Contract
 
-**Status:** C2.2-B documentation contract accepted locally; no schema code, SQL, migration, or database change
+**Status:** C2.2-B contract implemented by C2.3 in Development
 
 **Reviewed:** 2026-07-17
 
 This document is the physical-design source of truth for the next bounded database slice. It translates the accepted C2.2-A/A1 logical model into PostgreSQL column, key, constraint, index, immutability, transaction, and privilege requirements.
 
-It is not executable. The implemented C2.1 Drizzle schema and reviewed migration remain authoritative for the four existing tables. The four structured-menu tables below are candidate contracts only. C2.2-B does not create Drizzle definitions, SQL, migrations, repositories, connections, rows, platform changes, or runtime behavior.
+This document remains the normative physical contract. C2.3 implements its four structured-menu tables in the active Drizzle schema, reviewed `0001` migration, repository, and atomic materializer. The implementation evidence is recorded in [database-structured-menu-projection.md](./database-structured-menu-projection.md).
 
 ## Scope
 
@@ -406,7 +406,7 @@ When a later authorized migration creates these tables:
 
 There is no RLS requirement because the slice has no user or tenant identity and is reachable only through the server runtime. Authentication or multi-tenant data would require a separate security design before changing that conclusion.
 
-## Dependency order for a later unexecuted draft
+## Dependency order reviewed before C2.3 promotion
 
 C2.2-D may draft, but not apply, objects in this dependency order:
 
@@ -436,7 +436,9 @@ No C2.1 table alteration is required by this order.
 - exact source amount, nullable currency, and display text with no conversion or inference;
 - no ranges, market-price markers, option groups, `additionalPrice` deltas, or row for unknown prices.
 
-These decisions authorize only the unexecuted C2.2-D draft. Retention and deletion for Preview or Production remain a separate rollout gate.
+At C2.2-B, these decisions authorized only the unexecuted C2.2-D draft. C2.3
+later received separate Development-only authorization. Retention and deletion
+for Preview or Production remain a separate rollout gate.
 
 ## C2.2-B exit classification
 
