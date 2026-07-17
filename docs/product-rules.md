@@ -1,6 +1,6 @@
 # Foodseyo Product Rules
 
-**Status:** Normative MVP definition through local C2.2-C structured-menu decisions
+**Status:** Normative MVP definition through local C2.2-D structured-menu schema draft
 
 **Date:** 2026-07-17
 
@@ -125,7 +125,7 @@ The canonical reader supports legacy `FoodseyoAnalysis` `1.0.0`, C1.2 `1.1.0`, a
 - **C2.2-A1:** C1 culinary and sensory contract preservation audit completed locally; no schema or migration.
 - **C2.2-B:** physical integrity contract completed locally for the existing C2.1 boundary and minimal structured-menu candidate; no schema or migration.
 - **C2.2-C:** scoped projection retention, invalidation, and price decisions completed locally; no schema, migration, or database access.
-- **C2.2-D:** next unexecuted Drizzle/SQL draft; no migration or database execution.
+- **C2.2-D:** isolated Drizzle/SQL draft and static integrity validation completed locally; no active schema, migration, or database execution.
 - **C2.3 candidate:** Development-only structured menu projection after the C2.2 gates.
 - **T7.1–T7.4:** restaurant/menu link analysis after C2.
 - **T8:** restaurant identification, reconsider after T7.

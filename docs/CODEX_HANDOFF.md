@@ -1,13 +1,13 @@
 # Foodseyo Codex Handoff
 
 **Updated:** 2026-07-17
-**Current checkpoint:** C2.2-C structured-menu decisions complete locally; C2.2-D is next but not started
+**Current checkpoint:** C2.2-D unexecuted structured-menu schema draft complete locally; C2.3 is next but not started
 
 This file is intentionally operational and may change at every checkpoint. Stable product intent belongs in [PROJECT_OVERVIEW.md](./PROJECT_OVERVIEW.md).
 
 ## Repository position
 
-- Current branch: `c2.2-c-structured-menu-decisions`
+- Current branch: `c2.2-d-unexecuted-schema-draft`
 - C2.2-A starting HEAD and preserved C2.1-G commit: `e08249182241d30a21aeebd17a0cd75e110591af`
 - C2.2-A delivery: `6c11da84325373eedce5d6e5cf551912e9c8205a`
 - C2.2-A1 starting HEAD: `6c11da84325373eedce5d6e5cf551912e9c8205a`
@@ -15,13 +15,15 @@ This file is intentionally operational and may change at every checkpoint. Stabl
 - C2.2-B starting HEAD: `0b95e5423d706beec6d889cda8448e125a4a0f7c`
 - C2.2-B delivery: `b0bcae6ae7a2210ea58c7fbdd4e774ba42c9af1a`
 - C2.2-C starting HEAD: `b0bcae6ae7a2210ea58c7fbdd4e774ba42c9af1a`
-- C2.2-C delivery: the current committed branch tip containing this handoff
+- C2.2-C delivery: `8e4cce4ae23826146bca3e1b7bba058c64dff41c`
+- C2.2-D starting HEAD: `8e4cce4ae23826146bca3e1b7bba058c64dff41c`
+- C2.2-D delivery: the current committed branch tip containing this handoff
 - Local `main`: `cfbb93750c0b8f41f470963eddaf203d3b82457f`
 - Local `origin/main` baseline: `d3c255d29b4029589e6f6b562a482134c0e28b99`
-- Ahead/behind at the committed C2.2-C checkpoint: `14/0`.
+- Ahead/behind at the committed C2.2-D checkpoint: `15/0`.
 - GitHub branch `c2.1-g-rollout-review` points to exact preserved commit `e08249182241d30a21aeebd17a0cd75e110591af`; no pull request or `main` change occurred.
 - That branch push created automatic Ready Preview deployment `dpl_3xMW3EWK5PWYpAEDPPhsnSk4akSZ` from the exact Git SHA. It was not promoted, tested through the live POST route, or accompanied by a Preview database migration.
-- The C2.2-A, C2.2-A1, C2.2-B, and C2.2-C branches and checkpoint commits have not been pushed or deployed.
+- The C2.2-A, C2.2-A1, C2.2-B, C2.2-C, and C2.2-D branches and checkpoint commits have not been pushed or deployed.
 
 The only untracked and unstaged files are:
 
@@ -44,6 +46,7 @@ They are reference artifacts only. Do not stage, modify, execute, or treat the s
 | Implemented physical database shape | `src/lib/database/schema/analysis-cache.ts` and reviewed migrations |
 | Candidate structured-menu physical integrity contract | `docs/database-physical-integrity-contract.md` |
 | Structured-menu retention, invalidation, and first-slice price decisions | `docs/database-structured-menu-decisions.md` |
+| Isolated structured-menu Drizzle/SQL draft and C2.3 entry gate | `docs/database-schema-draft.md` |
 | Canonical analysis contract | `src/domain/foodseyo-analysis.ts` and `docs/data-contract.md` |
 | Historical decisions | `docs/decision-log.md` |
 | Public setup and project entry point | `README.md` |
@@ -68,6 +71,7 @@ They are reference artifacts only. Do not stage, modify, execute, or treat the s
 - C2.2-A1 C1 culinary/sensory preservation audit, typed-claim clarification, variable-baseline contract, and materialization-failure observability boundary
 - C2.2-B exact C2.1 compatibility mirror and bounded structured-menu PostgreSQL integrity contract
 - C2.2-C Development-only retention/source-invalidation and canonical price-option scope decisions
+- C2.2-D isolated Drizzle/SQL schema draft and network-free static integrity validation
 - project context freeze separating stable product intent, current handoff state, and the public README
 
 Development contains four empty application tables and one migration-ledger row. Preview and Production contain no Foodseyo application tables. The exact-cache route exists in the preserved automatic Preview build, but the absent Preview schema means that build is not a validated database rollout and its analysis POST route was not invoked. The deployed Production application remains on its existing uncached provider flow.
@@ -112,11 +116,21 @@ The first price slice includes an eligible base price plus eligible non-null can
 
 No Drizzle schema, SQL, migration, repository, connection, database row, database or platform access, runtime behavior, OpenAI request, push, or deployment occurred. `pnpm verify:full`, `git diff --check`, and repository security validation pass. The supplied DOCX and SQL remain untracked and unstaged.
 
-## Next checkpoint: C2.2-D
+## Completed C2.2-D
 
-C2.2-D may prepare reviewed but unexecuted Drizzle and SQL drafts only for `menu_snapshots`, flat `menu_sections`, `menu_items`, and `menu_item_prices`. It must preserve the C2.2-B physical contract and the C2.2-C retention, source-eligibility, price-filtering, price-ordering, and least-privilege decisions.
+C2.2-D realizes only `menu_snapshots`, flat `menu_sections`, `menu_items`, and `menu_item_prices` as an isolated Drizzle design and PostgreSQL review draft. Exact columns, types, nullability, defaults, keys, restrictive foreign-key actions, same-snapshot section integrity, finite numeric prices, partial indexes, and `SELECT`/`INSERT` runtime grants match C2.2-B/C.
 
-Do not generate or run a migration, access a database or platform, create repositories, integrate a live route or public read path, start C2.3, push, deploy, migrate Preview or Production, merge `main`, invoke the live POST route, or call OpenAI without a separate instruction.
+The Drizzle draft is not exported by the active schema index. The SQL draft is outside `database/migrations`, which still contains only the reviewed C2.1-B migration. The 42-check network-free validator confirms Drizzle/SQL parity, least privilege, no C2.1 alteration, no prohibited payload or credentials, and no active schema or migration expansion.
+
+No migration was generated or executed. No repository, transaction service, database connection, database or platform access, runtime behavior, OpenAI request, push, or deployment occurred. `pnpm verify:full`, `git diff --check`, and repository security validation pass. The supplied DOCX and SQL remain untracked and unstaged.
+
+The durable draft review and application-level invariants still required are in [database-schema-draft.md](./database-schema-draft.md).
+
+## Next checkpoint: C2.3
+
+C2.3 requires a separate explicit instruction. It may promote the reviewed draft into the active schema, prepare and apply a reviewed Development-only migration, implement the atomic structured-menu projection transaction, and perform deterministic plus real PostgreSQL adversarial validation. Validation must leave no application rows or temporary Development branches.
+
+Do not alter C2.1 tables, add a public or live-route read path, expand entity or price scope, retain source images, migrate Preview or Production, push, deploy, merge `main`, invoke the live POST route, or call OpenAI without a separate instruction.
 
 ## Delivery rules
 

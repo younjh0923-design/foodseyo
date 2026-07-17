@@ -11,6 +11,7 @@ await import("./validate-analysis-consistency.mts");
 await import("./validate-consistency-integration.mts");
 await import("./validate-menu-cache-contract.mts");
 await import("./validate-analysis-cache-schema.mts");
+await import("./validate-structured-menu-schema-draft.mts");
 await import("./validate-analysis-cache-repositories.mts");
 await import("./validate-analysis-cache-integration.mts");
 

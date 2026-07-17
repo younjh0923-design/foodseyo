@@ -111,3 +111,5 @@ C2.2-D may draft only the four accepted projection tables and their static valid
 - no public read path, live-route integration, or database execution.
 
 C2.2-D must remain an unexecuted design checkpoint. C2.3, any Development migration, and any Preview or Production action require separate authorization.
+
+The completed static realization is recorded in [database-schema-draft.md](./database-schema-draft.md). It does not broaden these decisions or authorize execution.

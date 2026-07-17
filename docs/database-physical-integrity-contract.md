@@ -421,6 +421,10 @@ C2.2-D may draft, but not apply, objects in this dependency order:
 
 No C2.1 table alteration is required by this order.
 
+## C2.2-D static realization
+
+[C2.2-D](./database-schema-draft.md) realizes this contract as a separated Drizzle design and PostgreSQL review draft. Static validation proves column, key, foreign-key, check, index, privilege, and SQL parity while keeping the active schema export and migration directory unchanged. The draft is not executable and authorizes no database operation.
+
 ## C2.2-C decisions resolved
 
 [C2.2-C](./database-structured-menu-decisions.md) confirms:

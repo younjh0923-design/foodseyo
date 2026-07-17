@@ -630,3 +630,11 @@ This log records accepted product and architecture decisions frozen in T2. Chang
 - **Impact:** [database-structured-menu-decisions.md](./database-structured-menu-decisions.md) closes P-04 and P-06 only for the next bounded slice and allows C2.2-D to draft the four accepted tables without executing them. Raw-image retention, evidence artifacts, restaurant identity, culinary knowledge, users, community, Preview/Production retention, schema execution, migration, repositories, live-route integration, push, and deployment remain unauthorized.
 - **Status:** Accepted
 - **Date:** 2026-07-17
+
+## D-079 — Keep the structured-menu schema draft statically verifiable and non-executable
+
+- **Decision:** C2.2-D realizes only `menu_snapshots`, `menu_sections`, `menu_items`, and `menu_item_prices` in a separate Drizzle draft and a PostgreSQL review draft outside the active schema export and migration directory. Every foreign key uses restrictive update/delete actions; same-snapshot section membership uses a composite key; price rows reject negative and non-finite numeric values and permit at most one base row. Runtime privileges are drafted as `SELECT` and `INSERT` only after explicit revocation. A network-free validator checks Drizzle/SQL parity, all physical constraints, active-export isolation, and the unchanged C2.1 migration set.
+- **Reason:** Static code makes the C2.2-B/C contract reviewable by TypeScript and regression tests without accidentally creating an executable migration or changing runtime behavior. Keeping the draft out of the active export prevents ordinary Drizzle commands from treating an unapproved design as current database state.
+- **Impact:** [database-schema-draft.md](./database-schema-draft.md) records the draft, integrity result, application-level invariants still required, and the C2.3 entry gate. No migration metadata, C2.1 table, repository, transaction service, database, Neon/Vercel environment, API route, OpenAI request, push, or deployment changes. C2.3 requires separate authorization before promoting or executing any draft.
+- **Status:** Accepted
+- **Date:** 2026-07-17
