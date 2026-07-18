@@ -12,7 +12,18 @@ import {
   type MenuAnalysisApiResponse,
 } from "./menu-analysis-api.ts";
 import { MenuAnalysisError } from "./menu-analysis-errors.ts";
-import { createMenuImagesAnalyzer } from "./menu-images-analyzer.ts";
+import {
+  createPreparedMenuImagesAnalyzer,
+} from "./menu-images-analyzer.ts";
+import {
+  resolveMenuAnalysisWithExactCache,
+  MenuAnalysisCachePublicError,
+  type MenuAnalysisCacheReadState,
+  type MenuAnalysisCacheWriteState,
+  type MenuAnalysisExactCache,
+  type MenuAnalysisExactCacheCoordinatorDependencies,
+} from "./menu-analysis-exact-cache.ts";
+import { prepareMenuImagesAnalysis } from "./menu-analysis-preparation.ts";
 import type { MenuVisionProvider } from "./menu-vision-provider.ts";
 import type { MenuAnalysisModel } from "./openai-menu-request.ts";
 import {
@@ -41,6 +52,9 @@ export interface MenuAnalysisObservation {
   readonly openAiDurationMs: number | null;
   readonly serverValidationDurationMs: number | null;
   readonly responseByteLength: number;
+  readonly cacheReadState: MenuAnalysisCacheReadState;
+  readonly cacheWriteState: MenuAnalysisCacheWriteState;
+  readonly providerCallCount: number;
   readonly failureStageCode: MenuAnalysisObservationStage;
   readonly structuralErrorCount: number;
   readonly semanticErrorCount: number;
@@ -48,6 +62,8 @@ export interface MenuAnalysisObservation {
 
 export interface MenuAnalysisPostHandlerDependencies {
   createProvider(modelVersion: MenuAnalysisModel): MenuVisionProvider;
+  analysisCache?: MenuAnalysisExactCache;
+  cacheCoordinator?: MenuAnalysisExactCacheCoordinatorDependencies;
   environment?: Readonly<Record<string, string | undefined>>;
   createCorrelationId?(): string;
   now?(): number;
@@ -64,6 +80,7 @@ const createJsonResponse = (
   body: MenuAnalysisApiResponse,
   status: number,
   correlationId: string,
+  retryAfterSeconds?: number,
 ): { readonly response: Response; readonly byteLength: number } => {
   const serialized = JSON.stringify(body);
   return {
@@ -73,6 +90,9 @@ const createJsonResponse = (
         ...MENU_ANALYSIS_NO_STORE_HEADERS,
         "Content-Type": "application/json; charset=utf-8",
         [MENU_ANALYSIS_CORRELATION_HEADER]: correlationId,
+        ...(retryAfterSeconds === undefined
+          ? {}
+          : { "Retry-After": String(retryAfterSeconds) }),
       },
     }),
     byteLength: responseEncoder.encode(serialized).byteLength,
@@ -127,6 +147,13 @@ export const describeMenuAnalysisFailure = (
       semanticErrorCount: 0,
     };
   }
+  if (error instanceof MenuAnalysisCachePublicError) {
+    return {
+      failureStageCode: "menu_analysis",
+      structuralErrorCount: 0,
+      semanticErrorCount: 0,
+    };
+  }
   return {
     failureStageCode: "internal",
     structuralErrorCount: 0,
@@ -145,6 +172,9 @@ export function createMenuAnalysisPostHandler(
     let openAiDurationMs: number | null = null;
     let providerCompletedAt: number | null = null;
     let serverValidationDurationMs: number | null = null;
+    let cacheReadState: MenuAnalysisCacheReadState = "not_attempted";
+    let cacheWriteState: MenuAnalysisCacheWriteState = "not_attempted";
+    let providerCallCount = 0;
     const logObservation =
       dependencies.logObservation ?? defaultLogObservation;
     const observe = (
@@ -163,6 +193,9 @@ export function createMenuAnalysisPostHandler(
           openAiDurationMs,
           serverValidationDurationMs,
           responseByteLength: byteLength,
+          cacheReadState,
+          cacheWriteState,
+          providerCallCount,
           ...details,
         });
       } catch {
@@ -209,6 +242,7 @@ export function createMenuAnalysisPostHandler(
         return {
           modelVersion: provider.modelVersion,
           async analyzeMenuImages(input) {
+            providerCallCount += 1;
             const providerStartedAt = now();
             try {
               return await provider.analyzeMenuImages(input);
@@ -222,25 +256,50 @@ export function createMenuAnalysisPostHandler(
           },
         };
       };
-      const registry = createAnalyzerRegistry({
-        menu_images: createMenuImagesAnalyzer({
-          createProvider: createMeasuredProvider,
-          environment: dependencies.environment,
-        }),
-      });
-      const analysis = await analyzeFoodseyoInput(
+      const analysisRequest = {
+        type: "menu_images" as const,
+        images: toTransientImageInputs(validatedImages),
+        userEnteredRestaurantName: restaurantName,
+        location: null,
+      };
+      const prepared = await prepareMenuImagesAnalysis(
+        analysisRequest,
         {
-          type: "menu_images",
-          images: toTransientImageInputs(validatedImages),
-          userEnteredRestaurantName: restaurantName,
-          location: null,
+          environment: dependencies.environment ?? process.env,
         },
-        {
-          signal: request.signal,
-          analyzerRegistry: registry,
-        },
+        request.signal,
       );
-      if (providerCompletedAt !== null) {
+      const cacheResult = await resolveMenuAnalysisWithExactCache({
+        prepared,
+        cache: dependencies.analysisCache,
+        coordinator: dependencies.cacheCoordinator,
+        signal: request.signal,
+        async analyzeUncached() {
+          const registry = createAnalyzerRegistry({
+            menu_images: createPreparedMenuImagesAnalyzer(prepared, {
+              createProvider: createMeasuredProvider,
+            }),
+          });
+          const liveAnalysis = await analyzeFoodseyoInput(analysisRequest, {
+            signal: request.signal,
+            analyzerRegistry: registry,
+          });
+          if (providerCompletedAt !== null) {
+            serverValidationDurationMs = Math.max(
+              0,
+              Math.round(now() - providerCompletedAt),
+            );
+          }
+          return liveAnalysis;
+        },
+      });
+      const { analysis } = cacheResult;
+      cacheReadState = cacheResult.cacheReadState;
+      cacheWriteState = cacheResult.cacheWriteState;
+      if (
+        providerCompletedAt !== null &&
+        serverValidationDurationMs === null
+      ) {
         serverValidationDurationMs = Math.max(
           0,
           Math.round(now() - providerCompletedAt),
@@ -259,6 +318,10 @@ export function createMenuAnalysisPostHandler(
       });
       return result.response;
     } catch (error) {
+      if (error instanceof MenuAnalysisCachePublicError) {
+        cacheReadState = error.cacheReadState;
+        cacheWriteState = error.cacheWriteState;
+      }
       if (
         providerCompletedAt !== null &&
         serverValidationDurationMs === null
@@ -273,6 +336,7 @@ export function createMenuAnalysisPostHandler(
         safe.body,
         safe.status,
         correlationId,
+        safe.retryAfterSeconds,
       );
       observe(
         safe.status,

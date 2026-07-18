@@ -108,7 +108,7 @@ verify(!/localStorage|sessionStorage|indexedDB|base64/i.test(intake + intakeProv
 verify(home.includes("restaurant-link"), "restaurant/menu link input remains on Home");
 verify(!home.includes("fetch("), "link UI has no analysis request");
 verify(apiRoute.includes("createOpenAIMenuVisionProvider"), "menu_images API route remains live");
-verify(postHandler.includes("menu_images: createMenuImagesAnalyzer"), "only menu_images is overridden by the live route");
+verify(postHandler.includes("menu_images: createPreparedMenuImagesAnalyzer"), "only menu_images is overridden by the live route");
 verify(!/restaurant_photo: create|restaurant_screen: create/.test(postHandler), "legacy image inputs receive no live provider override");
 verify(analyzers.includes('>("restaurant_photo")'), "legacy photo input remains capability-unavailable");
 verify(analyzers.includes('>("restaurant_screen")'), "legacy screen input remains capability-unavailable");
@@ -137,7 +137,16 @@ verify(
 verify(productDocs.includes("T8:** restaurant identification"), "T8 reevaluation is documented");
 verify(productDocs.includes("Later:** map-app share-to-Foodseyo integration"), "map-app sharing is Later only");
 verify(productDocs.includes("No share extension or inbound map-app share flow exists today"), "map-app sharing is not claimed as implemented");
-verify(!/passport/i.test(inputDocs + productDocs + liveDocs), "active scope docs contain no Passport claim");
+verify(
+  !/passport/i.test(inputDocs + liveDocs) &&
+    productDocs.includes(
+      "Accounts, Food Passport, personalization, personal history, community, and permanent raw-image storage remain deferred.",
+    ) &&
+    productDocs.includes(
+      "**Later:** personalization, Food Passport, personal food history, and community after their own gates.",
+    ),
+  "active flows contain no Passport capability and product rules keep it deferred",
+);
 verify(decisionLog.includes("D-059 — Align the MVP around menu photos and links"), "scope change is appended to the decision log");
 verify(decisionLog.includes("D-060 — Optimize the workflow without changing product behavior"), "R1 decision is appended to the decision log");
 verify(agentsGuide.includes("Never run a real OpenAI request") && agentsGuide.includes("pnpm verify:full"), "AGENTS guide freezes paid-call and full-verify rules");
@@ -148,7 +157,7 @@ verify(
   ),
   "package scripts expose all four verification tiers",
 );
-verify(readme.includes("R1 — non-functional codebase and development workflow optimization"), "README roadmap includes R1");
+verify(readme.includes("R1 — codebase and development workflow optimization (completed)"), "README roadmap includes R1");
 verify(menuDocs.includes("T5.5 superseded that UI") && menuDocs.includes("one native multi-file picker"), "technical docs distinguish historical Bottom Sheet from current native picker");
 
 report();

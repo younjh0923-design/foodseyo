@@ -343,15 +343,24 @@ verify(observation?.durationMs === 25, "observation records duration only");
 verify(observation?.openAiDurationMs === 10, "observation records the provider request duration");
 verify(observation?.serverValidationDurationMs === 5, "observation records post-provider canonical validation duration");
 verify(observation?.responseByteLength === new TextEncoder().encode(routeText).byteLength, "observation records exact response byte length");
+verify(
+  observation?.cacheReadState === "disabled" &&
+    observation.cacheWriteState === "not_attempted" &&
+    observation.providerCallCount === 1,
+  "observation records only safe cache state and provider count",
+);
 verify(observation?.structuralErrorCount === 0 && observation.semanticErrorCount === 0, "success observation records zero validation errors");
 verify(
   Object.keys(observation ?? {}).sort().join("|") ===
     [
+      "cacheReadState",
+      "cacheWriteState",
       "correlationId",
       "durationMs",
       "failureStageCode",
       "httpStatus",
       "openAiDurationMs",
+      "providerCallCount",
       "responseByteLength",
       "semanticErrorCount",
       "serverValidationDurationMs",

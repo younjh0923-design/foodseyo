@@ -1,0 +1,636 @@
+{
+  "id": "6bbc4017-e6f3-4fd7-9c09-37686ebff58d",
+  "prevId": "00000000-0000-0000-0000-000000000000",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.analysis_contracts": {
+      "name": "analysis_contracts",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "model_version": {
+          "name": "model_version",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "prompt_version": {
+          "name": "prompt_version",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "provider_schema_version": {
+          "name": "provider_schema_version",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "canonical_schema_version": {
+          "name": "canonical_schema_version",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "consistency_profile_version": {
+          "name": "consistency_profile_version",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "analysis_contracts_pkey": {
+          "name": "analysis_contracts_pkey",
+          "columns": [
+            "id"
+          ]
+        }
+      },
+      "uniqueConstraints": {
+        "analysis_contracts_versions_uk": {
+          "name": "analysis_contracts_versions_uk",
+          "nullsNotDistinct": false,
+          "columns": [
+            "model_version",
+            "prompt_version",
+            "provider_schema_version",
+            "canonical_schema_version",
+            "consistency_profile_version"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "analysis_contracts_versions_nonblank_ck": {
+          "name": "analysis_contracts_versions_nonblank_ck",
+          "value": "\n        btrim(\"analysis_contracts\".\"model_version\") <> ''\n        AND btrim(\"analysis_contracts\".\"prompt_version\") <> ''\n        AND btrim(\"analysis_contracts\".\"provider_schema_version\") <> ''\n        AND btrim(\"analysis_contracts\".\"canonical_schema_version\") <> ''\n        AND btrim(\"analysis_contracts\".\"consistency_profile_version\") <> ''\n      "
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.analysis_runs": {
+      "name": "analysis_runs",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "menu_evidence_set_id": {
+          "name": "menu_evidence_set_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "analysis_contract_id": {
+          "name": "analysis_contract_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "attempt_number": {
+          "name": "attempt_number",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "safe_error_code": {
+          "name": "safe_error_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "started_at": {
+          "name": "started_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "lease_expires_at": {
+          "name": "lease_expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "finished_at": {
+          "name": "finished_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "analysis_runs_one_processing_ux": {
+          "name": "analysis_runs_one_processing_ux",
+          "columns": [
+            {
+              "expression": "menu_evidence_set_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "analysis_contract_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"analysis_runs\".\"status\" = 'processing'",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "analysis_runs_lookup_ix": {
+          "name": "analysis_runs_lookup_ix",
+          "columns": [
+            {
+              "expression": "menu_evidence_set_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "analysis_contract_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": false,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "analysis_runs_menu_evidence_set_fk": {
+          "name": "analysis_runs_menu_evidence_set_fk",
+          "tableFrom": "analysis_runs",
+          "tableTo": "menu_evidence_sets",
+          "columnsFrom": [
+            "menu_evidence_set_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "analysis_runs_analysis_contract_fk": {
+          "name": "analysis_runs_analysis_contract_fk",
+          "tableFrom": "analysis_runs",
+          "tableTo": "analysis_contracts",
+          "columnsFrom": [
+            "analysis_contract_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "analysis_runs_pkey": {
+          "name": "analysis_runs_pkey",
+          "columns": [
+            "id"
+          ]
+        }
+      },
+      "uniqueConstraints": {
+        "analysis_runs_attempt_uk": {
+          "name": "analysis_runs_attempt_uk",
+          "nullsNotDistinct": false,
+          "columns": [
+            "menu_evidence_set_id",
+            "analysis_contract_id",
+            "attempt_number"
+          ]
+        },
+        "analysis_runs_snapshot_identity_uk": {
+          "name": "analysis_runs_snapshot_identity_uk",
+          "nullsNotDistinct": false,
+          "columns": [
+            "id",
+            "menu_evidence_set_id",
+            "analysis_contract_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "analysis_runs_status_ck": {
+          "name": "analysis_runs_status_ck",
+          "value": "\"analysis_runs\".\"status\" IN ('processing', 'ready', 'failed')"
+        },
+        "analysis_runs_attempt_number_ck": {
+          "name": "analysis_runs_attempt_number_ck",
+          "value": "\"analysis_runs\".\"attempt_number\" >= 1"
+        },
+        "analysis_runs_safe_error_code_nonblank_ck": {
+          "name": "analysis_runs_safe_error_code_nonblank_ck",
+          "value": "\"analysis_runs\".\"safe_error_code\" IS NULL OR btrim(\"analysis_runs\".\"safe_error_code\") <> ''"
+        },
+        "analysis_runs_state_ck": {
+          "name": "analysis_runs_state_ck",
+          "value": "\n        (\n          \"analysis_runs\".\"status\" = 'processing'\n          AND \"analysis_runs\".\"lease_expires_at\" IS NOT NULL\n          AND \"analysis_runs\".\"finished_at\" IS NULL\n          AND \"analysis_runs\".\"safe_error_code\" IS NULL\n        )\n        OR\n        (\n          \"analysis_runs\".\"status\" = 'ready'\n          AND \"analysis_runs\".\"lease_expires_at\" IS NULL\n          AND \"analysis_runs\".\"finished_at\" IS NOT NULL\n          AND \"analysis_runs\".\"safe_error_code\" IS NULL\n        )\n        OR\n        (\n          \"analysis_runs\".\"status\" = 'failed'\n          AND \"analysis_runs\".\"lease_expires_at\" IS NULL\n          AND \"analysis_runs\".\"finished_at\" IS NOT NULL\n          AND \"analysis_runs\".\"safe_error_code\" IS NOT NULL\n          AND btrim(\"analysis_runs\".\"safe_error_code\") <> ''\n        )\n      "
+        },
+        "analysis_runs_finished_time_ck": {
+          "name": "analysis_runs_finished_time_ck",
+          "value": "\"analysis_runs\".\"finished_at\" IS NULL OR \"analysis_runs\".\"finished_at\" >= \"analysis_runs\".\"started_at\""
+        },
+        "analysis_runs_processing_lease_time_ck": {
+          "name": "analysis_runs_processing_lease_time_ck",
+          "value": "\"analysis_runs\".\"status\" <> 'processing' OR \"analysis_runs\".\"lease_expires_at\" > \"analysis_runs\".\"started_at\""
+        },
+        "analysis_runs_updated_time_ck": {
+          "name": "analysis_runs_updated_time_ck",
+          "value": "\"analysis_runs\".\"updated_at\" >= \"analysis_runs\".\"created_at\""
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.analysis_snapshots": {
+      "name": "analysis_snapshots",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "menu_evidence_set_id": {
+          "name": "menu_evidence_set_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "analysis_contract_id": {
+          "name": "analysis_contract_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "analysis_run_id": {
+          "name": "analysis_run_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "result_fingerprint": {
+          "name": "result_fingerprint",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "canonical_result_json": {
+          "name": "canonical_result_json",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "last_accessed_at": {
+          "name": "last_accessed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "invalidated_at": {
+          "name": "invalidated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "safe_invalidation_code": {
+          "name": "safe_invalidation_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "analysis_snapshots_result_fingerprint_ix": {
+          "name": "analysis_snapshots_result_fingerprint_ix",
+          "columns": [
+            {
+              "expression": "result_fingerprint",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "analysis_snapshots_one_active_ux": {
+          "name": "analysis_snapshots_one_active_ux",
+          "columns": [
+            {
+              "expression": "menu_evidence_set_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "analysis_contract_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"analysis_snapshots\".\"invalidated_at\" IS NULL",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "analysis_snapshots_menu_evidence_set_fk": {
+          "name": "analysis_snapshots_menu_evidence_set_fk",
+          "tableFrom": "analysis_snapshots",
+          "tableTo": "menu_evidence_sets",
+          "columnsFrom": [
+            "menu_evidence_set_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "analysis_snapshots_analysis_contract_fk": {
+          "name": "analysis_snapshots_analysis_contract_fk",
+          "tableFrom": "analysis_snapshots",
+          "tableTo": "analysis_contracts",
+          "columnsFrom": [
+            "analysis_contract_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "analysis_snapshots_run_evidence_contract_fk": {
+          "name": "analysis_snapshots_run_evidence_contract_fk",
+          "tableFrom": "analysis_snapshots",
+          "tableTo": "analysis_runs",
+          "columnsFrom": [
+            "analysis_run_id",
+            "menu_evidence_set_id",
+            "analysis_contract_id"
+          ],
+          "columnsTo": [
+            "id",
+            "menu_evidence_set_id",
+            "analysis_contract_id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "analysis_snapshots_pkey": {
+          "name": "analysis_snapshots_pkey",
+          "columns": [
+            "id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "analysis_snapshots_result_fingerprint_nonblank_ck": {
+          "name": "analysis_snapshots_result_fingerprint_nonblank_ck",
+          "value": "btrim(\"analysis_snapshots\".\"result_fingerprint\") <> ''"
+        },
+        "analysis_snapshots_json_object_ck": {
+          "name": "analysis_snapshots_json_object_ck",
+          "value": "jsonb_typeof(\"analysis_snapshots\".\"canonical_result_json\") = 'object'"
+        },
+        "analysis_snapshots_expiry_time_ck": {
+          "name": "analysis_snapshots_expiry_time_ck",
+          "value": "\"analysis_snapshots\".\"expires_at\" IS NULL OR \"analysis_snapshots\".\"expires_at\" > \"analysis_snapshots\".\"created_at\""
+        },
+        "analysis_snapshots_access_time_ck": {
+          "name": "analysis_snapshots_access_time_ck",
+          "value": "\"analysis_snapshots\".\"last_accessed_at\" >= \"analysis_snapshots\".\"created_at\""
+        },
+        "analysis_snapshots_invalidation_time_ck": {
+          "name": "analysis_snapshots_invalidation_time_ck",
+          "value": "\"analysis_snapshots\".\"invalidated_at\" IS NULL OR \"analysis_snapshots\".\"invalidated_at\" >= \"analysis_snapshots\".\"created_at\""
+        },
+        "analysis_snapshots_invalidation_pair_ck": {
+          "name": "analysis_snapshots_invalidation_pair_ck",
+          "value": "\n        (\n          \"analysis_snapshots\".\"invalidated_at\" IS NULL\n          AND \"analysis_snapshots\".\"safe_invalidation_code\" IS NULL\n        )\n        OR\n        (\n          \"analysis_snapshots\".\"invalidated_at\" IS NOT NULL\n          AND \"analysis_snapshots\".\"safe_invalidation_code\" IS NOT NULL\n        )\n      "
+        },
+        "analysis_snapshots_safe_invalidation_code_nonblank_ck": {
+          "name": "analysis_snapshots_safe_invalidation_code_nonblank_ck",
+          "value": "\n        \"analysis_snapshots\".\"safe_invalidation_code\" IS NULL\n        OR btrim(\"analysis_snapshots\".\"safe_invalidation_code\") <> ''\n      "
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.menu_evidence_sets": {
+      "name": "menu_evidence_sets",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "input_kind": {
+          "name": "input_kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "source_fingerprint": {
+          "name": "source_fingerprint",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "fingerprint_version": {
+          "name": "fingerprint_version",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "image_count": {
+          "name": "image_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "normalized_url": {
+          "name": "normalized_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "source_provider": {
+          "name": "source_provider",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "observed_at": {
+          "name": "observed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "menu_evidence_sets_pkey": {
+          "name": "menu_evidence_sets_pkey",
+          "columns": [
+            "id"
+          ]
+        }
+      },
+      "uniqueConstraints": {
+        "menu_evidence_sets_identity_uk": {
+          "name": "menu_evidence_sets_identity_uk",
+          "nullsNotDistinct": false,
+          "columns": [
+            "source_fingerprint",
+            "fingerprint_version"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "menu_evidence_sets_input_kind_ck": {
+          "name": "menu_evidence_sets_input_kind_ck",
+          "value": "\n        \"menu_evidence_sets\".\"input_kind\" IN (\n          'uploaded_menu_images',\n          'official_menu_html',\n          'official_menu_pdf',\n          'online_ordering_menu',\n          'listing_menu',\n          'listing_menu_photo'\n        )\n      "
+        },
+        "menu_evidence_sets_source_fingerprint_nonblank_ck": {
+          "name": "menu_evidence_sets_source_fingerprint_nonblank_ck",
+          "value": "btrim(\"menu_evidence_sets\".\"source_fingerprint\") <> ''"
+        },
+        "menu_evidence_sets_fingerprint_version_nonblank_ck": {
+          "name": "menu_evidence_sets_fingerprint_version_nonblank_ck",
+          "value": "btrim(\"menu_evidence_sets\".\"fingerprint_version\") <> ''"
+        },
+        "menu_evidence_sets_image_count_ck": {
+          "name": "menu_evidence_sets_image_count_ck",
+          "value": "\"menu_evidence_sets\".\"image_count\" IS NULL OR \"menu_evidence_sets\".\"image_count\" > 0"
+        },
+        "menu_evidence_sets_normalized_url_nonblank_ck": {
+          "name": "menu_evidence_sets_normalized_url_nonblank_ck",
+          "value": "\"menu_evidence_sets\".\"normalized_url\" IS NULL OR btrim(\"menu_evidence_sets\".\"normalized_url\") <> ''"
+        },
+        "menu_evidence_sets_source_provider_nonblank_ck": {
+          "name": "menu_evidence_sets_source_provider_nonblank_ck",
+          "value": "\"menu_evidence_sets\".\"source_provider\" IS NULL OR btrim(\"menu_evidence_sets\".\"source_provider\") <> ''"
+        },
+        "menu_evidence_sets_input_payload_ck": {
+          "name": "menu_evidence_sets_input_payload_ck",
+          "value": "\n        (\n          \"menu_evidence_sets\".\"input_kind\" = 'uploaded_menu_images'\n          AND \"menu_evidence_sets\".\"image_count\" IS NOT NULL\n          AND \"menu_evidence_sets\".\"normalized_url\" IS NULL\n        )\n        OR\n        (\n          \"menu_evidence_sets\".\"input_kind\" <> 'uploaded_menu_images'\n          AND \"menu_evidence_sets\".\"normalized_url\" IS NOT NULL\n          AND btrim(\"menu_evidence_sets\".\"normalized_url\") <> ''\n        )\n      "
+        }
+      },
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {},
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

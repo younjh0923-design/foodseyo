@@ -1,0 +1,164 @@
+# Foodseyo Project Overview
+
+**Purpose:** Stable product and competition context
+**Updated:** 2026-07-17
+
+## Product definition
+
+> Foodseyo is a source-honest, mobile-first food copilot that turns unfamiliar menu photos into structured food guidance so people can decide what to order, not merely translate what the menu says.
+
+Foodseyo sits between unfamiliar menu words and an actual eating decision. A translation may reveal a dish name while leaving the diner unsure about taste, texture, heat, richness, ingredients, dietary implications, or which details are uncertain. Foodseyo converts supported evidence into one canonical explanation designed for ordering.
+
+## Audience and problem
+
+The primary audience is travelers and other diners who are unfamiliar with a menu's language or food culture. Secondary audiences include immigrants, international students, cautious explorers, and people who need conservative dietary or allergy-related context.
+
+The product problem is not simply language conversion. A diner needs to understand:
+
+- what a dish is likely to taste and feel like;
+- how spicy, rich, or unfamiliar it may be;
+- which ingredients the menu states and which are only typical or uncertain;
+- what ordering considerations or limitations matter;
+- what must still be confirmed with restaurant staff.
+
+Foodseyo provides decision support, not medical advice. It never guarantees allergy safety.
+
+## Product principles
+
+1. **Decision support over translation.** Explain the food experience and the evidence behind it.
+2. **Structure over open-ended chat.** Produce a reusable, validated analysis rather than an unconstrained answer.
+3. **Source honesty.** Keep direct menu evidence, general food knowledge, restaurant evidence, and uncertainty distinct.
+4. **Deterministic application ownership.** Application code owns canonical validation, IDs, evidence links, wording rules, safety notices, and storage.
+5. **Consistency with explicit identity.** Controlled vocabularies, semantic validation, version metadata, and fingerprints reduce drift and define safe exact reuse.
+6. **Conservative safety.** Missing evidence remains missing, uncertain claims remain uncertain, and restaurant confirmation remains necessary.
+7. **Data minimization.** Raw images stay transient; secrets and sensitive analysis content stay out of logs.
+
+## Active competition MVP
+
+The active live input is `menu_images`:
+
+```text
+one to ten ordered menu photos
+→ browser validation and adaptive preprocessing
+→ one explicitly triggered GPT-5.6 Responses API request
+→ deterministic adaptation and canonical validation
+→ current-tab session storage
+→ Analysis Overview and Dish Detail
+```
+
+The Home restaurant/menu link field performs local HTTP/HTTPS syntax validation only. It does not fetch, analyze, redirect to a demo result, or claim completion.
+
+The current result experience may include:
+
+- restaurant-resolution status and limitations;
+- menu categories and dishes;
+- taste, texture, heat, and richness;
+- ingredients labeled as stated, typical, or uncertain;
+- dietary and allergy cautions;
+- ordering considerations;
+- explicit evidence references and uncertainty;
+- a route back to scan another menu.
+
+## Competition positioning
+
+Foodseyo targets the OpenAI Build Week **Apps for Your Life** track. The core demonstration is:
+
+```text
+unfamiliar menu
+→ source-honest GPT-5.6 interpretation
+→ coherent mobile result
+→ better-informed ordering decision
+```
+
+GPT-5.6 supplies structured menu interpretation. Codex has accelerated the product-scope cleanup, canonical contracts, provider hardening, consistency system, network-free regression coverage, database design audit, infrastructure verification, and staged exact-cache implementation.
+
+The database/cache work is an enabling trust layer, not the primary product pitch. Its objective is to make analysis faster, semantically consistent, evidence-aware, versioned, and safely reusable without obscuring the user outcome or repeating full provider reasoning when trusted context already exists.
+
+## Current technical shape
+
+- Next.js, React, and TypeScript mobile-first web application
+- server-only OpenAI Responses API integration using GPT-5.6
+- strict Zod canonical and provider-output validation
+- deterministic normalization, wording, and semantic validation
+- source, dish, analysis-result, and snapshot fingerprints
+- current-tab `sessionStorage` result handoff
+- Vercel application infrastructure
+- isolated Neon Development, Preview, and Production branches
+- Drizzle and PostgreSQL four-table exact-cache schema on Development only
+- server-only pooled PostgreSQL runtime client, validated repositories, and locally completed exact-cache ownership integration
+- network-free automated validation and production build checks
+
+The C2.1-D/E/F history connects exact lookup, quarantine, ownership, duplicate coordination, bounded polling, and strict ready-snapshot persistence to the menu analysis route. It passed deterministic and repeated adversarial real-PostgreSQL Development verification. The exact C2.1-G commit is preserved on a GitHub feature branch and has an automatic Git-sourced Vercel Preview, but Preview and Production have not received the application schema and the Preview is not a validated database rollout. The C2.1-G review recommends preserving the current uncached Production flow through the competition deadline.
+
+## Core consistency database program
+
+The durable program charter is [database-program-charter.md](./database-program-charter.md). It distinguishes three reuse paths:
+
+1. exact whole-analysis reuse under the complete C2.1 source and analysis contract;
+2. semantic dish and reviewed culinary-knowledge reuse;
+3. restaurant- and branch-scoped reuse under preserved identity evidence.
+
+Structured-menu projection is the first bounded relational implementation slice, not the final database objective. Restaurant and branch candidates, dish concepts and aliases, versioned culinary profiles, separate sensory axes, ingredient roles, typed menu claims, deterministic effective merging, and GPT-aware pre/post-provider orchestration are current core backend work. They remain sequenced behind their own evidence, product/security, physical-contract, Development-validation, and rollout gates; none is live merely because it belongs to the program.
+
+Accounts, Food Passport, personalization, personal food history, community, and permanent raw-image storage remain deferred product scope.
+
+## Explicit non-goals for the active MVP
+
+- restaurant link fetching or analysis before T7;
+- restaurant-photo, sign, map, or screenshot analysis;
+- automatic restaurant or branch identification before post-T7 reevaluation;
+- stored profiles, personalization, or recommendation scoring;
+- Food Passport, community, reviews, reservations, payments, or accounts;
+- permanent raw-image storage or permanent user analysis history;
+- map-app sharing or native-app distribution;
+- unsupported capabilities simulated with demo data.
+
+The repository may retain compatibility types or clearly labeled deterministic demo routes. Their presence does not make those inputs or features live.
+
+## Roadmap
+
+### Context maintenance
+
+- keep this stable overview separate from the volatile handoff;
+- keep README, product rules, roadmap, and handoff state aligned with completed checkpoints;
+- preserve the existing live analysis behavior and Production baseline unless a reviewed checkpoint explicitly changes them.
+
+### C2.1 exact-cache runtime
+
+1. **C2.1-C:** pooled runtime database client, repositories, validated reads/writes, and atomic ready-snapshot persistence — completed.
+2. **C2.1-D:** exact snapshot lookup, cache hit/miss behavior, corrupt/expired-snapshot quarantine, and safe post-provider persistence — completed locally, not deployed.
+3. **C2.1-E:** pre-provider lease ownership, duplicate-request control, bounded polling, and failure recovery — completed locally, not deployed.
+4. **C2.1-F:** real Development database integrity and concurrency tests — completed locally.
+5. **C2.1-G:** rollout-readiness review, staged Preview plan, recovery design, and Production go/no-go gate — completed locally; Production rollout not approved.
+
+C2.1-F is complete locally, including repeated adversarial PostgreSQL verification on disposable Development child branches and confirmed cleanup. C2.1-G then found the implementation sound but the release path incomplete. Preserving its exact commit created a traceable automatic Preview build, but there is still no target-aware full Preview/Production migration verifier, no Preview database migration or validation, no current Production snapshot, and no Git SHA provenance for the active Production deployment. No schema or database behavior has been rolled out beyond Development. The current uncached Production flow remains the submission baseline; a separately authorized Preview database rehearsal must precede any new Production decision.
+
+### Relational planning after C2.1
+
+- **C2.2-A:** logical ERD audit and scoped v3 model — completed locally with no physical schema or migration;
+- **C2.2-B:** physical integrity contract for the existing cache boundary and the minimal structured-menu candidate — completed locally without schema or migration;
+- **C2.2-C:** bounded retention, invalidation, and first-slice price decisions — completed locally without schema, migration, or database access;
+- **C2.2-D:** isolated Drizzle/SQL draft and static integrity validation — completed locally without an active schema, migration, or database access;
+- **C2.2-E:** Core Consistency Database Program Charter — completed locally as a documentation-only scope and sequencing correction;
+- **C2.3:** Development-only structured menu projection completed with an active four-table schema, atomic materializer, reviewed migration, and adversarial PostgreSQL validation; no live-route integration or rollout;
+- implement T7 restaurant/menu link acquisition with URL normalization, SSRF defense, source classification, and preserved evidence before restaurant/branch identity;
+- define and implement restaurant/branch candidates through separate decision, physical-contract, Development-validation, and rollout checkpoints;
+- define and implement dish concepts, aliases, reviewed culinary profiles, separate sensory knowledge, ingredient roles, typed claims, and provenance through bounded checkpoints;
+- define deterministic menu-specific merge and GPT-aware contextual reuse only after the supporting identity and knowledge contracts pass;
+- evaluate the exact, semantic-dish, and restaurant-scoped paths adversarially before any rollout;
+- keep personalization, Food Passport, nearby discovery, community, PWA/native distribution, and map sharing behind their own product and safety gates.
+
+## Submission critical path
+
+The working product is more important than the number of planned features. Before submission:
+
+1. keep the live menu-photo flow green;
+2. complete only database/cache stages that pass their full validation gates;
+3. freeze features before final QA;
+4. verify the mobile Production experience and safe failure paths;
+5. prepare a public repository and setup-ready README;
+6. record a public demo video under three minutes;
+7. explain where GPT-5.6 provides product value and where Codex accelerated implementation;
+8. include the required core Codex session identifier and complete the Devpost submission.
+
+If unfinished cache work threatens the stable menu-photo flow, preserve the working uncached product and defer rollout rather than shipping a partially verified Production dependency.

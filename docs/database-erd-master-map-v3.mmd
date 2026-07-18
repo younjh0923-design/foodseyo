@@ -1,0 +1,54 @@
+flowchart LR
+  subgraph NOW[Implemented and frozen locally]
+    A[Transient menu input]
+    B[C2.1 exact cache and ownership]
+    A --> B
+  end
+
+  subgraph NEXT[Next bounded database slice]
+    C[C2.3 first structured menu implementation slice]
+    B --> C
+  end
+
+  subgraph EVIDENCE[Core identity after acquisition contracts]
+    D[T7 acquired link evidence]
+    E[T8 restaurant and branch candidates]
+    D --> E
+    C --> E
+  end
+
+  subgraph KNOWLEDGE[Core reviewed knowledge and semantic reuse]
+    F[Versioned culinary baselines]
+    K1[Basic tastes]
+    K2[Flavor notes]
+    K3[Textures]
+    K4[Heat ordered scale]
+    K5[Richness ordered scale]
+    K6[Ingredient roles and variations]
+    K7[Common claim metadata]
+    K8[Exactly one relational typed detail]
+    K9[Origin review and lifecycle]
+    K10[Source over inference over baseline over unknown]
+    G[Menu claims and separate heat adjustability]
+    H[Versioned effective guidance]
+    F --> K7
+    K9 --> K7
+    K1 --> K8
+    K2 --> K8
+    K3 --> K8
+    K4 --> K8
+    K5 --> K8
+    K6 --> K8
+    K7 --> K8
+    K10 --> G
+    C --> G
+    K8 --> H
+    G --> H
+  end
+
+  subgraph FUTURE[Deferred product scope outside the core program]
+    I[Authenticated user context]
+    J[Food Passport and community]
+    I --> H
+    H --> J
+  end

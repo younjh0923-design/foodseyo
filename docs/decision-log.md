@@ -525,3 +525,159 @@ This log records accepted product and architecture decisions frozen in T2. Chang
 - **Impact:** `menu_images` maps to database `uploaded_menu_images`; raw images and per-image hashes remain transient. Before ownership, cache/database failures may fall back to uncached analysis. After ownership, provider execution is forbidden unless ownership is proven. Snapshot insert and run-ready transition are atomic. The live API, provider request count, model/prompt/provider schema defaults, canonical `1.1.1`, source/dish fingerprint outputs, session key, UI, and storage behavior do not change. Drizzle, PostgreSQL packages, executable schema, migrations, connections, and cache lookup remain deferred to C2.1-B after manual C2.1-A infrastructure work.
 - **Status:** Accepted
 - **Date:** 2026-07-16
+
+## D-066 — Isolate database environments and credentials before implementation
+
+- **Decision:** C2.1-A uses one Free Neon project in AWS `us-east-1` with `main`, `development`, and persistent `preview` branches mapped independently to Vercel Production, Development, and Preview. Each branch has separate `foodseyo_runtime` and `foodseyo_migrator` credentials. `DATABASE_URL` is the pooled runtime contract and `DATABASE_MIGRATION_URL` is the direct migration contract. The existing Vercel project remains linked to `younjh0923-design/foodseyo`; provider-managed Neon variables are Development-only, use the `NEON_PROVIDER_` prefix, and are not application contracts.
+- **Reason:** Exact-cache implementation requires strict environment isolation and least-privilege credentials without exposing the Neon owner role to the application, creating a second Vercel project, upgrading the database plan, or deploying unfinished database code.
+- **Impact:** C2.1-B may implement the reviewed schema and repositories against Development first. Table, sequence, and default privileges remain deferred until the application objects exist. Preview cannot access Production, and Production cannot access non-Production branches. Free-plan limits—five-minute scale to zero, up to six hours or 1 GB of restore history, no automated snapshot schedule, and no protected branches—are accepted for development but must be reassessed before a Production database rollout. C2.1-A creates no application table, migration, dependency, cache behavior, OpenAI call, or application deployment.
+- **Historical note:** D-067 corrected the migration-secret storage boundary: the migrator roles and direct migration contract remain, but `DATABASE_MIGRATION_URL` is no longer stored in any live Vercel application environment.
+- **Status:** Accepted
+- **Date:** 2026-07-17
+
+## D-067 — Keep migration credentials outside the application runtime
+
+- **Decision:** Vercel retains only the environment-scoped pooled `DATABASE_URL` application database contract for Development, Preview, and Production. `DATABASE_MIGRATION_URL` is supplied only through a dedicated operator or CI migration environment outside the live Vercel application runtime and build environment. The `foodseyo_migrator` roles remain on all three Neon branches. The permanent shared `preview` branch remains isolated from Production. Fluid Compute is enabled and was directly verified through the authenticated Vercel Project API.
+- **Reason:** A DDL-capable secret stored as a sensitive Vercel environment variable remains accessible to application runtime and build processes. Controlled migrations require a narrower execution boundary than the deployed application.
+- **Impact:** C2.1-B must inject the direct migrator credential only into its controlled migration process. This correction does not delete or rotate a database role, change any pooled runtime credential, create a table or migration, deploy the application, or start C2.1-B.
+- **Status:** Accepted
+- **Date:** 2026-07-17
+
+## D-068 — Apply the exact-cache schema through a least-privilege Development migration
+
+- **Decision:** C2.1-B creates exactly `analysis_contracts`, `menu_evidence_sets`, `analysis_runs`, and `analysis_snapshots` from Drizzle definitions and the reviewed `0000_c2_1_b_analysis_cache_schema` migration. The migration uses the `public.__drizzle_migrations` ledger and runs only on Development as `foodseyo_migrator`. Runtime receives SELECT and INSERT on the four tables plus only the reviewed mutable-column UPDATE grants; it receives no DELETE, schema CREATE, ownership, migration-ledger access, or immutable-column UPDATE.
+- **Reason:** The physical schema must preserve the exact-cache identity, ownership, snapshot-integrity, invalidation, and audit-history contract without importing the stale 24-table reference schema or granting application runtime DDL capability. Drizzle's stock PostgreSQL migrator attempts `CREATE SCHEMA IF NOT EXISTS` and therefore requires database-level CREATE even for the existing `public` schema. The dedicated role must not be broadened solely for that bootstrap statement.
+- **Impact:** The checked-in least-privilege runner uses Drizzle's versioned migration reader and hash metadata, creates only the ledger table in the already authorized schema, serializes execution with a transaction-scoped advisory lock, and applies reviewed SQL transactionally. Development contains four empty application tables and one ledger entry; a second run is a no-op. Preview and Production remain unmigrated. No runtime client, repository, cache lookup, provider bypass, API change, OpenAI call, or deployment is part of C2.1-B; C2.1-C has not started.
+- **Status:** Accepted
+- **Date:** 2026-07-17
+
+## D-069 — Separate stable project context from volatile checkpoint state
+
+- **Decision:** `docs/PROJECT_OVERVIEW.md` owns the stable product definition, target audience, differentiators, active MVP boundary, and long-term direction. `docs/CODEX_HANDOFF.md` owns the volatile branch, checkpoint, validation, and next-action state. `README.md` is the public runnable entry point, while the existing normative product, database, infrastructure, and technical contracts retain authority in their own domains.
+- **Reason:** The long-form vision, public GitHub `main`, and newer local checkpoint commits described different moments in the project. Mixing vision, public state, and current implementation caused stale roadmap claims and made a fresh development session likely to expand scope or repeat completed work.
+- **Impact:** The active roadmap now records C2.1-A/A.1/B as complete, C2.1-C–G as staged exact-cache runtime work, and C2.2–C2.4 as a later planning audit. This documentation checkpoint changes no application behavior, database object, credential, environment, OpenAI request path, or deployment, and C2.1-C remains unstarted.
+- **Status:** Accepted
+- **Date:** 2026-07-17
+
+## D-070 — Keep C2.1-C repositories isolated from live cache behavior
+
+- **Decision:** C2.1-C uses one server-only, module-scoped `pg.Pool` configured only from the pooled `DATABASE_URL`, capped at five application connections, and attached to Vercel Fluid Compute lifecycle handling. Four parameterized repository modules validate inputs and rows with Zod. Canonical snapshots additionally require structural, semantic, exact-contract, and whole-result-fingerprint agreement. `persistReadyAnalysisSnapshot` locks the owned, unexpired processing run and performs snapshot insertion plus the `ready` transition in one short transaction.
+- **Reason:** The storage boundary and atomic invariants must be independently testable before cache lookup or concurrency policy changes the proven live provider path. A narrow runtime credential, bounded pool, and validated repository boundary reduce the chance of connection amplification, DDL access, or corrupt canonical reuse.
+- **Impact:** Deterministic tests cover the four repositories, integrity rejection, commit, and rollback behavior. A controlled Development run connects as `foodseyo_runtime`, exercises the same primitives inside one outer transaction, and rolls back to four empty tables. No migration credential, DDL, schema change, Preview/Production operation, live route integration, lease polling, provider bypass, OpenAI request, deployment, or public error behavior is introduced. Cache lookup begins in C2.1-D, but rollout remains blocked until C2.1-E and the required C2.1-F validation are complete.
+- **Status:** Accepted
+- **Date:** 2026-07-17
+
+## D-071 — Integrate exact hits before adding ownership orchestration
+
+- **Decision:** C2.1-D prepares exact source and contract identity before provider construction, returns only fully validated active snapshots, quarantines corrupt or expired snapshots with guarded non-destructive updates, and preserves the existing uncached analysis as the fallback. On a validated miss, persistence is best-effort: a `processing` run is created and transitioned to `ready` with its snapshot entirely inside one short post-provider transaction. Cache observations contain only safe read/write state and provider call count.
+- **Reason:** Exact hit behavior and corruption safety can be integrated and verified independently from the more complex lease, duplicate-request, polling, and recovery state machine. Because C2.1-E has not established ownership before the provider call, C2.1-D must not expose a lease during provider execution or turn a database failure into a new user-visible failure.
+- **Impact:** A valid exact hit bypasses provider construction and returns the unchanged canonical API response. Read failures, unconfirmed quarantine, and persistence conflicts return the existing uncached result without replacement persistence. The post-provider transaction does not prevent duplicate provider calls and is explicitly superseded by C2.1-E pre-provider ownership orchestration. Deterministic tests and a rollback-only Development check cover hit, miss, quarantine, persistence, concurrent presence, and rollback with zero OpenAI calls. No schema, migration, secret, Preview/Production state, public response, UI, push, or deployment changes. Rollout remains blocked until C2.1-E is complete and the required C2.1-F validation passes.
+- **Status:** Accepted
+- **Date:** 2026-07-17
+
+## D-072 — Acquire ownership before provider execution
+
+- **Decision:** C2.1-E resolves an exact snapshot before ownership, then uses one short transaction to elect a 120-second processing owner or identify an active owner. The application creates the proposed run UUID before acquisition. An ambiguous outcome is re-read once by that UUID and fails closed with HTTP 503 unless ownership is proven. Active duplicates poll every 200 milliseconds for at most 2 seconds, reuse a completed valid snapshot, or return the frozen retryable HTTP 409 response with `Retry-After: 2`. Expired attempts are failed as `LEASE_EXPIRED` and replaced by the next append-only attempt atomically. Only the confirmed owner may run the provider under the cache-managed path or atomically persist the ready snapshot.
+- **Reason:** Exact lookup alone does not prevent duplicate paid provider work. Ownership must be proven without holding a database transaction across the provider request, and ambiguous database outcomes must never authorize a second provider call or replacement write.
+- **Impact:** Cache failure remains uncached fail-open only before acquisition can have created ownership state. From acquisition onward, failures are fail-closed except that an already validated owner result may still be returned uncached if the atomic snapshot/ready transaction fails. Corrupt snapshots are never returned; an unconfirmed quarantine authorizes neither ownership nor replacement persistence. Deterministic validation covers ownership, duplicate reuse, polling bounds, public errors, ambiguous recovery, expired leases, invalid canonical rejection, and zero network/OpenAI calls. Controlled PostgreSQL concurrency validation passed on two disposable Development child branches, both deleted afterward. C2.1-F remains mandatory before rollout. No schema, migration, dependency, Preview/Production state, push, deployment, or OpenAI request is part of this decision.
+- **Status:** Accepted
+- **Date:** 2026-07-17
+
+## D-073 — Require independent adversarial PostgreSQL validation before rollout
+
+- **Decision:** C2.1-F validates the completed C2.1-E exact-cache and ownership implementation through a separate guarded real-PostgreSQL harness on disposable children of the permanent Development branch. The matrix repeats five-caller identical-request contention, injects rollback-before-commit and throw-after-commit outcomes, exercises expired append-only ownership recovery and strict owner persistence, and seeds corrupt, invalid, expired, fingerprint-corrupt, and identity-mismatched snapshots. Failed and unconfirmed quarantine are forced independently. Permanent Development is inspected only in read-only transactions before and after the child-branch runs.
+- **Reason:** Deterministic tests and the initial C2.1-E concurrency proof are necessary but not sufficient for rollout. Transaction-pool behavior, unique-index serialization, commit ambiguity, rollback atomicity, and corrupt-row handling must be challenged against real PostgreSQL without risking shared Development data or widening application scope.
+- **Impact:** Two controlled runs each passed 67 assertions and four five-caller contention rounds as pooled `foodseyo_runtime`, with exactly one synthetic provider owner per identity and zero HTTP or OpenAI calls. Exact branch cleanup was confirmed for `br-morning-lake-awicgpoy` and `br-crimson-fire-awezd52r`, and permanent Development remained at zero application rows. No C2.1-E contract defect required a production-code, schema, or migration correction. No secret, Preview/Production operation, push, deployment, live POST invocation, or C2.1-G rollout is part of this decision.
+- **Status:** Accepted
+- **Date:** 2026-07-17
+
+## D-074 — Preserve the uncached Production baseline through the competition deadline
+
+- **Decision:** C2.1-G does not authorize a cache rollout. Foodseyo keeps the existing uncached Production analysis flow through the July 21, 2026 OpenAI Build Week deadline. A future rollout must first add exact-target migration and full verification tooling, complete a Git-proven Preview deployment and validation matrix, establish a verified Production recovery point and immediate code rollback target, and return for a separate Production go/no-go decision. No Production rollout may begin inside the final 48-hour competition freeze.
+- **Reason:** D→E→F proved the exact-cache and ownership behavior against deterministic and real PostgreSQL failure modes, but release readiness also depends on environment targeting, deployment provenance, Preview evidence, recovery capability, and schedule risk. At review time there was no Preview deployment, Preview and Production were unmigrated, the current verifier could not perform a target-labelled full post-migration audit outside Development, the active Vercel CLI deployment exposed no Git SHA, Neon had zero snapshots and no schedule, and Vercel Hobby rollback covered only the immediately previous Production deployment.
+- **Impact:** The detailed Preview sequence, validation matrix, rollback plan, and Production criteria are frozen in `docs/database-rollout-plan.md`. Development remains the only environment with the four empty application tables. No push, deployment, migration, Preview/Production mutation, live POST request, OpenAI request, schema change, or application-code change is part of C2.1-G. Submission-critical mobile QA, public repository readiness, demo recording, and Devpost delivery take priority over a nonessential Production cache rollout.
+- **Status:** Accepted
+- **Date:** 2026-07-17
+
+## D-075 — Narrow ERD v3 to bounded, evidence-compatible slices
+
+- **Decision:** C2.2-A treats the external Complete ERD v2 as a long-term domain inventory rather than an implementation plan. The implemented four-table C2.1 cache remains unchanged. The only next physical-design candidate is an immutable structured-menu projection consisting of `menu_snapshots`, flat `menu_sections`, `menu_items`, and `menu_item_prices`; a successful `menu_snapshots` row carries source snapshot and projector-version identity, so no separate synchronous materialization status table is added. Restaurant identity waits for T7 evidence acquisition and T8 reevaluation. Persisted artifacts, culinary knowledge, normalized claims, users, Passport, community, and generic audit payloads remain deferred or excluded behind their own product and security gates.
+- **Reason:** The v2 proposal mixed active MVP data, speculative future products, and relationships that could not yet preserve canonical identity or enforce referential integrity. Implementing all domains would conflict with transient-image policy, numeric-confidence-free restaurant resolution, the C2.1 cache boundary, and the competition freeze. A bounded logical model prevents speculative tables from becoming accidental product commitments while preserving a coherent long-term direction.
+- **Impact:** `docs/database-logical-model-v3.md` records entity responsibilities, v2 dispositions, relationship corrections, unresolved decisions, and the revised checkpoint order. C2.2-B may define a physical integrity contract only for the existing C2.1 compatibility boundary and the four structured-menu candidates. C2.2-A creates no Drizzle schema, SQL, migration, table, connection, platform change, route integration, OpenAI request, push, or deployment.
+- **Status:** Accepted
+- **Date:** 2026-07-17
+
+## D-076 — Preserve C1 culinary and sensory contracts in logical ERD v3
+
+- **Decision:** C2.2-A1 keeps basic tastes, flavor notes, textures, heat, and richness as separate logical axes aligned to the versioned C1 profile. Heat and richness remain different ordered scales with scale-bound values. A versioned culinary baseline may represent typical and range values, prevalence, variability, calibrated culinary confidence, basis, provenance, review state, and lifecycle, but it is never a universal restaurant fact. Ingredient roles distinguish `core`, `typical`, `optional`, `regional_variant`, and `preparation_dependent` independently from menu-evidence basis. Menu resolution remains `source_stated > inferred_from_source > culinary_baseline > unknown`; baseline claims fill only missing context, remain labeled, and yield to contradictory source evidence. Heat adjustability is a separate source-backed claim. Common claim metadata owns exactly one relational typed detail; polymorphic references, unrestricted EAV, and opaque value JSON are rejected. Model origin, review state, and active/superseded/retired lifecycle remain independently queryable.
+- **Reason:** The C1 runtime and canonical contracts were intact, but C2.2-A described future knowledge through generic sensory terms, ordinal scales, and typed details without explicitly freezing axis separation, baseline variability, ingredient roles, heat adjustability, or the closed relational subtype rule. That ambiguity could have allowed a later physical design to collapse established semantics while appearing compatible with v3.
+- **Impact:** `docs/database-logical-model-v3.md`, the master map, the canonical mapping documentation, and product rules now preserve the complete culinary/sensory boundary without changing C1 code or the canonical schema. Successful structured-menu projection remains represented by one unique `(analysis snapshot, projector version)` `menu_snapshots` row and atomic children; failures leave no partial structure and use allowlisted safe telemetry unless a separately approved append-only attempt entity is later justified. C2.2-B remains limited to the existing C2.1 compatibility boundary and four structured-menu candidates. No Drizzle schema, SQL, migration, repository, runtime behavior, database access, platform change, OpenAI request, push, or deployment is part of C2.2-A1.
+- **Status:** Accepted
+- **Date:** 2026-07-17
+
+## D-077 — Freeze the bounded structured-menu physical integrity contract
+
+- **Decision:** C2.2-B accepts the implemented C2.1 four-table schema unchanged and defines a non-executable PostgreSQL contract for `menu_snapshots`, flat `menu_sections`, `menu_items`, and `menu_item_prices`. `menu_snapshots` references only the immutable source analysis snapshot, so evidence and analysis-contract identity are derived without redundant columns. `(analysis_snapshot_id, projector_version)` is the successful-materialization key. Sections and items have stable parent-scoped identities and positions; a composite foreign key keeps an optional item section in the same snapshot. Prices store only finite nonnegative source-backed numeric `base` or canonical `option` values, preserve nullable currency and display context, and never use zero for unknown. All four tables are immutable to runtime, use restrictive foreign-key actions, have no soft deletion, and are written as one complete transaction. Runtime receives only `SELECT` and `INSERT`; `PUBLIC` receives nothing.
+- **Reason:** The next slice needs enforceable identity, ordering, same-parent references, idempotency, rollback, and least privilege before schema drafting. Copying evidence and contract IDs into the projection would add a mismatch state, cascades would pre-approve an unresolved retention policy, and a status-bearing materialization row would permit partial structure to look authoritative.
+- **Impact:** [database-physical-integrity-contract.md](./database-physical-integrity-contract.md) mirrors every existing C2.1 column and enforcement boundary, specifies every candidate column/type/null/default/key/FK/check/index/mutability/grant, assigns cross-row rules to the guarded transaction service, and carries P-04/P-06 into C2.2-C. It creates no Drizzle schema, SQL, migration, repository, connection, database row, trigger, platform change, runtime behavior, OpenAI request, push, or deployment.
+- **Status:** Accepted
+- **Date:** 2026-07-17
+
+## D-078 — Bound structured-menu retention and price projection before schema drafting
+
+- **Decision:** The first structured-menu implementation remains internal to Development with no public read path, projection TTL, automatic row deletion, soft deletion, or runtime mutation. A projection is eligible only while its exact source snapshot remains active, unexpired, structurally and semantically valid, and exact-contract valid; source invalidation or expiry immediately disables reuse without mutating the projection. Validation uses rollback or disposable Development child branches and leaves no application rows behind. The price projection includes one eligible base price followed by eligible non-null canonical `priceOptions` in source order. Eligibility requires available direct or external evidence with source IDs and a finite nonnegative `Money`. It excludes `MenuOption.additionalPrice`, null or unsupported prices, ranges, market-price markers, inference, conversion, option groups, and add-on deltas.
+- **Reason:** Development needs an idempotent, adversarially testable projection boundary without prematurely creating a Production retention service or public data store. Canonical price options already carry the identity, label, order, value, and evidence needed by the four-table contract, while an add-on amount without its option-group context would be ambiguous.
+- **Impact:** [database-structured-menu-decisions.md](./database-structured-menu-decisions.md) closes P-04 and P-06 only for the next bounded slice and allows C2.2-D to draft the four accepted tables without executing them. Raw-image retention, evidence artifacts, restaurant identity, culinary knowledge, users, community, Preview/Production retention, schema execution, migration, repositories, live-route integration, push, and deployment remain unauthorized.
+- **Status:** Accepted
+- **Date:** 2026-07-17
+
+## D-079 — Keep the structured-menu schema draft statically verifiable and non-executable
+
+- **Decision:** C2.2-D realizes only `menu_snapshots`, `menu_sections`, `menu_items`, and `menu_item_prices` in a separate Drizzle draft and a PostgreSQL review draft outside the active schema export and migration directory. Every foreign key uses restrictive update/delete actions; same-snapshot section membership uses a composite key; price rows reject negative and non-finite numeric values and permit at most one base row. Runtime privileges are drafted as `SELECT` and `INSERT` only after explicit revocation. A network-free validator checks Drizzle/SQL parity, all physical constraints, active-export isolation, and the unchanged C2.1 migration set.
+- **Reason:** Static code makes the C2.2-B/C contract reviewable by TypeScript and regression tests without accidentally creating an executable migration or changing runtime behavior. Keeping the draft out of the active export prevents ordinary Drizzle commands from treating an unapproved design as current database state.
+- **Impact:** [database-schema-draft.md](./database-schema-draft.md) records the draft, integrity result, application-level invariants still required, and the C2.3 entry gate. No migration metadata, C2.1 table, repository, transaction service, database, Neon/Vercel environment, API route, OpenAI request, push, or deployment changes. C2.3 requires separate authorization before promoting or executing any draft.
+- **Status:** Accepted
+- **Date:** 2026-07-17
+
+## D-080 — Establish the Core Consistency Database Program Charter
+
+- **Decision:** Foodseyo's database objective is to make analysis faster, semantically consistent, evidence-aware, versioned, and safely reusable while reducing unnecessary repeated full-provider reasoning. The program has three distinct reuse paths: exact canonical snapshot reuse, semantic dish and reviewed culinary-knowledge reuse, and restaurant/branch-scoped reuse. Structured-menu projection remains the first bounded implementation slice rather than the final database goal. Restaurant/branch candidates, dish concepts and aliases, reviewed culinary profiles, separate sensory knowledge, ingredient roles, typed menu claims, deterministic effective merging, and GPT-aware pre/post-provider orchestration are current core program work, sequenced behind their own evidence, decision, physical-contract, Development-validation, and rollout gates. Accounts, Food Passport, personalization, community, and permanent raw-image storage remain deferred.
+- **Reason:** The C2.2-A safety boundary correctly rejected a speculative all-domain schema, but later roadmap wording could be read as if decomposing canonical JSON were the complete database objective and restaurant/culinary reuse were optional distant ideas. Foodseyo needs a durable program boundary that preserves bounded implementation while making semantic consistency and reusable reviewed context explicit product infrastructure.
+- **Impact:** [database-program-charter.md](./database-program-charter.md) freezes GPT and deterministic application authority, evidence precedence, unknown safety, C1 axis separation, ingredient roles, typed relational claims, provenance/version requirements, the phased roadmap, a three-path evaluation matrix, completion criteria, and per-slice rollout gates. C2.3 remains the exact next checkpoint and first implementation slice. The C2.2-D draft remains inactive and isolated. This decision supersedes only outdated forward-looking scope and timing implications in D-075, D-076, D-078, D-079, and aligned roadmap wording that described restaurant identity or culinary knowledge as optional or outside the current core program. It does not supersede their integrity, evidence, transient-image, least-privilege, Development-only, Preview/Production, or separate-authorization constraints, and it does not rewrite historical MVP decisions such as D-031 or D-056.
+- **Status:** Accepted
+- **Date:** 2026-07-17
+
+## D-081 — Implement the bounded structured-menu projection in Development
+
+- **Decision:** C2.3 promotes exactly `menu_snapshots`, `menu_sections`, `menu_items`, and `menu_item_prices` from the accepted C2.2-D review into the active Drizzle schema and reviewed `0001_c2_3_structured_menu_projection` migration. One deterministic builder creates the persistence DTO. One repository validates the exact ready, active, unexpired canonical source and performs parameterized reads and inserts. One materializer revalidates under a source lock, inserts the complete aggregate, checks row counts and exact read-back, and commits or rolls back everything. `(analysis_snapshot_id, projector_version)` remains the idempotency key; an exact uniqueness-race loser revalidates and reuses only the complete committed winner. Runtime receives only `SELECT` and `INSERT`.
+- **Reason:** The first relational decomposition must prove source honesty, order, completeness, evidence-backed price filtering, same-snapshot membership, failure rollback, and concurrency against real PostgreSQL before any application read path or rollout exists.
+- **Impact:** Development now contains eight empty application tables and two migration-ledger entries. Deterministic validation and a disposable Neon Development child branch verified normal projection, duplicate and concurrent reuse, forced rollback, composite foreign keys, negative and non-finite prices, base/option payload constraints, invalid sources, expiry, least privilege, and cleanup with zero OpenAI calls. The child branch was deleted and confirmed absent. Preview, Production, Vercel, the live analysis route, C2.1 schema, public API/UI, and Production's uncached flow remain unchanged. [database-structured-menu-projection.md](./database-structured-menu-projection.md) records the implementation and stop boundary.
+- **Status:** Accepted
+- **Date:** 2026-07-17
+
+## D-082 — Publish one cumulative review branch without changing Production
+
+- **Decision:** Publish `c2.3-structured-menu-projection` as the cumulative
+  GitHub review branch and open a draft pull request against `main`. The branch
+  contains every linear C2.1 through C2.3 checkpoint commit. Preserve the
+  intermediate local branch pointers in a durable branch map instead of
+  pushing each pointer and triggering unnecessary Preview build fan-out.
+  GitHub `main`, Preview and Production databases, and the Production
+  deployment remain unchanged. The independent
+  `juhyungbaek0621/travel-food-copilot` repository is a product and UX review
+  input only; no code from it is included in this publication.
+- **Reason:** A teammate needs the complete implementation history to compare
+  approaches and propose selective integration. A cumulative branch plus draft
+  pull request exposes every commit and the full `main` diff without turning a
+  collaboration review into a Production release or weakening the existing
+  C2.1-G and per-slice rollout gates.
+- **Impact:** README, handoff, and the collaboration branch map record exact
+  checkpoint pointers and the safe review procedure. The publication changes
+  documentation only. It does not merge `main`, migrate or mutate Neon,
+  modify Vercel configuration, deploy, connect the C2.3 read path, call
+  OpenAI, invoke the live POST route, or stage the supplied DOCX and SQL
+  references. Any future integration from the teammate implementation must be
+  reimplemented and validated behind Foodseyo's canonical, evidence, privacy,
+  database-integrity, and rollout contracts.
+- **Status:** Accepted
+- **Date:** 2026-07-17

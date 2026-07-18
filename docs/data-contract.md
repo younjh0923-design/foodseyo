@@ -1,6 +1,6 @@
 # Foodseyo Unified Analysis Data Contract
 
-**Status:** Canonical `1.0.0`/`1.1.0` compatibility plus C1.2.1 `1.1.1` live results
+**Status:** Canonical `1.0.0`/`1.1.0` compatibility plus C1.2.1 `1.1.1` live results; future relational preservation clarified by C2.2-A1
 
 **Date:** 2026-07-16
 
@@ -199,6 +199,22 @@ C1.1 established the independent `foodseyo-consistency-v1` foundation. C1.2 adde
 Only `canonicalSchemaVersion` changes for C1.2.1. The model, prompt, provider schema, and consistency profile versions remain unchanged. Result fingerprints therefore change naturally, while source and dish fingerprint inputs do not.
 
 The contract separates basic tastes, flavor notes, heat, richness, textures, and free-form ingredient evidence. Ingredient evidence is `stated`, `typical`, or `uncertain`; typical or uncertain information never becomes a stated restaurant fact. The source fingerprint uses pre-provider source identity, including ordered SHA-256 content hashes and count for menu images. Raw image hashes are not stored in the canonical result. The dish fingerprint accepts source-stated dish evidence only. Normalized consistency, deterministic wording, and all five version fields belong to a separate result fingerprint. These identities do not enable cache reuse, database storage, or provider bypass in C1.2.
+
+### Future relational preservation boundary
+
+C2.2-A1 does not change the canonical runtime schema. It constrains any future culinary-knowledge or menu-claim mapping:
+
+- basic tastes, flavor notes, textures, heat, and richness remain five distinct axes; no relational `taste` bucket may combine them;
+- heat and richness use different ordered scales, and a value reference must preserve its scale identity;
+- culinary baseline profiles are variable, versioned, reviewed summaries rather than universal restaurant facts;
+- ordered baseline claims may preserve minimum, typical, and maximum values, while claim metadata preserves prevalence, variability, calibrated culinary confidence, basis, provenance, review state, and profile version;
+- ingredient baseline roles (`core`, `typical`, `optional`, `regional_variant`, `preparation_dependent`) remain separate from C1 menu-evidence basis (`stated`, `typical`, `uncertain`);
+- menu resolution remains `source_stated > inferred_from_source > culinary_baseline > unknown`; a baseline fills missing context only, remains explicitly labeled, and cannot override contradictory menu evidence;
+- `unknown` never becomes absence, false, allergen-safe, or dietary-safe;
+- source-backed heat adjustability is stored separately from observed or typical heat;
+- common claim metadata may have only a closed family of relational typed details. Unverifiable polymorphic references, unrestricted EAV, and opaque claim-value JSON are not valid mappings.
+
+The durable logical definition is [database-logical-model-v3.md](./database-logical-model-v3.md). Publication also keeps generation origin, review state, and active/superseded/retired lifecycle distinct; model generation never implies review.
 
 `src/data/demoRestaurant.ts` is a UI adapter. It derives the existing `Restaurant` and `Dish` view models from the canonical fixture so the clearly labeled Demo Overview, Dish Detail, Meal Planner, Assistant mock, and routes share one source of truth.
 

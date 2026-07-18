@@ -218,7 +218,7 @@ Future restaurant-photo, screen, link, nearby, and research providers connect th
 
 The canonical envelope is validated again before session persistence and on every Live result read. `src/lib/live-analysis-results.ts` is a pure view-model adapter above the orchestrator: it preserves canonical category and dish ordering, resolves safe Dish links, and maps nonempty presentation sections including menu-derived ingredients and cautions. It does not mutate the envelope or call an analyzer, provider, OpenAI, web research, review source, restaurant endpoint, or any other network service.
 
-`/analysis` is the canonical result destination, and only `menu_images` is live. T6 is cancelled from the MVP. C1.1/C1.1.1 establish the contract and identity foundations; C1.2 integrates them into the existing menu-image analyzer; C1.2.1 corrects restaurant provenance without another provider call. C2 is next, T7 link analysis follows C2, and T8 identification will be reconsidered after T7.
+`/analysis` is the canonical result destination, and only `menu_images` is live. T6 is cancelled from the MVP. C1.1/C1.1.1 establish the contract and identity foundations; C1.2 integrates them into the existing menu-image analyzer; C1.2.1 corrects restaurant provenance without another provider call. C2.1-A/B established isolated infrastructure and the Development schema without changing this live orchestration. C2.1-C–G will add and roll out the exact-cache runtime in reviewed stages; T7 link analysis follows C2, and T8 identification will be reconsidered after T7.
 
 ## T5 transport boundary
 

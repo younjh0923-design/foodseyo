@@ -58,8 +58,17 @@ Validated analysis is stored under `foodseyo.currentAnalysis` in `sessionStorage
 - R1 — internal codebase and development workflow optimization
 - C1.1 / C1.1.1 — consistency foundations (completed)
 - C1.2 — live menu-image consistency integration (completed)
-- C1.2.1 — restaurant-resolution provenance correction (current)
-- C2.1–C2.4 — relational model and cache safety (next)
+- C1.2.1 — restaurant-resolution provenance correction (completed)
+- C2.1-A/B — isolated database infrastructure and Development schema (completed)
+- C2.1-C — runtime repositories (completed)
+- C2.1-D — exact cache integration (completed locally; not deployed)
+- C2.1-E — ownership and failure policy (completed locally; not deployed)
+- C2.1-F — required Development integrity/concurrency validation (completed locally)
+- C2.1-G — rollout-readiness review completed; Production rollout deferred
+- C2.1-H — exact feature-branch preservation completed; automatic Preview is build provenance only
+- C2.2-A — scoped logical ERD v3 audit complete; no physical schema
+- C2.2-B–D — bounded physical integrity contract, scoped decisions, and unexecuted schema draft
+- C2.3 complete locally — Development-only structured menu projection after the C2.2 gates, with no live route integration
 - T7.1–T7.4 — restaurant/menu link analysis after C2
 - T8 — restaurant identification, reconsider after T7
 - Later — map-app share-to-Foodseyo integration

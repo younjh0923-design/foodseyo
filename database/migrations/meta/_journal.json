@@ -1,0 +1,20 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1784267631062,
+      "tag": "0000_c2_1_b_analysis_cache_schema",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1784325784980,
+      "tag": "0001_c2_3_structured_menu_projection",
+      "breakpoints": true
+    }
+  ]
+}

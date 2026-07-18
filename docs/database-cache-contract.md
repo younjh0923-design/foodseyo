@@ -1,8 +1,55 @@
 # C2.1 database and exact-cache contract
 
-This file is the current source of truth for the C2.1 database/cache contract. The supplied `Foodseyo_Database_Architecture_v1.2.docx` and `Foodseyo_PostgreSQL_Schema_v1.2.sql` remain reference artifacts. Where they differ from this file, this file governs C2.1. Executable Drizzle schema and reviewed migrations will be created in C2.1-B; the formal architecture artifact can be regenerated from the implemented schema afterward.
+This file is the current source of truth for the C2.1 database/cache contract. The supplied `Foodseyo_Database_Architecture_v1.2.docx` and `Foodseyo_PostgreSQL_Schema_v1.2.sql` remain reference artifacts. Where they differ from this file, this file governs C2.1. The executable Drizzle schema and first reviewed Development migration were created in C2.1-B; the formal architecture artifact can be regenerated from the implemented schema afterward.
 
-This checkpoint freezes contracts only. It does not create a database, implement cache lookup or PostgreSQL repositories, acquire a real lease, persist a snapshot, or change the live API response.
+The contract-freezing checkpoint did not create a database, implement cache lookup or PostgreSQL repositories, acquire a real lease, persist a snapshot, or change the live API response. C2.1-B implemented only the physical schema and first Development migration. C2.1-C implemented the isolated runtime client and repository primitives. C2.1-D composed exact lookup, quarantine, provider bypass, and best-effort persistence into the local analysis route. C2.1-E implements the frozen pre-provider ownership and public busy/indeterminate policy locally. C2.1-F independently validates that implementation against adversarial real-PostgreSQL behavior in Development. The exact C2.1-G commit is preserved on a GitHub feature branch and has an automatic Git-sourced Preview build, but the Preview database remains unmigrated, the live POST route was not invoked, and Production remains on the uncached flow.
+
+## Physical implementation status
+
+C2.1-B defines exactly `analysis_contracts`, `menu_evidence_sets`, `analysis_runs`, and `analysis_snapshots` in `src/lib/database/schema/analysis-cache.ts`. The reviewed migration is `0000_c2_1_b_analysis_cache_schema` and its ledger is `public.__drizzle_migrations`.
+
+The migration was applied once to Neon Development (`br-dark-cherry-awci0faj`) and a second run applied zero migrations. Preview (`br-misty-breeze-awy83urg`) and Production (`br-blue-night-awieb03l`) were verified through read-only transactions and were not migrated.
+
+C2.1-C adds:
+
+- a server-only module-scoped `pg.Pool` configured from `DATABASE_URL` only;
+- a five-connection application pool attached to Vercel Fluid Compute lifecycle handling;
+- parameterized repositories for all four tables;
+- strict Zod validation for repository inputs and database rows;
+- canonical structural, semantic, exact-contract, and whole-snapshot fingerprint validation;
+- one short atomic transaction that locks the owned, unexpired processing run, inserts the ready snapshot, and transitions that run to `ready`.
+
+The controlled Development verification connected as `foodseyo_runtime` through the pooled TLS contract, exercised all four repositories, re-read the validated canonical snapshot, and rolled the transaction back. All four application tables had zero rows before and after verification. No schema, migration, Preview/Production database, live API route, or provider path changed.
+
+C2.1-D adds:
+
+- complete source and five-value contract preparation before cache lookup or provider construction;
+- strict active-snapshot inspection with structural, semantic, exact-identity, and whole-snapshot fingerprint validation;
+- guarded, non-destructive quarantine for corrupt or expired snapshots;
+- valid-hit provider bypass with the unchanged canonical API response;
+- fail-open uncached analysis for cache-read failures and unconfirmed quarantine, without replacement persistence;
+- best-effort persistence of a validated live result, with run creation, snapshot insert, and `ready` transition contained in one short post-provider transaction;
+- privacy-safe cache read/write state and provider-call-count observation.
+
+The C2.1-D post-provider transaction is deliberately not the C2.1-E ownership protocol. Its `processing` run is created and transitioned entirely inside the final transaction, so no lease is exposed before or during the provider request. It does not prevent duplicate provider calls, poll another owner, recover an expired lease, or add a new public cache error. A concurrent persistence conflict rolls back and returns the already validated live result uncached. C2.1-E must move ownership acquisition before provider execution and implement the frozen concurrency and failure policy.
+
+The controlled C2.1-D Development verification used the same pooled TLS runtime role inside one outer transaction. It inserted a synthetic corrupt snapshot, confirmed guarded quarantine, persisted a valid replacement, re-read it as an exact hit, made zero provider calls, rolled back, and confirmed all four application tables still had zero rows. No DDL, migration credential, OpenAI request, live POST invocation, Preview/Production operation, push, or deployment occurred.
+
+C2.1-E adds:
+
+- one short acquisition transaction that locks the current processing attempt, returns an active owner as busy, or atomically fails an expired attempt as `LEASE_EXPIRED` and inserts the next attempt;
+- application-generated proposed run UUID recovery after an ambiguous acquisition outcome;
+- a strict ownership object carried from acquisition through provider execution, guarded failure transition, and atomic ready persistence;
+- duplicate polling for at most 2 seconds at a fixed 200-millisecond interval, within the frozen 100–250 millisecond bounds;
+- retryable HTTP 409 `ANALYSIS_IN_PROGRESS` with `Retry-After: 2`, and retryable HTTP 503 `ANALYSIS_TEMPORARILY_UNAVAILABLE`;
+- pre-ownership-only uncached fail-open behavior and fail-closed behavior from the moment acquisition may have created state;
+- deterministic concurrency, corruption, ambiguous-acquisition, expired-lease, owner-only persistence, and public-response validation with zero network or OpenAI calls.
+
+The C2.1-E implementation and deterministic suite are complete in the local worktree. The controlled real PostgreSQL verifier passed independently on ephemeral Development child branches `br-damp-poetry-awrh7604` and `br-wild-recipe-awnapjbv`. Each run connected over pooled TLS as `foodseyo_runtime`, verified exactly one owner and one provider call, duplicate snapshot reuse, active-owner 409 behavior, strict owner persistence, expired-lease recovery, and zero OpenAI calls. Both exact child branches were deleted by the guarded cleanup path. C2.1-F remained a separate required integrity and concurrency gate and is completed by the independent validation below.
+
+C2.1-F adds no product capability, schema, migration, or Production behavior. Its independent validator runs four five-caller contention rounds per ephemeral branch and covers one-owner/one-provider election, completed-snapshot reuse, bounded 409 polling, indeterminate 503 behavior, append-only expired-lease recovery, owner failure, strict owner-only persistence, rollback before commit, ambiguous acquisition and persistence outcomes, and corrupt, invalid, expired, fingerprint-corrupt, or identity-mismatched snapshots. It also forces both unconfirmed and failed quarantine outcomes and confirms that neither path returns corrupt data or persists a replacement.
+
+The C2.1-F validator passed with 67 assertions on each of ephemeral Development child branches `br-morning-lake-awicgpoy` and `br-crimson-fire-awezd52r`. Both used pooled TLS as `foodseyo_runtime`, made zero HTTP or OpenAI calls, and were deleted and confirmed absent. Read-only checks before and after the runs confirmed zero application rows on permanent Development. No C2.1-E contract defect required a Production-code, schema, or migration correction.
 
 ## Exact identity and immutable contracts
 
@@ -109,17 +156,10 @@ Future cache telemetry may contain only cache stage, hit/miss/busy/uncached stat
 
 ## C2.1 non-goals
 
-C2.1 does not persist raw images; create restaurant, dish-concept, observation, or logical-menu catalogs; implement dish-level reuse; analyze links; change the canonical schema, provider prompt/schema/model defaults, or source/dish fingerprint semantics; or change UI/session behavior. C2.1-0.1 adds no database dependency, connection, schema, migration, SQL execution, cache hit, provider bypass, or new public live error response.
+C2.1 does not persist raw images; create restaurant, dish-concept, observation, or logical-menu catalogs; implement dish-level reuse; analyze links; change the canonical schema, provider prompt/schema/model defaults, or source/dish fingerprint semantics; or change UI/session behavior. C2.1-E adds only the already frozen ownership and 409/503 cache policy locally, and C2.1-F validates it without expanding scope. C2.1-G completed the separate rollout review and withheld Production approval. The preserved automatic Preview is build provenance only: there is still no Preview/Production database migration or authorization to roll out cache behavior. C2.2-A/A1 change only the future logical model. C2.2-B/C define the contract and scoped decisions for four future structured-menu tables. C2.2-D realizes them only as an isolated, unexecuted [schema draft](./database-schema-draft.md); the active four-table C2.1 export and migration remain unchanged.
 
-## Manual infrastructure prerequisites
+## Infrastructure prerequisite status
 
-Before C2.1-B, the user must complete the C2.1-A infrastructure boundary outside this checkpoint:
+C2.1-A is complete. The verified non-secret architecture, environment mapping, least-privilege roles, variable scopes, operational limits, and C2.1-B entry boundary are recorded in [database-environment-setup.md](./database-environment-setup.md).
 
-- create or select the managed Neon account, project, and region;
-- create isolated Development, Preview, and Production database branches or projects;
-- authorize the existing Vercel project integration without relinking or creating a second project;
-- create separate least-privilege runtime and migration roles;
-- configure environment-scoped runtime and migration variable names through the hosting dashboards;
-- confirm backup/PITR, restore, TLS, connection-limit, and operational monitoring policies.
-
-Return only non-secret evidence such as project/branch names, selected region, environment-scope confirmation, role names, and readiness screenshots with values redacted. Never paste or commit passwords, tokens, database URLs, connection strings, API keys, or environment values.
+The infrastructure setup does not activate the cache or authorize schema creation outside C2.1-B. Passwords, tokens, database URLs, connection strings, API keys, hostnames, and environment values remain excluded from repository files and reports.
