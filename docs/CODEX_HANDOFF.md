@@ -1,7 +1,7 @@
 # Foodseyo Codex Handoff
 
 **Updated:** 2026-07-17
-**Current checkpoint:** C2.3 Development-only structured-menu projection complete locally; no live read path or rollout
+**Current checkpoint:** C2.3 Development-only structured-menu projection complete and published for team review; no live read path or rollout
 
 This file is intentionally operational and may change at every checkpoint.
 Stable product intent belongs in [PROJECT_OVERVIEW.md](./PROJECT_OVERVIEW.md).
@@ -10,13 +10,23 @@ Stable product intent belongs in [PROJECT_OVERVIEW.md](./PROJECT_OVERVIEW.md).
 
 - Current branch: `c2.3-structured-menu-projection`
 - C2.3 starting HEAD: `0db6d2207d80936b00ca84b1e9640696578137fe`
-- C2.3 delivery: the current committed branch tip containing this handoff
+- C2.3 implementation checkpoint: `bbb09f4e506f4572724a5fd5835cd3fa1bceae4e`
+- C2.3 review delivery: the current committed branch tip containing the
+  collaboration documentation
 - Local `main`: `cfbb93750c0b8f41f470963eddaf203d3b82457f`
 - Local `origin/main` baseline: `d3c255d29b4029589e6f6b562a482134c0e28b99`
-- Ahead/behind at the committed C2.3 checkpoint: `17/0`
-- C2.3 has not been pushed, deployed, merged, or opened as a pull request.
+- Ahead/behind at the review-publication commit: `18/0`
+- The cumulative `c2.3-structured-menu-projection` branch is published with
+  upstream tracking and a draft pull request for team review.
+- The draft pull request is review provenance only. It is not merge,
+  Preview/Production migration, or deployment approval.
+- Intermediate checkpoint branch pointers remain documented locally rather
+  than being pushed separately. Every checkpoint commit is reachable from the
+  cumulative review branch.
 - GitHub `main`, the preserved `c2.1-g-rollout-review` branch, and its automatic
   Vercel Preview were not changed.
+- The complete branch map and collaboration boundary are in
+  `docs/collaboration-branch-map.md`.
 
 The only untracked and unstaged files are:
 
@@ -51,6 +61,7 @@ the repository, or stored in Vercel.
 | Stable product definition and long-term direction | `docs/PROJECT_OVERVIEW.md` |
 | Active MVP scope and safety | `docs/product-rules.md` |
 | Current checkpoint and next action | `docs/CODEX_HANDOFF.md` |
+| GitHub review branch and checkpoint pointers | `docs/collaboration-branch-map.md` |
 | Core database objective and phased program | `docs/database-program-charter.md` |
 | C2.1 exact-cache behavior | `docs/database-cache-contract.md` |
 | Implemented active database schema | `src/lib/database/schema/index.ts` |
@@ -145,7 +156,8 @@ Do not infer authorization to:
 - add restaurant, branch, dish-concept, culinary-knowledge, typed-claim,
   semantic-merge, user, Passport, or community tables;
 - retain raw images or prohibited source payloads;
-- push, deploy, merge `main`, invoke the live POST route, or call OpenAI.
+- make another push without explicit authorization, deploy, merge `main`,
+  invoke the live POST route, or call OpenAI.
 
 ## Delivery rules
 

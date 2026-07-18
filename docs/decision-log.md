@@ -654,3 +654,30 @@ This log records accepted product and architecture decisions frozen in T2. Chang
 - **Impact:** Development now contains eight empty application tables and two migration-ledger entries. Deterministic validation and a disposable Neon Development child branch verified normal projection, duplicate and concurrent reuse, forced rollback, composite foreign keys, negative and non-finite prices, base/option payload constraints, invalid sources, expiry, least privilege, and cleanup with zero OpenAI calls. The child branch was deleted and confirmed absent. Preview, Production, Vercel, the live analysis route, C2.1 schema, public API/UI, and Production's uncached flow remain unchanged. [database-structured-menu-projection.md](./database-structured-menu-projection.md) records the implementation and stop boundary.
 - **Status:** Accepted
 - **Date:** 2026-07-17
+
+## D-082 — Publish one cumulative review branch without changing Production
+
+- **Decision:** Publish `c2.3-structured-menu-projection` as the cumulative
+  GitHub review branch and open a draft pull request against `main`. The branch
+  contains every linear C2.1 through C2.3 checkpoint commit. Preserve the
+  intermediate local branch pointers in a durable branch map instead of
+  pushing each pointer and triggering unnecessary Preview build fan-out.
+  GitHub `main`, Preview and Production databases, and the Production
+  deployment remain unchanged. The independent
+  `juhyungbaek0621/travel-food-copilot` repository is a product and UX review
+  input only; no code from it is included in this publication.
+- **Reason:** A teammate needs the complete implementation history to compare
+  approaches and propose selective integration. A cumulative branch plus draft
+  pull request exposes every commit and the full `main` diff without turning a
+  collaboration review into a Production release or weakening the existing
+  C2.1-G and per-slice rollout gates.
+- **Impact:** README, handoff, and the collaboration branch map record exact
+  checkpoint pointers and the safe review procedure. The publication changes
+  documentation only. It does not merge `main`, migrate or mutate Neon,
+  modify Vercel configuration, deploy, connect the C2.3 read path, call
+  OpenAI, invoke the live POST route, or stage the supplied DOCX and SQL
+  references. Any future integration from the teammate implementation must be
+  reimplemented and validated behind Foodseyo's canonical, evidence, privacy,
+  database-integrity, and rollout contracts.
+- **Status:** Accepted
+- **Date:** 2026-07-17

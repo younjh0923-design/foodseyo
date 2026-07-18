@@ -39,6 +39,31 @@ The Home link field validates HTTP/HTTPS syntax only. It does not fetch or analy
 
 Neon/Vercel Development, Preview, and Production database environments are isolated. Development now contains the four exact-cache tables plus the four C2.3 structured-menu projection tables, with zero application rows and two migration-ledger entries. C2.3 implements deterministic DTO construction, source eligibility checks, one atomic projection transaction, idempotent winner reuse, and real-PostgreSQL constraint, concurrency, rollback, invalidation, and expiry validation. Runtime has only `SELECT` and `INSERT` on the projection tables. No projection read path is connected to the live application. The exact C2.1-G commit is preserved on a GitHub feature branch and produced an automatic Git-sourced Preview build, but Preview and Production received no database migration or validated cache rollout. Production remains on the uncached flow.
 
+## Collaboration and GitHub review
+
+The cumulative review branch is
+[`c2.3-structured-menu-projection`](https://github.com/younjh0923-design/foodseyo/tree/c2.3-structured-menu-projection).
+It contains the complete linear C2.1 through C2.3 checkpoint history. The
+intermediate local branch pointers are documented for auditability, but only
+the cumulative branch needs to be published for another developer to inspect
+every commit and compare the full change set.
+
+GitHub `main` remains the stable Production baseline. The cumulative branch is
+shared through a draft pull request for review only; the draft is not approval
+to merge, migrate Preview or Production, or deploy. This avoids unnecessary
+Preview build fan-out while preserving the exact implementation history.
+
+The team is also evaluating the independent
+[`juhyungbaek0621/travel-food-copilot`](https://github.com/juhyungbaek0621/travel-food-copilot)
+implementation. Its product and UX ideas are review inputs, not an alternate
+source of truth. No code from that repository is included in this publication.
+Useful ideas must be reimplemented behind Foodseyo's canonical, evidence,
+privacy, database-integrity, and rollout contracts rather than merged
+wholesale.
+
+See [`docs/collaboration-branch-map.md`](./docs/collaboration-branch-map.md)
+for the checkpoint branch map and safe integration procedure.
+
 ## Run locally
 
 Requirements:
@@ -115,6 +140,9 @@ Codex has supported the repository-wide implementation workflow: product-scope c
 - Later product scope — personalization, Food Passport, community, and map-app sharing
 
 Stable product context is in [`docs/PROJECT_OVERVIEW.md`](./docs/PROJECT_OVERVIEW.md). The current implementation handoff is in [`docs/CODEX_HANDOFF.md`](./docs/CODEX_HANDOFF.md).
+The cumulative GitHub review branch, checkpoint pointers, and collaboration
+boundary are recorded in
+[`docs/collaboration-branch-map.md`](./docs/collaboration-branch-map.md).
 
 The scoped future relational model is in [`docs/database-logical-model-v3.md`](./docs/database-logical-model-v3.md).
 The primary database objective, three reuse paths, GPT boundary, and phased program are in [`docs/database-program-charter.md`](./docs/database-program-charter.md).
